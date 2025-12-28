@@ -3,23 +3,23 @@ import { SignUpForm } from './signup-form'
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded border w-full max-w-md p-8">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+      <div className="bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 w-full max-w-md p-8 shadow-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Inscription</h1>
-          <p className="text-gray-600">ISAEG PFE</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Inscription</h1>
+          <p className="text-gray-300">ISAEG PFE</p>
         </div>
 
         <SignUpForm />
 
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-300">
             Déjà inscrit?{' '}
-            <Link href="/auth/signin" className="text-blue-600 hover:text-blue-700 font-medium">
+            <Link href="/auth/signin" className="text-emerald-400 hover:text-emerald-300 font-medium">
               Se connecter
             </Link>
           </p>
-          <Link href="/" className="block text-sm text-gray-500 hover:text-gray-700 mt-4">
+          <Link href="/" className="block text-sm text-gray-400 hover:text-gray-300 mt-4">
             ← Retour
           </Link>
         </div>
@@ -27,4 +27,3 @@ export default function SignUpPage() {
     </div>
   )
 }
-

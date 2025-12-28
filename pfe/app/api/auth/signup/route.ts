@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
-  const { email, password, fullName, role } = await request.json()
+  const { email, password, fullName, role, studentId, department, phone } = await request.json()
 
   const supabase = await createClient()
 
@@ -13,6 +13,9 @@ export async function POST(request: Request) {
       data: {
         full_name: fullName,
         role: role,
+        student_id: studentId || null,
+        department: department || null,
+        phone: phone,
       },
     },
   })
