@@ -6,16 +6,14 @@ export async function POST(request: Request) {
 
   const supabase = await createClient()
 
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
+    const { data, error } = await supabase.from('users').select('*').eq('email', email).eq('password', password)
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 400 })
-  }
-
-  return NextResponse.json({ success: true })
+    if (data && data.length === 0) {
+      return NextResponse.json({ error: 'User not found' }, { status: 400 })
+    }
+    else {
+      return NextResponse.json({ success: true, user: data })
+    }
 }
 
 
