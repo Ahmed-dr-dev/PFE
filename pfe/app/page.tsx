@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
@@ -57,28 +58,16 @@ export default async function Home() {
                   </Link>
                 </div>
               </div>
-              <div className="relative">
-                <div className="relative">
-                  <svg viewBox="0 0 600 500" className="w-full h-auto">
-                    <defs>
-                      <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" style={{ stopColor: '#10b981', stopOpacity: 1 }} />
-                        <stop offset="100%" style={{ stopColor: '#06b6d4', stopOpacity: 1 }} />
-                      </linearGradient>
-                    </defs>
-                    <rect x="50" y="50" width="500" height="400" rx="20" fill="url(#grad1)" opacity="0.15" />
-                    <rect x="100" y="100" width="400" height="300" rx="15" fill="#1e293b" stroke="#10b981" strokeWidth="3" />
-                    <circle cx="200" cy="180" r="30" fill="#10b981" />
-                    <rect x="250" y="165" width="200" height="15" rx="5" fill="#475569" />
-                    <rect x="250" y="195" width="150" height="15" rx="5" fill="#475569" />
-                    <rect x="100" y="250" width="400" height="120" rx="10" fill="#0f172a" />
-                    <rect x="120" y="270" width="80" height="80" rx="8" fill="#10b981" opacity="0.3" />
-                    <rect x="220" y="270" width="80" height="80" rx="8" fill="#06b6d4" opacity="0.3" />
-                    <rect x="320" y="270" width="80" height="80" rx="8" fill="#8b5cf6" opacity="0.3" />
-                    <circle cx="300" cy="420" r="8" fill="#10b981" />
-                    <circle cx="320" cy="420" r="8" fill="#06b6d4" />
-                    <circle cx="340" cy="420" r="8" fill="#8b5cf6" />
-                  </svg>
+              <div className="relative flex items-center justify-center">
+                <div className="relative w-full max-w-lg">
+                  <Image
+                    src="/pngtree-books-and-graduat-hat-png-image_3442925-removebg-preview.png"
+                    alt="Books and graduation hat illustration"
+                    width={600}
+                    height={500}
+                    className="w-full h-auto drop-shadow-2xl"
+                    priority
+                  />
                 </div>
               </div>
             </div>
@@ -140,24 +129,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Stats - Compact */}
-        <section className="py-16 bg-slate-900/50">
-          <div className="max-w-4xl mx-auto px-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {[
-                { num: '500+', label: 'Projets' },
-                { num: '200+', label: 'Étudiants' },
-                { num: '50+', label: 'Enseignants' },
-                { num: '95%', label: 'Satisfaction' },
-              ].map((stat, index) => (
-                <div key={index}>
-                  <div className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-2">{stat.num}</div>
-                  <div className="text-gray-400 text-sm">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+      
 
         {/* CTA - Minimal */}
         <section className="py-20 bg-gradient-to-br from-slate-800 to-slate-900 border-t border-slate-700/50">
@@ -186,30 +158,7 @@ export default async function Home() {
         </section>
       </main>
 
-      {/* Footer - Minimal */}
-      <footer className="bg-slate-900/80 border-t border-slate-700/50">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div>
-              <h4 className="text-lg font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent mb-2">ISAEG PFE</h4>
-              <p className="text-gray-400 text-sm">
-                Plateforme de gestion des projets de fin d'études
-              </p>
-            </div>
-            <div className="flex gap-6 text-sm text-gray-400">
-              <Link href="/auth/signin" className="hover:text-white transition-colors">
-                Connexion
-              </Link>
-              <Link href="/auth/signup" className="hover:text-white transition-colors">
-                Inscription
-              </Link>
-            </div>
-          </div>
-          <div className="border-t border-slate-700/50 mt-8 pt-8 text-center text-gray-500 text-sm">
-            <p>&copy; {new Date().getFullYear()} ISAEG PFE. Tous droits réservés.</p>
-          </div>
-        </div>
-      </footer>
+     
     </div>
   )
 }

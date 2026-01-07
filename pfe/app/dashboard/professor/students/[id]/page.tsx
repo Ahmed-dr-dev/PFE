@@ -164,3 +164,4 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
   )
 }
 
+
