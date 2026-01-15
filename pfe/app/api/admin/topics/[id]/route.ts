@@ -1,29 +1,19 @@
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const auth = await requireAuth('admin')
+    if (auth.error) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    // Verify admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
-    }
-
+    const { id } = await params
     const { data: topic, error } = await supabase
       .from('pfe_topics')
       .select(`
@@ -64,7 +54,7 @@ export async function GET(
           )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error) {
@@ -90,23 +80,12 @@ export async function PUT(
 ) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const auth = await requireAuth('admin')
+    if (auth.error) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    // Verify admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
-    }
-
+    const { id } = await params
     const { status } = await request.json()
 
     if (!['approved', 'rejected', 'archived'].includes(status)) {
@@ -119,7 +98,7 @@ export async function PUT(
         status,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 

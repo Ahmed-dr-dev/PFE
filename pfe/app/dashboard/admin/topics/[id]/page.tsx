@@ -1,22 +1,42 @@
+'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { TopicActions } from './topic-actions'
 
-async function getTopic(id: string) {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/topics/${id}`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.topic
-  } catch (error) {
-    return null
-  }
-}
+export default function TopicDetailPage() {
+  const params = useParams()
+  const id = params.id as string
+  const [topic, setTopic] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
-export default async function TopicDetailPage({ params }: { params: { id: string } }) {
-  const topic = await getTopic(params.id)
-  
+  useEffect(() => {
+    async function fetchTopic() {
+      try {
+        const res = await fetch(`/api/admin/topics/${id}`)
+        if (res.ok) {
+          const data = await res.json()
+          setTopic(data.topic)
+        }
+      } catch (error) {
+        console.error('Error fetching topic:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (id) fetchTopic()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!topic) {
     return (
       <div className="space-y-8">

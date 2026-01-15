@@ -1,35 +1,30 @@
+'use client'
 import { TopicCard } from './topic-card'
-import { SubmitTopicForm } from './submit-topic-form'
+import { useEffect, useState } from 'react'
 
-async function getTopics() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/student/topics`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.topics || []
-  } catch (error) {
-    return []
-  }
-}
+export default function TopicsPage() {
+  const [topics, setTopics] = useState<any[]>([])
+  const [hasSupervisor, setHasSupervisor] = useState<boolean>(true)
+  const [loading, setLoading] = useState(true)
 
-async function getMyPfe() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/student/my-pfe`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.pfe
-  } catch (error) {
-    return null
-  }
-}
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const topicsRes = await fetch('/api/student/topics', { cache: 'no-store' })
+        if (topicsRes.ok) {
+          const topicsData = await topicsRes.json()
+          setTopics(topicsData.topics || [])
+          setHasSupervisor(topicsData.hasSupervisor !== false)
+        }
+      } catch (error) {
+        // Handle error
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [])
 
-export default async function TopicsPage() {
-  const [topics, myPfe] = await Promise.all([getTopics(), getMyPfe()])
-  
   // Transform topics to match TopicCard expected format
   const formattedTopics = topics.map((topic: any) => ({
     id: topic.id,
@@ -37,6 +32,7 @@ export default async function TopicsPage() {
     description: topic.description,
     teacher: topic.professor || { full_name: 'N/A', email: '' },
     department: topic.department || 'N/A',
+    applicationStatus: topic.applicationStatus || null,
   }))
 
   return (
@@ -47,28 +43,27 @@ export default async function TopicsPage() {
             Sujets de PFE <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">disponibles</span>
           </h1>
           <p className="text-gray-400 text-lg">
-            Consultez les sujets proposés par les enseignants
+            Consultez les sujets proposés par votre encadrant
           </p>
         </div>
-        <SubmitTopicForm />
       </div>
 
-      {myPfe && (
-        <div className="bg-blue-500/20 border border-blue-500/50 text-blue-200 px-6 py-4 rounded-lg backdrop-blur-sm">
+      {!hasSupervisor && (
+        <div className="bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 px-6 py-4 rounded-lg backdrop-blur-sm">
           <p className="font-medium">
-            Vous avez déjà un PFE assigné. Vous pouvez consulter les détails sur la page{' '}
-            <a href="/dashboard/my-pfe" className="underline hover:text-blue-100">
-              Mon PFE
-            </a>
-            .
+            Vous n'avez pas encore d'encadrant assigné. Les sujets de votre encadrant apparaîtront ici une fois qu'un encadrant vous sera assigné.
           </p>
         </div>
       )}
 
-      {formattedTopics && formattedTopics.length > 0 ? (
+      {loading ? (
+        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
+          <p className="text-gray-400 text-lg">Chargement...</p>
+        </div>
+      ) : formattedTopics && formattedTopics.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {formattedTopics.map((topic: any) => (
-            <TopicCard key={topic.id} topic={topic} hasPfe={!!myPfe} />
+            <TopicCard key={topic.id} topic={topic} hasPfe={false} />
           ))}
         </div>
       ) : (
@@ -90,7 +85,11 @@ export default async function TopicsPage() {
                 />
               </svg>
             </div>
-            <p className="text-gray-300 text-lg font-medium">Aucun sujet disponible pour le moment</p>
+            <p className="text-gray-300 text-lg font-medium">
+              {hasSupervisor 
+                ? 'Aucun sujet disponible de votre encadrant pour le moment' 
+                : 'Aucun encadrant assigné'}
+            </p>
           </div>
         </div>
       )}

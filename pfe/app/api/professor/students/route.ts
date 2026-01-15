@@ -68,14 +68,16 @@ export async function GET() {
     // Format students data
     const students = projects?.map(project => {
       const lastMeeting = lastMeetings[project.id]
+      const student = Array.isArray(project.student) ? project.student[0] : project.student
+      const topic = Array.isArray(project.topic) ? project.topic[0] : project.topic
       return {
-        id: project.student.id,
-        name: project.student.full_name,
-        email: project.student.email,
-        phone: project.student.phone,
-        department: project.student.department,
-        year: project.student.year,
-        topic: project.topic?.title || 'N/A',
+        id: student?.id,
+        full_name: student?.full_name,
+        email: student?.email,
+        phone: student?.phone,
+        department: student?.department,
+        year: student?.year,
+        topic: topic ? { id: topic.id, title: topic.title, description: topic.description } : null,
         status: project.status,
         progress: project.progress || 0,
         startDate: project.start_date,

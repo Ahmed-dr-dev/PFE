@@ -1,36 +1,27 @@
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const auth = await requireAuth('admin')
+    if (auth.error) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    // Verify admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
-    }
-
+    const { id } = await params
     const { data: assignment, error } = await supabase
-      .from('assignments')
+      .from('pfe_projects')
       .select(`
         id,
         status,
-        assigned_at,
-        student:profiles!assignments_student_id_fkey(
+        start_date,
+        created_at,
+        student:profiles!pfe_projects_student_id_fkey(
           id,
           full_name,
           email,
@@ -47,14 +38,14 @@ export async function GET(
             email
           )
         ),
-        supervisor:profiles!assignments_supervisor_id_fkey(
+        supervisor:profiles!pfe_projects_supervisor_id_fkey(
           id,
           full_name,
           email,
           department
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (error) {
@@ -65,7 +56,23 @@ export async function GET(
       return NextResponse.json({ error: 'Affectation non trouvée' }, { status: 404 })
     }
 
-    return NextResponse.json({ assignment })
+    // Format assignment to handle potential array responses from Supabase
+    const student = Array.isArray(assignment.student) ? assignment.student[0] : assignment.student
+    const topic = Array.isArray(assignment.topic) ? assignment.topic[0] : assignment.topic
+    const supervisor = Array.isArray(assignment.supervisor) ? assignment.supervisor[0] : assignment.supervisor
+    const professor = topic && (Array.isArray(topic.professor) ? topic.professor[0] : topic.professor)
+
+    const formattedAssignment = {
+      ...assignment,
+      student: student || null,
+      topic: topic ? {
+        ...topic,
+        professor: professor || null,
+      } : null,
+      supervisor: supervisor || null,
+    }
+
+    return NextResponse.json({ assignment: formattedAssignment })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },
@@ -76,81 +83,99 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const auth = await requireAuth('admin')
+    if (auth.error) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    // Verify admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
-    }
-
+    const { id } = await params
     const { studentId, topicId, supervisorId, status } = await request.json()
 
-    // Update assignment
+    // Update PFE project
     const updateData: any = {
       updated_at: new Date().toISOString(),
     }
 
     if (studentId) updateData.student_id = studentId
-    if (topicId) updateData.topic_id = topicId
+    if (topicId !== undefined) updateData.topic_id = topicId
     if (supervisorId) updateData.supervisor_id = supervisorId
-    if (status) updateData.status = status
+    if (status) {
+      updateData.status = status
+      // If approving, set start_date if not already set
+      if (status === 'approved') {
+        // Get current project to check if start_date exists
+        const { data: currentProject } = await supabase
+          .from('pfe_projects')
+          .select('start_date')
+          .eq('id', id)
+          .single()
+        
+        if (!currentProject?.start_date) {
+          updateData.start_date = new Date().toISOString().split('T')[0]
+        }
+      }
+    }
 
     const { data: assignment, error } = await supabase
-      .from('assignments')
+      .from('pfe_projects')
       .update(updateData)
-      .eq('id', params.id)
-      .select()
+      .eq('id', id)
+      .select(`
+        id,
+        status,
+        start_date,
+        created_at,
+        student:profiles!pfe_projects_student_id_fkey(
+          id,
+          full_name,
+          email,
+          department,
+          year
+        ),
+        topic:pfe_topics(
+          id,
+          title,
+          description,
+          professor:profiles!pfe_topics_professor_id_fkey(
+            id,
+            full_name,
+            email
+          )
+        ),
+        supervisor:profiles!pfe_projects_supervisor_id_fkey(
+          id,
+          full_name,
+          email,
+          department
+        )
+      `)
       .single()
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // If status is 'assigned', create PFE project
-    if (status === 'assigned' && assignment) {
-      const { data: assignmentData } = await supabase
-        .from('assignments')
-        .select('student_id, topic_id, supervisor_id')
-        .eq('id', params.id)
-        .single()
+    // Format assignment to handle potential array responses
+    const student = Array.isArray(assignment.student) ? assignment.student[0] : assignment.student
+    const topic = Array.isArray(assignment.topic) ? assignment.topic[0] : assignment.topic
+    const supervisor = Array.isArray(assignment.supervisor) ? assignment.supervisor[0] : assignment.supervisor
+    const professor = topic && (Array.isArray(topic.professor) ? topic.professor[0] : topic.professor)
 
-      if (assignmentData) {
-        // Check if PFE project already exists
-        const { data: existingPfe } = await supabase
-          .from('pfe_projects')
-          .select('id')
-          .eq('student_id', assignmentData.student_id)
-          .maybeSingle()
-
-        if (!existingPfe) {
-          await supabase
-            .from('pfe_projects')
-            .insert({
-              student_id: assignmentData.student_id,
-              topic_id: assignmentData.topic_id,
-              supervisor_id: assignmentData.supervisor_id,
-              status: 'approved',
-              start_date: new Date().toISOString().split('T')[0],
-            })
-        }
-      }
+    const formattedAssignment = {
+      ...assignment,
+      student: student || null,
+      topic: topic ? {
+        ...topic,
+        professor: professor || null,
+      } : null,
+      supervisor: supervisor || null,
     }
 
-    return NextResponse.json({ assignment })
+    return NextResponse.json({ assignment: formattedAssignment })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },

@@ -1,20 +1,88 @@
+'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
-async function getStudents() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/professor/students`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.students || []
-  } catch (error) {
-    return []
+export default function StudentsPage() {
+  const [students, setStudents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [availableStudents, setAvailableStudents] = useState<any[]>([])
+  const [selectedStudent, setSelectedStudent] = useState<string>('')
+  const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    async function fetchStudents() {
+      try {
+        const res = await fetch('/api/professor/students', {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        setStudents(data.students || [])
+      } catch (error) {
+        // Handle error
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStudents()
+  }, [])
+
+  useEffect(() => {
+    if (showModal) {
+      async function fetchData() {
+        try {
+          const studentsRes = await fetch('/api/professor/assignments')
+          if (studentsRes.ok) {
+            const studentsData = await studentsRes.json()
+            setAvailableStudents(studentsData.students || [])
+          }
+        } catch (error) {
+          console.error('Error fetching data:', error)
+        }
+      }
+      fetchData()
+    }
+  }, [showModal])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selectedStudent) {
+      alert('Veuillez sélectionner un étudiant')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const res = await fetch('/api/professor/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: selectedStudent,
+        }),
+      })
+
+      if (res.ok) {
+        alert('Étudiant ajouté à votre supervision avec succès')
+        setShowModal(false)
+        setSelectedStudent('')
+        // Refresh students list
+        const studentsRes = await fetch('/api/professor/students', { cache: 'no-store' })
+        if (studentsRes.ok) {
+          const data = await studentsRes.json()
+          setStudents(data.students || [])
+        }
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Erreur lors de l\'ajout de l\'étudiant')
+      }
+    } catch (error) {
+      console.error('Error adding student:', error)
+      alert('Erreur lors de l\'ajout de l\'étudiant')
+    } finally {
+      setSubmitting(false)
+    }
   }
-}
-
-export default async function StudentsPage() {
-  const students = await getStudents()
 
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
@@ -25,7 +93,9 @@ export default async function StudentsPage() {
   const statusLabels: Record<string, string> = {
     pending: 'En attente',
     in_progress: 'En cours',
+    rejected: 'Rejeté',
     completed: 'Terminé',
+    approved: 'Approuvé',
   }
 
   return (
@@ -37,10 +107,21 @@ export default async function StudentsPage() {
           </h1>
           <p className="text-gray-400 text-lg">Gérez et encadrez vos étudiants affectés</p>
         </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold"
+        >
+          Ajouter un étudiant
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {students && students.length > 0 ? students.map((student: any) => (
+      {loading ? (
+        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
+          <p className="text-gray-400 text-lg">Chargement...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6">
+          {students && students.length > 0 ? students.map((student: any) => (
           <div
             key={student.id}
             className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
@@ -52,14 +133,16 @@ export default async function StudentsPage() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-xl font-bold text-white">{student.full_name || 'N/A'}</h3>
+                    <h3 className="text-xl font-bold text-white">{student.full_name || student.name || 'N/A'}</h3>
+                 
                     {student.status && (
+                      console.log(student.status),
                       <span
                         className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm ${
                           statusColors[student.status] || statusColors.pending
                         }`}
                       >
-                        {statusLabels[student.status] || 'En attente'}
+                        {statusLabels[student.status]}
                       </span>
                     )}
                   </div>
@@ -69,20 +152,7 @@ export default async function StudentsPage() {
               </div>
             </div>
 
-            {student.progress !== undefined && student.progress !== null && (
-              <div className="mb-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-400">Progression</span>
-                  <span className="text-sm font-semibold text-white">{student.progress || 0}%</span>
-                </div>
-                <div className="w-full bg-slate-700/50 rounded-full h-2">
-                  <div
-                    className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${student.progress || 0}%` }}
-                  />
-                </div>
-              </div>
-            )}
+          
 
             <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-700/50">
               {student.last_meeting && (
@@ -114,7 +184,73 @@ export default async function StudentsPage() {
             <p className="text-gray-400 text-lg">Aucun étudiant assigné</p>
           </div>
         )}
-      </div>
+        </div>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="relative bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setShowModal(false)
+                setSelectedStudent('')
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            <h2 className="text-2xl font-bold text-white mb-6">Ajouter un étudiant à votre supervision</h2>
+            <p className="text-gray-400 text-sm mb-6">L'étudiant pourra ensuite appliquer pour vos sujets approuvés.</p>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">
+                  Étudiant
+                </label>
+                <select
+                  value={selectedStudent}
+                  onChange={(e) => setSelectedStudent(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  required
+                >
+                  <option value="">Sélectionner un étudiant</option>
+                  {availableStudents.map((student) => (
+                    <option key={student.id} value={student.id}>
+                      {student.full_name} - {student.email} {student.department ? `(${student.department})` : ''}
+                    </option>
+                  ))}
+                </select>
+                {availableStudents.length === 0 && (
+                  <p className="text-sm text-gray-500 mt-2">Aucun étudiant disponible (tous ont déjà un encadrant)</p>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={submitting || availableStudents.length === 0 || !selectedStudent}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Ajout...' : 'Ajouter l\'étudiant'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowModal(false)
+                    setSelectedStudent('')
+                  }}
+                  className="px-6 py-3 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold"
+                >
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

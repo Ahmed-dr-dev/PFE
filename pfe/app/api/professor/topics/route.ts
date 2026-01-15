@@ -8,6 +8,7 @@ export async function GET() {
     if (auth.error) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
+    
 
     const userId = auth.user!.id
     const supabase = await createClient()

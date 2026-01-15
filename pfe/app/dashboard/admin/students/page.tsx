@@ -1,20 +1,39 @@
+'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
-async function getStudents() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/students`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.students || []
-  } catch (error) {
-    return []
+export default function StudentsPage() {
+  const [students, setStudents] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all')
+
+  useEffect(() => {
+    async function fetchStudents() {
+      try {
+        const res = await fetch('/api/admin/students')
+        if (res.ok) {
+          const data = await res.json()
+          setStudents(data.students || [])
+        }
+      } catch (error) {
+        console.error('Error fetching students:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStudents()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    )
   }
-}
-
-export default async function StudentsPage() {
-  const students = await getStudents()
 
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
@@ -28,6 +47,20 @@ export default async function StudentsPage() {
     completed: 'Terminé',
   }
 
+  // Get unique departments
+  const allDepartments = ['informatique', 'gestion', 'finance', 'marketing', 'rh', 'comptabilite']
+  const existingDepartments = Array.from(new Set(students.map((s: any) => s.department).filter(Boolean)))
+  const departments = Array.from(new Set([...existingDepartments, ...allDepartments]))
+
+  // Filter students
+  const filteredStudents = students.filter((student: any) => {
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'pending' && !student.hasPfe) ||
+      (statusFilter !== 'pending' && student.pfeStatus === statusFilter)
+    const matchesDepartment = departmentFilter === 'all' || student.department === departmentFilter
+    return matchesStatus && matchesDepartment
+  })
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -39,8 +72,44 @@ export default async function StudentsPage() {
         </div>
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Statut
+          </label>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+          >
+            <option value="all">Tous les statuts</option>
+            <option value="pending">Sans PFE</option>
+            <option value="in_progress">En cours</option>
+            <option value="completed">Terminé</option>
+            <option value="approved">Approuvé</option>
+          </select>
+        </div>
+        <div className="flex-1">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Département
+          </label>
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+          >
+            <option value="all">Tous les départements</option>
+            {departments.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept.charAt(0).toUpperCase() + dept.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6">
-        {students && students.length > 0 ? students.map((student: any) => (
+        {filteredStudents && filteredStudents.length > 0 ? filteredStudents.map((student: any) => (
           <div
             key={student.id}
             className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
@@ -53,13 +122,13 @@ export default async function StudentsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
                     <h3 className="text-xl font-bold text-white">{student.full_name || student.name || 'N/A'}</h3>
-                    {student.status && (
+                    {student.pfeStatus && (
                       <span
                         className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm ${
-                          statusColors[student.status] || statusColors.pending
+                          statusColors[student.pfeStatus] || statusColors.pending
                         }`}
                       >
-                        {statusLabels[student.status] || 'En attente'}
+                        {statusLabels[student.pfeStatus] || 'En attente'}
                       </span>
                     )}
                   </div>
@@ -95,7 +164,7 @@ export default async function StudentsPage() {
                 >
                   Voir profil
                 </Link>
-                {!student.supervisor && (
+                {!student.hasPfe && (
                   <Link
                     href={`/dashboard/admin/assignments?student=${student.id}`}
                     className="px-4 py-2 bg-gradient-to-r from-emerald-600/20 to-cyan-600/20 border border-emerald-500/50 text-emerald-200 rounded-lg hover:from-emerald-600/30 hover:to-cyan-600/30 transition-all duration-200 font-semibold text-sm"
@@ -112,7 +181,8 @@ export default async function StudentsPage() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    
   )
 }
 

@@ -1,23 +1,44 @@
+'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
-async function getSupervision() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/student/supervision`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return { supervisor: null, meetings: [], documents: [] }
-    return await res.json()
-  } catch (error) {
-    return { supervisor: null, meetings: [], documents: [] }
-  }
-}
+export default function SupervisionPage() {
+  const [data, setData] = useState<any>({ supervisor: null, meetings: [], documents: [] })
+  const [loading, setLoading] = useState(true)
 
-export default async function SupervisionPage() {
-  const data = await getSupervision()
+  useEffect(() => {
+    async function fetchSupervision() {
+      try {
+        const res = await fetch('/api/student/supervision', {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const result = await res.json()
+        setData(result)
+      } catch (error) {
+        // Handle error
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchSupervision()
+  }, [])
+
   const supervisor = data.supervisor
   const meetings = data.meetings || []
   const documents = data.documents || []
+  const pfeStatus = data.pfeStatus
   
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
+          <p className="text-gray-400 text-lg">Chargement...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!supervisor) {
     return (
       <div className="space-y-8">
@@ -42,6 +63,14 @@ export default async function SupervisionPage() {
         </h1>
         <p className="text-gray-400 text-lg">Informations sur votre encadrant et suivi du projet</p>
       </div>
+
+      {pfeStatus === 'pending' && (
+        <div className="bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 px-6 py-4 rounded-lg backdrop-blur-sm">
+          <p className="font-medium">
+            Votre affectation est en attente d'approbation par l'administrateur. Une fois approuvée, vous pourrez consulter les sujets disponibles.
+          </p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -73,10 +102,12 @@ export default async function SupervisionPage() {
               </div>
 
               <div className="space-y-6">
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Biographie</p>
-                  <p className="text-gray-300 leading-relaxed">{supervisor.bio}</p>
-                </div>
+                {supervisor.bio && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Biographie</p>
+                    <p className="text-gray-300 leading-relaxed">{supervisor.bio}</p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-700/50">
                   <div>
@@ -103,122 +134,28 @@ export default async function SupervisionPage() {
                       </svg>
                     </a>
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Bureau</p>
-                    <p className="text-gray-300 font-medium">{supervisor.office}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Heures de disponibilité</p>
-                    <p className="text-gray-300 font-medium">{supervisor.office_hours}</p>
-                  </div>
+                  {supervisor.office && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Bureau</p>
+                      <p className="text-gray-300 font-medium">{supervisor.office}</p>
+                    </div>
+                  )}
+                  {supervisor.office_hours && (
+                    <div>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Heures de disponibilité</p>
+                      <p className="text-gray-300 font-medium">{supervisor.office_hours}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center border border-purple-500/30">
-                <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              Réunions de suivi
-            </h2>
-            <div className="space-y-4">
-              {meetings && meetings.length > 0 ? meetings.map((meeting: any) => (
-                <div
-                  key={meeting.id}
-                  className="p-6 bg-slate-700/30 border border-slate-600/50 rounded-xl hover:border-emerald-500/50 transition-all duration-200"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-xs font-semibold text-emerald-300">
-                          {meeting.type}
-                        </span>
-                        <span
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                            meeting.status === 'completed'
-                              ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                              : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'
-                          }`}
-                        >
-                          {meeting.status === 'completed' ? 'Terminée' : 'Planifiée'}
-                        </span>
-                      </div>
-                      <p className="text-white font-semibold text-lg">
-                        {new Date(meeting.date).toLocaleDateString('fr-FR', {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </p>
-                      <p className="text-gray-400 text-sm mt-1">{meeting.time}</p>
-                    </div>
-                  </div>
-                  {meeting.notes && (
-                    <p className="text-gray-300 text-sm leading-relaxed">{meeting.notes}</p>
-                  )}
-                </div>
-              )) : (
-                <p className="text-gray-400 text-sm text-center py-8">Aucune réunion planifiée</p>
-              )}
-            </div>
-          </div>
+         
         </div>
 
         <div className="space-y-6">
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/30">
-                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              Documents partagés
-            </h2>
-            <div className="space-y-3">
-              {documents && documents.length > 0 ? documents.map((doc: any) => (
-                <div
-                  key={doc.id}
-                  className="p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl hover:border-emerald-500/50 transition-all duration-200 group"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-slate-600/50 flex items-center justify-center border border-slate-500/50 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/30 transition-colors">
-                      <svg className="w-5 h-5 text-gray-400 group-hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-semibold text-sm truncate">{doc.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-gray-500">{doc.type}</span>
-                        <span className="text-xs text-gray-500">•</span>
-                        <span className="text-xs text-gray-500">{doc.size}</span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Par {doc.uploader?.full_name || 'N/A'} • {new Date(doc.uploaded_at).toLocaleDateString('fr-FR')}
-                      </p>
-                    </div>
-                    <a
-                      href={doc.file_path}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 rounded-lg hover:bg-slate-600/50 transition-colors"
-                    >
-                      <svg className="w-5 h-5 text-gray-400 hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                    </a>
-                  </div>
-                </div>
-              )) : (
-                <p className="text-gray-400 text-sm text-center py-8">Aucun document partagé</p>
-              )}
-            </div>
-          </div>
+        
 
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">

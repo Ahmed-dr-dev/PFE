@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 
 async function getAssignment(id: string) {
   try {
@@ -26,8 +26,10 @@ async function getProfessors() {
   }
 }
 
-export default function AssignmentDetailPage({ params }: { params: { id: string } }) {
+export default function AssignmentDetailPage() {
   const router = useRouter()
+  const params = useParams()
+  const id = params.id as string
   const [assignment, setAssignment] = useState<any>(null)
   const [assignmentData, setAssignmentData] = useState<any>(null)
   const [professors, setProfessors] = useState<any[]>([])
@@ -38,7 +40,7 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
   useEffect(() => {
     async function fetchData() {
       const [assignmentData, professorsData] = await Promise.all([
-        getAssignment(params.id),
+        getAssignment(id),
         getProfessors(),
       ])
       setAssignmentData(assignmentData)
@@ -49,8 +51,8 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
       }
       setLoading(false)
     }
-    fetchData()
-  }, [params.id])
+    if (id) fetchData()
+  }, [id])
 
   const handleAssign = async () => {
     if (!selectedSupervisor) {
@@ -60,10 +62,13 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
 
     setSaving(true)
     try {
-      const res = await fetch(`/api/admin/assignments/${params.id}`, {
+      const res = await fetch(`/api/admin/assignments/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ supervisor_id: selectedSupervisor }),
+        body: JSON.stringify({ 
+          supervisor_id: selectedSupervisor,
+          status: 'approved'
+        }),
       })
 
       if (res.ok) {
@@ -75,6 +80,35 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
     } catch (error) {
       console.error('Error assigning supervisor:', error)
       alert('Erreur lors de l\'affectation')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleReject = async () => {
+    if (!confirm('Êtes-vous sûr de vouloir annuler cette affectation ?')) {
+      return
+    }
+
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/admin/assignments/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'rejected'
+        }),
+      })
+
+      if (res.ok) {
+        router.push('/dashboard/admin/assignments')
+      } else {
+        const error = await res.json()
+        alert(error.error || 'Erreur lors de l\'annulation')
+      }
+    } catch (error) {
+      console.error('Error cancelling assignment:', error)
+      alert('Erreur lors de l\'annulation')
     } finally {
       setSaving(false)
     }
@@ -141,34 +175,43 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
             {assignment.topic && (
               <div>
                 <h3 className="text-xl font-semibold text-white mb-2">{assignment.topic.title || 'N/A'}</h3>
-                {assignment.supervisor && (
-                  <p className="text-gray-400 text-sm">Encadrant actuel: {assignment.supervisor.full_name || 'N/A'}</p>
+                {assignment.topic.description && (
+                  <p className="text-gray-300 text-sm mb-4">{assignment.topic.description}</p>
+                )}
+                {assignment.topic.professor && (
+                  <div className="mt-4 pt-4 border-t border-slate-700/50">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Professeur proposant</p>
+                    <p className="text-gray-400 text-sm">{assignment.topic.professor.full_name || 'N/A'}</p>
+                    {assignment.topic.professor.email && (
+                      <p className="text-gray-500 text-xs mt-1">{assignment.topic.professor.email}</p>
+                    )}
+                  </div>
                 )}
               </div>
             )}
           </div>
 
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
-            <h2 className="text-2xl font-bold text-white mb-6">Sélectionner un encadrant</h2>
-            <div className="space-y-3">
-              {professors && professors.length > 0 ? professors.map((prof: any) => (
-                <button
-                  key={prof.id}
-                  onClick={() => setSelectedSupervisor(prof.id)}
-                  className={`w-full p-4 rounded-xl border transition-all duration-200 text-left ${
-                    selectedSupervisor === prof.id
-                      ? 'bg-emerald-500/20 border-emerald-500/50'
-                      : 'bg-slate-700/30 border-slate-600/50 hover:border-emerald-500/50'
-                  }`}
-                >
-                  <h3 className="text-white font-semibold mb-1">{prof.full_name || 'N/A'}</h3>
-                  <p className="text-gray-400 text-sm">{prof.department || 'N/A'}</p>
-                </button>
-              )) : (
-                <p className="text-gray-400 text-sm text-center py-8">Aucun enseignant disponible</p>
-              )}
+          {assignment.supervisor && (
+            <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
+              <h2 className="text-2xl font-bold text-white mb-6">Encadrant assigné</h2>
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-semibold text-xl">
+                  {(assignment.supervisor.full_name || 'N/A').split(' ').map((n: string) => n[0]).join('')}
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold text-white mb-1">{assignment.supervisor.full_name || 'N/A'}</h3>
+                  {assignment.supervisor.email && (
+                    <p className="text-gray-400 text-sm mb-2">{assignment.supervisor.email}</p>
+                  )}
+                  {assignment.supervisor.department && (
+                    <p className="text-gray-500 text-xs">{assignment.supervisor.department}</p>
+                  )}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
+
+        
         </div>
 
         <div className="space-y-6">
@@ -185,9 +228,21 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
                   <p className="text-white font-medium text-sm">{assignment.topic.title || 'N/A'}</p>
                 </div>
               )}
-              {selectedSupervisor && (
+              {assignment.supervisor && (
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Encadrant</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Encadrant actuel</p>
+                  <p className="text-white font-medium text-sm">{assignment.supervisor.full_name || 'N/A'}</p>
+                  {assignment.supervisor.email && (
+                    <p className="text-gray-500 text-xs mt-1">{assignment.supervisor.email}</p>
+                  )}
+                  {assignment.supervisor.department && (
+                    <p className="text-gray-500 text-xs">{assignment.supervisor.department}</p>
+                  )}
+                </div>
+              )}
+              {selectedSupervisor && selectedSupervisor !== assignment.supervisor?.id && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Nouvel encadrant</p>
                   <p className="text-white font-medium text-sm">
                     {professors.find((p: any) => p.id === selectedSupervisor)?.full_name || 'N/A'}
                   </p>
@@ -199,13 +254,24 @@ export default function AssignmentDetailPage({ params }: { params: { id: string 
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
             <h3 className="text-lg font-bold text-white mb-4">Actions</h3>
             <div className="space-y-3">
-              <button
-                onClick={handleAssign}
-                disabled={saving || !selectedSupervisor}
-                className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {saving ? 'Enregistrement...' : 'Confirmer l\'affectation'}
-              </button>
+              {assignment.status === 'pending' && (
+                <>
+                  <button
+                    onClick={handleAssign}
+                    disabled={saving || !selectedSupervisor}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? 'Enregistrement...' : 'Confirmer l\'affectation'}
+                  </button>
+                  <button
+                    onClick={handleReject}
+                    disabled={saving}
+                    className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {saving ? 'Enregistrement...' : 'Annuler l\'affectation'}
+                  </button>
+                </>
+              )}
               <Link
                 href="/dashboard/admin/assignments"
                 className="block w-full px-4 py-3 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm text-center"

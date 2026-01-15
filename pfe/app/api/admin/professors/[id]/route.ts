@@ -1,30 +1,22 @@
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const auth = await requireAuth('admin')
+    if (auth.error) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    // Verify admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
-    }
-
-    const { data: professor, error } = await supabase
+    const { id } = await params
+    
+    // Get professor profile
+    const { data: professor, error: professorError } = await supabase
       .from('profiles')
       .select(`
         id,
@@ -40,33 +32,57 @@ export async function GET(
           id,
           title,
           status
-        ),
-        students:pfe_projects!pfe_projects_supervisor_id_fkey(
-          id,
-          status,
-          progress,
-          student:profiles!pfe_projects_student_id_fkey(
-            id,
-            full_name
-          )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('role', 'professor')
       .single()
 
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+    if (professorError) {
+      return NextResponse.json({ error: professorError.message }, { status: 500 })
     }
 
     if (!professor) {
       return NextResponse.json({ error: 'Enseignant non trouvé' }, { status: 404 })
     }
 
+    // Get students supervised by this professor - query directly from pfe_projects
+    const { data: projects, error: projectsError } = await supabase
+      .from('pfe_projects')
+      .select(`
+        id,
+        status,
+        progress,
+        student:profiles!pfe_projects_student_id_fkey(
+          id,
+          full_name
+        )
+      `)
+      .eq('supervisor_id', id)
+      .order('created_at', { ascending: false })
+
+    if (projectsError) {
+      return NextResponse.json({ error: projectsError.message }, { status: 500 })
+    }
+
+    // Format topics
+    const topics = Array.isArray(professor.topics) ? professor.topics : (professor.topics ? [professor.topics] : [])
+
+    // Format students - handle potential array responses
+    const students = (projects || []).map((project: any) => {
+      const student = Array.isArray(project.student) ? project.student[0] : project.student
+      return {
+        id: project.id,
+        student: student || null,
+        progress: project.progress || 0,
+        status: project.status,
+      }
+    })
     return NextResponse.json({
       professor: {
         id: professor.id,
         name: professor.full_name,
+        full_name: professor.full_name,
         email: professor.email,
         phone: professor.phone,
         department: professor.department,
@@ -75,10 +91,10 @@ export async function GET(
         bio: professor.bio,
         expertise: professor.expertise,
       },
-      topics: professor.topics || [],
-      students: professor.students || [],
-      topicsCount: professor.topics?.length || 0,
-      studentsCount: professor.students?.length || 0,
+      topics: topics,
+      students: students,
+      topicsCount: topics.length,
+      studentsCount: students.length,
     })
   } catch (error) {
     return NextResponse.json(

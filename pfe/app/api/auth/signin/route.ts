@@ -31,12 +31,14 @@ export async function POST(request: Request) {
       .eq('email', email)
       .single()
 
+
     if (profileError || !profile) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
         { status: 401 }
       )
     }
+
 
     // Hash provided password and compare
     const hashedPassword = await hashPassword(password)

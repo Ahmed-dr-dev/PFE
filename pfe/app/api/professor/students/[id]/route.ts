@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAuth('professor')
@@ -12,6 +12,7 @@ export async function GET(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
+    const { id } = await params
     const userId = auth.user!.id
     const supabase = await createClient()
 
@@ -38,7 +39,7 @@ export async function GET(
           description
         )
       `)
-      .eq('student_id', params.id)
+      .eq('student_id', id)
       .eq('supervisor_id', userId)
       .maybeSingle()
 
@@ -49,6 +50,10 @@ export async function GET(
     if (!project) {
       return NextResponse.json({ error: 'Étudiant non trouvé' }, { status: 404 })
     }
+
+    // Handle array responses
+    const student = Array.isArray(project.student) ? project.student[0] : project.student
+    const topic = Array.isArray(project.topic) ? project.topic[0] : project.topic
 
     // Get milestones
     const { data: milestones } = await supabase
@@ -66,21 +71,31 @@ export async function GET(
       .limit(1)
       .maybeSingle()
 
+    // Get all meetings for this student
+    const { data: meetings } = await supabase
+      .from('meetings')
+      .select('*')
+      .eq('pfe_project_id', project.id)
+      .order('date', { ascending: false })
+      .order('time', { ascending: false })
+
     return NextResponse.json({
       student: {
-        id: project.student.id,
-        name: project.student.full_name,
-        email: project.student.email,
-        phone: project.student.phone,
-        department: project.student.department,
-        year: project.student.year,
+        id: student?.id,
+        name: student?.full_name,
+        full_name: student?.full_name,
+        email: student?.email,
+        phone: student?.phone,
+        department: student?.department,
+        year: student?.year,
       },
-      topic: project.topic,
+      topic: topic || null,
       status: project.status,
       progress: project.progress || 0,
       startDate: project.start_date,
       lastMeeting: lastMeeting?.date || null,
       milestones: milestones || [],
+      meetings: meetings || [],
     })
   } catch (error) {
     return NextResponse.json(

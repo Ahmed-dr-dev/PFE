@@ -1,18 +1,17 @@
 'use client'
 
+import Link from 'next/link'
+
 interface Topic {
   id: string
   title: string
   description: string | null
   teacher: { full_name: string; email: string } | null
   department: string | null
+  applicationStatus?: string | null
 }
 
 export function TopicCard({ topic, hasPfe }: { topic: Topic; hasPfe: boolean }) {
-  function handleChoose() {
-    // Design only - no API call
-  }
-
   return (
     <div className="group relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 hover:border-emerald-500/50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/5 group-hover:to-cyan-500/5 rounded-2xl transition-all duration-300" />
@@ -67,13 +66,31 @@ export function TopicCard({ topic, hasPfe }: { topic: Topic; hasPfe: boolean }) 
           )}
         </div>
 
-        <button
-          onClick={handleChoose}
-          disabled={hasPfe}
-          className="w-full bg-gradient-to-r from-emerald-600 to-cyan-600 text-white py-3 px-4 rounded-xl hover:from-emerald-700 hover:to-cyan-700 font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 hover:-translate-y-0.5 disabled:hover:translate-y-0"
-        >
-          {hasPfe ? 'Déjà assigné' : 'Choisir ce sujet'}
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href={`/dashboard/student/topics/${topic.id}`}
+            className="flex-1 bg-slate-700/50 text-white py-3 px-4 rounded-xl hover:bg-slate-700 font-semibold transition-all duration-200 text-sm text-center"
+          >
+            Voir détails
+          </Link>
+          {topic.applicationStatus && (
+            <span
+              className={`px-3 py-3 rounded-xl text-xs font-semibold border ${
+                topic.applicationStatus === 'approved'
+                  ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50'
+                  : topic.applicationStatus === 'rejected'
+                  ? 'bg-red-500/20 text-red-200 border-red-500/50'
+                  : 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50'
+              }`}
+            >
+              {topic.applicationStatus === 'approved'
+                ? 'Approuvé'
+                : topic.applicationStatus === 'rejected'
+                ? 'Rejeté'
+                : 'En attente'}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   )

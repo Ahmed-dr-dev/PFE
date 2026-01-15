@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAuth('professor')
@@ -12,6 +12,7 @@ export async function GET(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
+    const { id } = await params
     const userId = auth.user!.id
     const supabase = await createClient()
 
@@ -52,7 +53,7 @@ export async function GET(
           )
         )
       `)
-      .eq('id', params.id)
+      .eq('id', id)
       .eq('professor_id', userId)
       .single()
 
@@ -75,7 +76,7 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAuth('professor')
@@ -83,6 +84,7 @@ export async function PUT(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
+    const { id } = await params
     const userId = auth.user!.id
     const supabase = await createClient()
 
@@ -93,7 +95,7 @@ export async function PUT(
     const { data: existingTopic } = await supabase
       .from('pfe_topics')
       .select('professor_id')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (!existingTopic || existingTopic.professor_id !== userId) {
@@ -110,7 +112,7 @@ export async function PUT(
         status,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single()
 

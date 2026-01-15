@@ -1,12 +1,12 @@
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const auth = await requireAuth('admin')
+    if (auth.error) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
@@ -14,7 +14,7 @@ export async function GET() {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
-      .eq('id', user.id)
+      .eq('id', auth.user!.id)
       .single()
 
     if (profile?.role !== 'admin') {

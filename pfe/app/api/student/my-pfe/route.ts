@@ -1,15 +1,16 @@
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const auth = await requireAuth('student')
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
+    // Get PFE project with approved topic only (topic_id must be set)
     const { data: pfe, error } = await supabase
       .from('pfe_projects')
       .select(`
@@ -38,7 +39,8 @@ export async function GET() {
           expertise
         )
       `)
-      .eq('student_id', user.id)
+      .eq('student_id', auth.user!.id)
+      .not('topic_id', 'is', null)
       .maybeSingle()
 
     if (error) {
@@ -49,7 +51,17 @@ export async function GET() {
       return NextResponse.json({ pfe: null })
     }
 
-    return NextResponse.json({ pfe })
+    // Format nested objects to handle potential array responses
+    const topic = Array.isArray(pfe.topic) ? pfe.topic[0] : pfe.topic
+    const supervisor = Array.isArray(pfe.supervisor) ? pfe.supervisor[0] : pfe.supervisor
+
+    return NextResponse.json({
+      pfe: {
+        ...pfe,
+        topic: topic || null,
+        supervisor: supervisor || null,
+      },
+    })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },

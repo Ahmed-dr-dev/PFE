@@ -1,13 +1,13 @@
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const auth = await requireAuth('student')
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
     const { topicId } = await request.json()
@@ -16,26 +16,50 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ID du sujet requis' }, { status: 400 })
     }
 
-    // Check if student already has a PFE
-    const { data: existingPfe } = await supabase
+    // Get student's PFE project - must be approved by admin
+    const { data: pfe } = await supabase
       .from('pfe_projects')
-      .select('id')
-      .eq('student_id', user.id)
+      .select('id, topic_id, supervisor_id, status')
+      .eq('student_id', auth.user!.id)
+      .eq('status', 'approved') // Only approved PFE projects can apply
       .maybeSingle()
 
-    if (existingPfe) {
+    if (!pfe || !pfe.supervisor_id) {
+      return NextResponse.json({ error: 'Aucun encadrant assigné ou affectation non approuvée' }, { status: 400 })
+    }
+
+    const supervisorId = pfe.supervisor_id
+
+    // Check if student already has a topic assigned
+    if (pfe && pfe.topic_id) {
       return NextResponse.json(
-        { error: 'Vous avez déjà un PFE assigné' },
+        { error: 'Vous avez déjà un sujet de PFE assigné' },
         { status: 400 }
       )
     }
 
-    // Check if topic exists and is approved
+    // Check if student already has an approved application for any topic
+    const { data: approvedApplication } = await supabase
+      .from('topic_applications')
+      .select('id, topic_id')
+      .eq('student_id', auth.user!.id)
+      .eq('status', 'approved')
+      .maybeSingle()
+
+    if (approvedApplication) {
+      return NextResponse.json(
+        { error: 'Vous avez déjà été approuvé pour un sujet de PFE' },
+        { status: 400 }
+      )
+    }
+
+    // Check if topic exists, is approved, and belongs to student's supervisor
     const { data: topic } = await supabase
       .from('pfe_topics')
       .select('id, status, professor_id')
       .eq('id', topicId)
       .eq('status', 'approved')
+      .eq('professor_id', supervisorId)
       .maybeSingle()
 
     if (!topic) {
@@ -46,7 +70,7 @@ export async function POST(request: Request) {
     const { data: existingApplication } = await supabase
       .from('topic_applications')
       .select('id')
-      .eq('student_id', user.id)
+      .eq('student_id', auth.user!.id)
       .eq('topic_id', topicId)
       .maybeSingle()
 
@@ -61,7 +85,7 @@ export async function POST(request: Request) {
     const { data: application, error } = await supabase
       .from('topic_applications')
       .insert({
-        student_id: user.id,
+        student_id: auth.user!.id,
         topic_id: topicId,
         status: 'pending',
       })

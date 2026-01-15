@@ -1,24 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/auth'
+      import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const auth = await requireAuth('admin')
+    if (auth.error) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-
-    // Verify admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
     }
 
     const { data: students, error } = await supabase
@@ -30,7 +19,7 @@ export async function GET() {
         phone,
         department,
         year,
-        pfe:pfe_projects(
+        pfe:pfe_projects!pfe_projects_student_id_fkey(
           id,
           status,
           progress,
@@ -52,17 +41,25 @@ export async function GET() {
     }
 
     // Format students data
-    const formattedStudents = students?.map(student => ({
-      id: student.id,
-      name: student.full_name,
-      email: student.email,
-      phone: student.phone,
-      department: student.department,
-      year: student.year,
-      pfeStatus: student.pfe?.[0]?.status || 'pending',
-      supervisor: student.pfe?.[0]?.supervisor?.full_name || null,
-      topic: student.pfe?.[0]?.topic?.title || null,
-    })) || []
+    const formattedStudents = students?.map(student => {
+      const pfe = Array.isArray(student.pfe) ? student.pfe[0] : student.pfe
+      const supervisor = pfe && (Array.isArray(pfe.supervisor) ? pfe.supervisor[0] : pfe.supervisor)
+      const topic = pfe && (Array.isArray(pfe.topic) ? pfe.topic[0] : pfe.topic)
+      
+      return {
+        id: student.id,
+        name: student.full_name,
+        full_name: student.full_name,
+        email: student.email,
+        phone: student.phone,
+        department: student.department,
+        year: student.year,
+        pfeStatus: pfe?.status || null,
+        hasPfe: !!pfe,
+        supervisor: supervisor?.full_name || null,
+        topic: topic?.title || null,
+      }
+    }) || []
 
     return NextResponse.json({ students: formattedStudents })
   } catch (error) {

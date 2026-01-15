@@ -1,18 +1,38 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
 export default function NewTopicPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
+  const [loadingProfile, setLoadingProfile] = useState(true)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     requirements: '',
     department: '',
   })
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await fetch('/api/professor/profile')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.profile?.department) {
+            setFormData(prev => ({ ...prev, department: data.profile.department }))
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error)
+      } finally {
+        setLoadingProfile(false)
+      }
+    }
+    fetchProfile()
+  }, [])
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -98,17 +118,14 @@ export default function NewTopicPage() {
             <label htmlFor="department" className="block text-sm font-semibold text-gray-300 mb-2">
               Département
             </label>
-            <select
+            <input
+              type="text"
               id="department"
-              value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-            >
-              <option value="">Sélectionner un département</option>
-              <option value="informatique">Informatique</option>
-              <option value="gestion">Gestion</option>
-              <option value="comptabilite">Comptabilité</option>
-            </select>
+              value={formData.department || ''}
+              disabled
+              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-gray-400 cursor-not-allowed"
+            />
+            <p className="text-xs text-gray-500 mt-1">Le département correspond à votre profil</p>
           </div>
 
           <div className="flex items-center gap-4 pt-4">

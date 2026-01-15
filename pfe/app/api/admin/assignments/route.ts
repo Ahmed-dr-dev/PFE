@@ -1,58 +1,75 @@
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const auth = await requireAuth('admin')
+    if (auth.error) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    // Verify admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
-    }
-
+    // Get all PFE projects (assignments)
     const { data: assignments, error } = await supabase
-      .from('assignments')
+      .from('pfe_projects')
       .select(`
         id,
         status,
-        assigned_at,
-        student:profiles!assignments_student_id_fkey(
+        start_date,
+        created_at,
+        student_id,
+        topic_id,
+        supervisor_id,
+        student:profiles!pfe_projects_student_id_fkey(
           id,
           full_name,
           email,
-          department
+          department,
+          year
         ),
         topic:pfe_topics(
           id,
           title,
           professor:profiles!pfe_topics_professor_id_fkey(
             id,
-            full_name
+            full_name,
+            email
           )
         ),
-        supervisor:profiles!assignments_supervisor_id_fkey(
+        supervisor:profiles!pfe_projects_supervisor_id_fkey(
           id,
-          full_name
+          full_name,
+          email,
+          department
         )
       `)
-      .order('assigned_at', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (error) {
+      console.error('Error fetching assignments:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ assignments: assignments || [] })
+    // Format assignments to handle potential array responses from Supabase
+    const formattedAssignments = (assignments || []).map((assignment: any) => {
+      const student = Array.isArray(assignment.student) ? assignment.student[0] : assignment.student
+      const topic = Array.isArray(assignment.topic) ? assignment.topic[0] : assignment.topic
+      const supervisor = Array.isArray(assignment.supervisor) ? assignment.supervisor[0] : assignment.supervisor
+      const professor = topic && (Array.isArray(topic.professor) ? topic.professor[0] : topic.professor)
+      
+      return {
+        ...assignment,
+        student: student || null,
+        topic: topic ? {
+          ...topic,
+          professor: professor || null,
+        } : null,
+        supervisor: supervisor || null,
+      }
+    })
+
+    return NextResponse.json({ assignments: formattedAssignments })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },
@@ -64,28 +81,16 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
-    }
-
-    // Verify admin role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-
-    if (profile?.role !== 'admin') {
-      return NextResponse.json({ error: 'Accès non autorisé' }, { status: 403 })
+    const auth = await requireAuth('admin')
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
     const { studentId, topicId, supervisorId } = await request.json()
 
-    if (!studentId || !topicId || !supervisorId) {
+    if (!studentId || !supervisorId) {
       return NextResponse.json(
-        { error: 'Étudiant, sujet et encadrant requis' },
+        { error: 'Étudiant et encadrant requis' },
         { status: 400 }
       )
     }
@@ -104,24 +109,23 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create assignment
-    const { data: assignment, error: assignmentError } = await supabase
-      .from('assignments')
+    // Create PFE project with pending status (admin will approve/reject)
+    const { data: pfeProject, error: pfeError } = await supabase
+      .from('pfe_projects')
       .insert({
         student_id: studentId,
-        topic_id: topicId,
+        topic_id: topicId || null,
         supervisor_id: supervisorId,
-        status: 'pending',
-        assigned_by: user.id,
+        status: 'pending', // Admin will approve or reject
       })
       .select()
       .single()
 
-    if (assignmentError) {
-      return NextResponse.json({ error: assignmentError.message }, { status: 500 })
+    if (pfeError) {
+      return NextResponse.json({ error: pfeError.message }, { status: 500 })
     }
 
-    return NextResponse.json({ assignment })
+    return NextResponse.json({ assignment: pfeProject })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },

@@ -1,24 +1,24 @@
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const auth = await requireAuth('student')
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    // Get student's PFE project to find supervisor
+    // Get student's PFE project to find supervisor (even if pending - student should see supervisor info)
     const { data: pfe } = await supabase
       .from('pfe_projects')
-      .select('id, supervisor_id')
-      .eq('student_id', user.id)
+      .select('id, supervisor_id, status')
+      .eq('student_id', auth.user!.id)
       .maybeSingle()
 
     if (!pfe || !pfe.supervisor_id) {
-      return NextResponse.json({ supervisor: null })
+      return NextResponse.json({ supervisor: null, pfeStatus: null, meetings: [], documents: [] })
     }
 
     // Get supervisor details
@@ -32,15 +32,15 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Get meetings
+    // Get meetings (only if PFE project exists)
     const { data: meetings } = await supabase
       .from('meetings')
       .select('*')
-      .eq('student_id', user.id)
+      .eq('student_id', auth.user!.id)
       .order('date', { ascending: false })
       .order('time', { ascending: false })
 
-    // Get shared documents
+    // Get shared documents (only if PFE project exists)
     const { data: documents } = await supabase
       .from('documents')
       .select(`
@@ -64,6 +64,7 @@ export async function GET() {
       supervisor,
       meetings: meetings || [],
       documents: documents || [],
+      pfeStatus: pfe.status,
     })
   } catch (error) {
     return NextResponse.json(

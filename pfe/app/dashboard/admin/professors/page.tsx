@@ -1,21 +1,49 @@
+'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
-async function getProfessors() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/professors`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.professors || []
-  } catch (error) {
-    return []
+export default function ProfessorsPage() {
+  const [professors, setProfessors] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [departmentFilter, setDepartmentFilter] = useState<string>('all')
+
+  useEffect(() => {
+    async function fetchProfessors() {
+      try {
+        const res = await fetch('/api/admin/professors')
+        if (res.ok) {
+          const data = await res.json()
+          setProfessors(data.professors || [])
+        }
+      } catch (error) {
+        console.error('Error fetching professors:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchProfessors()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    )
   }
-}
 
-export default async function ProfessorsPage() {
-  const professors = await getProfessors()
- 
+  // Get unique departments
+  const allDepartments = ['informatique', 'gestion', 'finance', 'marketing', 'rh', 'comptabilite']
+  const existingDepartments = Array.from(new Set(professors.map((p: any) => p.department).filter(Boolean)))
+  const departments = Array.from(new Set([...existingDepartments, ...allDepartments]))
+
+  // Filter professors
+  const filteredProfessors = professors.filter((professor: any) => {
+    const matchesDepartment = departmentFilter === 'all' || professor.department === departmentFilter
+    return matchesDepartment
+  })
 
   return (
     <div className="space-y-8">
@@ -28,8 +56,28 @@ export default async function ProfessorsPage() {
         </div>
       </div>
 
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
+          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+            Département
+          </label>
+          <select
+            value={departmentFilter}
+            onChange={(e) => setDepartmentFilter(e.target.value)}
+            className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+          >
+            <option value="all">Tous les départements</option>
+            {departments.map((dept) => (
+              <option key={dept} value={dept}>
+                {dept.charAt(0).toUpperCase() + dept.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6">
-        {professors.map((professor: any) => (
+        {filteredProfessors && filteredProfessors.length > 0 ? filteredProfessors.map((professor: any) => (
           <div
             key={professor.id}
             className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
@@ -37,10 +85,10 @@ export default async function ProfessorsPage() {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex items-start gap-4 flex-1">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
-                  {professor.name.split(' ').slice(1).map((n: string) => n[0]).join('')}
+                  {(professor.full_name || professor.name || 'N/A').split(' ').slice(1).map((n: string) => n[0]).join('')}
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">{professor.name}</h3>
+                  <h3 className="text-xl font-bold text-white mb-1">{professor.full_name || professor.name || 'N/A'}</h3>
                   <p className="text-gray-400 text-sm mb-3">{professor.email}</p>
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
                     <div className="flex items-center gap-2">
@@ -74,7 +122,11 @@ export default async function ProfessorsPage() {
               </div>
             </div>
           </div>
-        ))}
+        )) : (
+          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
+            <p className="text-gray-400 text-lg">Aucun enseignant trouvé</p>
+          </div>
+        )}
       </div>
     </div>
   )

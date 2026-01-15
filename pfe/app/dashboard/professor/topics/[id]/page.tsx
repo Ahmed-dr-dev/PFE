@@ -1,23 +1,47 @@
+'use client'
 import Link from 'next/link'
 import { ApplicationActions } from './application-actions'
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 
-async function getTopic(id: string) {   
-  try {
-    const res = await fetch(`/api/professor/topics/${id}`, {
-      cache: 'no-store',
-    })
-    console.log(res)
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.topic
-  } catch (error) {
-    return null
+export default function TopicDetailPage() {
+  const params = useParams()
+  const id = params.id as string
+  const [topic, setTopic] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (id) {
+      fetchTopic(id).then((data) => {
+        setTopic(data)
+        setLoading(false)
+      })
+    }
+  }, [id])
+
+  async function fetchTopic(id: string) {
+    try {
+      const res = await fetch(`/api/professor/topics/${id}`, {
+        cache: 'no-store',
+      })
+      if (!res.ok) return null
+      const data = await res.json()
+      return data.topic
+    } catch (error) {
+      return null
+    }
   }
-}
 
-export default async function TopicDetailPage({ params }: { params: { id: string } }) {
-  const topic = await getTopic(params.id)
-  
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
+          <p className="text-gray-400 text-lg">Chargement...</p>
+        </div>
+      </div>
+    )
+  }
+
   if (!topic) {
     return (
       <div className="space-y-8">
@@ -145,5 +169,4 @@ export default async function TopicDetailPage({ params }: { params: { id: string
     </div>
   )
 }
-
 

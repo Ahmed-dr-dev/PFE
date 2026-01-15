@@ -1,19 +1,7 @@
-import React from 'react'
+'use client'
+import React, { useEffect, useState } from 'react'
 import { UploadButton } from './upload-button'
 import { DocumentActions } from './document-actions'
-
-async function getDocuments() {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/student/documents`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.documents || []
-  } catch (error) {
-    return []
-  }
-}
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes'
@@ -28,9 +16,28 @@ function getFileType(fileName: string): string {
   return ext
 }
 
-export default async function DocumentsPage() {
-  const documents = await getDocuments()
-  
+export default function DocumentsPage() {
+  const [documents, setDocuments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchDocuments() {
+      try {
+        const res = await fetch('/api/student/documents', {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        setDocuments(data.documents || [])
+      } catch (error) {
+        // Handle error
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchDocuments()
+  }, [])
+
   // Extract unique categories from documents
   const uniqueCategories = Array.from(new Set(documents.map((doc: any) => doc.category || 'Autre'))) as string[]
   const categories: string[] = ['Tous', ...uniqueCategories]
@@ -88,8 +95,13 @@ export default async function DocumentsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {documents && documents.length > 0 ? documents.map((doc: any, index: number) => (
+      {loading ? (
+        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
+          <p className="text-gray-400 text-lg">Chargement...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {documents && documents.length > 0 ? documents.map((doc: any, index: number) => (
           <div
             key={doc.id || index}
             className="group relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 hover:border-emerald-500/50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1"
@@ -159,7 +171,8 @@ export default async function DocumentsPage() {
             <p className="text-gray-400 text-lg">Aucun document disponible</p>
           </div>
         )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }

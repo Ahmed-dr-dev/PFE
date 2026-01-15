@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth'
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAuth('professor')
@@ -12,6 +12,7 @@ export async function DELETE(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
+    const { id } = await params
     const userId = auth.user!.id
     const supabase = await createClient()
 
@@ -19,7 +20,7 @@ export async function DELETE(
     const { data: document } = await supabase
       .from('documents')
       .select('file_path, pfe_project_id, pfe_projects!inner(supervisor_id)')
-      .eq('id', params.id)
+      .eq('id', id)
       .single()
 
     if (!document) {
@@ -41,7 +42,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('documents')
       .delete()
-      .eq('id', params.id)
+      .eq('id', id)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })

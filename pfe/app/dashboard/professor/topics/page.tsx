@@ -1,42 +1,37 @@
+'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 
-async function getTopics() {
-  try {
-    const res = await fetch('/api/professor/topics/id', {
-      cache: 'no-store',
-    })
-    if (!res.ok) return []
-    const data = await res.json()
-    return data.topics || []
-  } catch (error) {
-    return []
-  }
-}
+export default function TopicsPage() {
+  const [topics, setTopics] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState<string>('')
 
-export default async function TopicsPage() {
-  const topics = await getTopics()
-  
-  // Map status values
-  const statusMap: Record<string, string> = {
-    'pending': 'draft',
-    'approved': 'active',
-    'rejected': 'archived',
-    'draft': 'draft',
-    'archived': 'archived',
-  }
- 
+  useEffect(() => {
+    fetchTopics().then(setTopics)
+  }, [])
 
-  const statusColors: Record<string, string> = {
-    active: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50',
-    draft: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
-    archived: 'bg-gray-500/20 text-gray-200 border-gray-500/50',
+    async function fetchTopics() {
+    try {
+      const response = await fetch('/api/professor/topics', {
+        cache: 'no-store',
+      })
+      console.log(response)
+      if (!response.ok) return []
+      const data = await response.json()
+      return data.topics || []
+    } catch (error) {
+      return []
+    }
   }
 
-  const statusLabels: Record<string, string> = {
-    active: 'Actif',
-    draft: 'Brouillon',
-    archived: 'Archivé',
-  }
+  const filteredTopics = topics.filter((topic: any) => {
+    if (!searchQuery.trim()) return true
+    const query = searchQuery.toLowerCase()
+    return (
+      topic.title?.toLowerCase().includes(query) ||
+      topic.description?.toLowerCase().includes(query)
+    )
+  })
 
   return (
     <div className="space-y-8">
@@ -58,8 +53,33 @@ export default async function TopicsPage() {
         </Link>
       </div>
 
+      <div className="relative">
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Rechercher un sujet par titre ou description..."
+            className="w-full px-4 py-3 pl-12 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
+          />
+          <svg
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-6">
-        {topics.map((topic: any) => (
+        {filteredTopics.length > 0 ? filteredTopics.map((topic: any) => (
           <div
             key={topic.id}
             className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
@@ -68,12 +88,8 @@ export default async function TopicsPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-xl font-bold text-white">{topic.title}</h3>
-                  <span
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm ${
-                      statusColors[statusMap[topic.status] || 'draft'] || statusColors.draft
-                    }`}
-                  >
-                    {statusLabels[statusMap[topic.status] || 'draft']}
+                  <span className="px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm bg-slate-700/50 text-white">
+                    {topic.status}
                   </span>
                 </div>
                 <p className="text-gray-300 leading-relaxed">{topic.description}</p>
@@ -103,7 +119,13 @@ export default async function TopicsPage() {
               </div>
             </div>
           </div>
-        ))}
+        )) : (
+          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
+            <p className="text-gray-400 text-lg">
+              {searchQuery ? 'Aucun sujet trouvé pour votre recherche' : 'Aucun sujet proposé'}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   )

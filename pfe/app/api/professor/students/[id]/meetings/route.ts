@@ -4,7 +4,7 @@ import { requireAuth } from '@/lib/auth'
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAuth('professor')
@@ -12,6 +12,7 @@ export async function GET(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
+    const { id } = await params
     const userId = auth.user!.id
     const supabase = await createClient()
 
@@ -19,7 +20,7 @@ export async function GET(
     const { data: project } = await supabase
       .from('pfe_projects')
       .select('id')
-      .eq('student_id', params.id)
+      .eq('student_id', id)
       .eq('supervisor_id', userId)
       .maybeSingle()
 
@@ -50,7 +51,7 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const auth = await requireAuth('professor')
@@ -58,6 +59,7 @@ export async function POST(
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
+    const { id } = await params
     const userId = auth.user!.id
     const supabase = await createClient()
 
@@ -74,7 +76,7 @@ export async function POST(
     const { data: project } = await supabase
       .from('pfe_projects')
       .select('id')
-      .eq('student_id', params.id)
+      .eq('student_id', id)
       .eq('supervisor_id', userId)
       .maybeSingle()
 
@@ -87,7 +89,7 @@ export async function POST(
       .from('meetings')
       .insert({
         pfe_project_id: project.id,
-        student_id: params.id,
+        student_id: id,
         supervisor_id: userId,
         date,
         time,

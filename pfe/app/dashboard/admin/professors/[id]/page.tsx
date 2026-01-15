@@ -1,21 +1,41 @@
+'use client'
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 
-async function getProfessor(id: string) {
-  try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/professors/${id}`, {
-      cache: 'no-store',
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data
-  } catch (error) {
-    return null
+export default function ProfessorDetailPage() {
+  const params = useParams()
+  const id = params.id as string
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchProfessor() {
+      try {
+        const res = await fetch(`/api/admin/professors/${id}`)
+        if (res.ok) {
+          const data = await res.json()
+          setData(data)
+        }
+      } catch (error) {
+        console.error('Error fetching professor:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (id) fetchProfessor()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    )
   }
-}
 
-export default async function ProfessorDetailPage({ params }: { params: { id: string } }) {
-  const data = await getProfessor(params.id)
-  
   if (!data) {
     return (
       <div className="space-y-8">
@@ -32,6 +52,7 @@ export default async function ProfessorDetailPage({ params }: { params: { id: st
     id: s.student?.id || s.id,
     full_name: s.student?.full_name || 'N/A',
     progress: s.progress || 0,
+    status: s.status,
   }))
   const topicsCount = data.topicsCount || topics.length
   const studentsCount = data.studentsCount || students.length
