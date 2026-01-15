@@ -1,35 +1,20 @@
 import Link from 'next/link'
 
-export default function StudentsPage() {
-  const students = [
-    {
-      id: '1',
-      name: 'Abdelrahman Ali',
-      email: 'abdelrahman.ali@student.isaeg.ma',
-      department: 'Informatique',
-      year: '5ème année',
-      pfeStatus: 'in_progress',
-      supervisor: 'Prof. Ahmed Benali',
-    },
-    {
-      id: '2',
-      name: 'Fatima Zahra',
-      email: 'fatima.zahra@student.isaeg.ma',
-      department: 'Informatique',
-      year: '5ème année',
-      pfeStatus: 'pending',
-      supervisor: null,
-    },
-    {
-      id: '3',
-      name: 'Mohamed Amine',
-      email: 'mohamed.amine@student.isaeg.ma',
-      department: 'Gestion',
-      year: '5ème année',
-      pfeStatus: 'in_progress',
-      supervisor: 'Prof. Fatima Zahra',
-    },
-  ]
+async function getStudents() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/students`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.students || []
+  } catch (error) {
+    return []
+  }
+}
+
+export default async function StudentsPage() {
+  const students = await getStudents()
 
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
@@ -55,7 +40,7 @@ export default function StudentsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {students.map((student) => (
+        {students && students.length > 0 ? students.map((student: any) => (
           <div
             key={student.id}
             className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
@@ -63,18 +48,20 @@ export default function StudentsPage() {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex items-start gap-4 flex-1">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
-                  {student.name.split(' ').map(n => n[0]).join('')}
+                  {(student.full_name || student.name || 'N/A').split(' ').map((n: string) => n[0]).join('')}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-xl font-bold text-white">{student.name}</h3>
-                    <span
-                      className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm ${
-                        statusColors[student.pfeStatus] || statusColors.pending
-                      }`}
-                    >
-                      {statusLabels[student.pfeStatus]}
-                    </span>
+                    <h3 className="text-xl font-bold text-white">{student.full_name || student.name || 'N/A'}</h3>
+                    {student.status && (
+                      <span
+                        className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm ${
+                          statusColors[student.status] || statusColors.pending
+                        }`}
+                      >
+                        {statusLabels[student.status] || 'En attente'}
+                      </span>
+                    )}
                   </div>
                   <p className="text-gray-400 text-sm mb-2">{student.email}</p>
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
@@ -95,7 +82,7 @@ export default function StudentsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        <span>{student.supervisor}</span>
+                        <span>{student.supervisor.full_name || student.supervisor || 'N/A'}</span>
                       </div>
                     )}
                   </div>
@@ -119,7 +106,11 @@ export default function StudentsPage() {
               </div>
             </div>
           </div>
-        ))}
+        )) : (
+          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
+            <p className="text-gray-400 text-lg">Aucun étudiant trouvé</p>
+          </div>
+        )}
       </div>
     </div>
   )

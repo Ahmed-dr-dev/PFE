@@ -14,15 +14,28 @@ export default function NewTopicPage() {
     department: '',
   })
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
     setLoading(true)
-    // TODO: Implement API call
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      const response = await fetch('/api/professor/topics', {
+        method: 'POST',
+        body: JSON.stringify(formData),
+      })
+      if (!response.ok) {
+        const error = await response.json()
+        alert('Erreur lors de la création du sujet: ' + (error.error || 'Veuillez vérifier les champs et réessayer'))
+        return
+      }
+      alert('Sujet créé avec succès')
       router.push('/dashboard/professor/topics')
-    }, 1000)
+    } catch (error) {
+      alert('Erreur lors de la création du sujet: Veuillez vérifier les champs et réessayer')
+    } finally {
+      setLoading(false)
+    }
   }
+
 
   return (
     <div className="space-y-8">

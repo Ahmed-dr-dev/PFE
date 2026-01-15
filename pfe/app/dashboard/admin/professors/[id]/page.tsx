@@ -1,24 +1,40 @@
 import Link from 'next/link'
 
-export default function ProfessorDetailPage({ params }: { params: { id: string } }) {
-  const professor = {
-    id: params.id,
-    name: 'Prof. Ahmed Benali',
-    email: 'ahmed.benali@isaeg.ma',
-    phone: '+212 6XX XXX XXX',
-    department: 'Informatique',
-    office: 'Bureau 205, Bâtiment A',
-    topicsCount: 5,
-    studentsCount: 8,
-    topics: [
-      { id: '1', title: 'Système de gestion de bibliothèque', status: 'active' },
-      { id: '2', title: 'Plateforme e-learning', status: 'active' },
-    ],
-    students: [
-      { id: '1', name: 'Abdelrahman Ali', progress: 65 },
-      { id: '2', name: 'Fatima Zahra', progress: 45 },
-    ],
+async function getProfessor(id: string) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/professors/${id}`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data
+  } catch (error) {
+    return null
   }
+}
+
+export default async function ProfessorDetailPage({ params }: { params: { id: string } }) {
+  const data = await getProfessor(params.id)
+  
+  if (!data) {
+    return (
+      <div className="space-y-8">
+        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
+          <p className="text-gray-400 text-lg">Enseignant non trouvé</p>
+        </div>
+      </div>
+    )
+  }
+  
+  const professor = data.professor
+  const topics = data.topics || []
+  const students = (data.students || []).map((s: any) => ({
+    id: s.student?.id || s.id,
+    full_name: s.student?.full_name || 'N/A',
+    progress: s.progress || 0,
+  }))
+  const topicsCount = data.topicsCount || topics.length
+  const studentsCount = data.studentsCount || students.length
 
   return (
     <div className="space-y-8">
@@ -33,7 +49,7 @@ export default function ProfessorDetailPage({ params }: { params: { id: string }
             </svg>
             Retour aux enseignants
           </Link>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">{professor.name}</h1>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">{professor?.name || professor?.full_name || 'N/A'}</h1>
           <p className="text-gray-400 text-lg">Profil enseignant et statistiques</p>
         </div>
       </div>
@@ -43,42 +59,52 @@ export default function ProfessorDetailPage({ params }: { params: { id: string }
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-6">Sujets proposés</h2>
             <div className="space-y-4">
-              {professor.topics.map((topic) => (
+              {topics && topics.length > 0 ? topics.map((topic: any) => (
                 <div
                   key={topic.id}
                   className="p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl"
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="text-white font-semibold">{topic.title}</h3>
-                    <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-emerald-500/20 text-emerald-200 border-emerald-500/50">
-                      Actif
+                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${
+                      topic.status === 'approved'
+                        ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50'
+                        : topic.status === 'pending'
+                        ? 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50'
+                        : 'bg-gray-500/20 text-gray-200 border-gray-500/50'
+                    }`}>
+                      {topic.status === 'approved' ? 'Approuvé' : topic.status === 'pending' ? 'En attente' : 'Rejeté'}
                     </span>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-gray-400 text-sm text-center py-8">Aucun sujet proposé</p>
+              )}
             </div>
           </div>
 
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-6">Étudiants encadrés</h2>
             <div className="space-y-4">
-              {professor.students.map((student) => (
+              {students && students.length > 0 ? students.map((student: any) => (
                 <div
                   key={student.id}
                   className="p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl"
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-white font-semibold">{student.name}</h3>
-                    <span className="text-white font-semibold">{student.progress}%</span>
+                    <h3 className="text-white font-semibold">{student.full_name || 'N/A'}</h3>
+                    <span className="text-white font-semibold">{student.progress || 0}%</span>
                   </div>
                   <div className="w-full bg-slate-700/50 rounded-full h-2">
                     <div
                       className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${student.progress}%` }}
+                      style={{ width: `${student.progress || 0}%` }}
                     />
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-gray-400 text-sm text-center py-8">Aucun étudiant encadré</p>
+              )}
             </div>
           </div>
         </div>
@@ -86,26 +112,28 @@ export default function ProfessorDetailPage({ params }: { params: { id: string }
         <div className="space-y-6">
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
             <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-semibold text-2xl shadow-lg mb-4">
-              {professor.name.split(' ').slice(1).map(n => n[0]).join('')}
+              {(professor?.name || professor?.full_name || 'N/A').split(' ').slice(1).map((n: string) => n[0]).join('')}
             </div>
             <h3 className="text-lg font-bold text-white mb-4">Informations</h3>
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Email</p>
-                <p className="text-white font-medium text-sm">{professor.email}</p>
+                <p className="text-white font-medium text-sm">{professor?.email || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Téléphone</p>
-                <p className="text-white font-medium text-sm">{professor.phone}</p>
+                <p className="text-white font-medium text-sm">{professor?.phone || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Département</p>
-                <p className="text-white font-medium text-sm">{professor.department}</p>
+                <p className="text-white font-medium text-sm">{professor?.department || 'N/A'}</p>
               </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Bureau</p>
-                <p className="text-white font-medium text-sm">{professor.office}</p>
-              </div>
+              {professor?.office && (
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Bureau</p>
+                  <p className="text-white font-medium text-sm">{professor.office}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -114,11 +142,11 @@ export default function ProfessorDetailPage({ params }: { params: { id: string }
             <div className="space-y-4">
               <div>
                 <p className="text-gray-400 text-sm mb-1">Sujets proposés</p>
-                <p className="text-2xl font-bold text-white">{professor.topicsCount}</p>
+                <p className="text-2xl font-bold text-white">{topicsCount || (topics ? topics.length : 0)}</p>
               </div>
               <div>
                 <p className="text-gray-400 text-sm mb-1">Étudiants encadrés</p>
-                <p className="text-2xl font-bold text-white">{professor.studentsCount}</p>
+                <p className="text-2xl font-bold text-white">{studentsCount || (students ? students.length : 0)}</p>
               </div>
             </div>
           </div>

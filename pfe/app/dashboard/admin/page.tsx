@@ -1,14 +1,34 @@
 import Link from 'next/link'
 
-export default function DashboardPage() {
-  const stats = {
-    pendingTopics: 8,
-    totalStudents: 120,
-    totalProfessors: 25,
-    activePFE: 95,
-    pendingAssignments: 12,
-    completedPFE: 15,
+async function getStats() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/stats`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return {
+      pendingTopics: 0,
+      totalStudents: 0,
+      totalProfessors: 0,
+      activePFE: 0,
+      pendingAssignments: 0,
+      completedPFE: 0,
+    }
+    const data = await res.json()
+    return data
+  } catch (error) {
+    return {
+      pendingTopics: 0,
+      totalStudents: 0,
+      totalProfessors: 0,
+      activePFE: 0,
+      pendingAssignments: 0,
+      completedPFE: 0,
+    }
   }
+}
+
+export default async function DashboardPage() {
+  const stats = await getStats()
 
   return (
     <div className="space-y-8">

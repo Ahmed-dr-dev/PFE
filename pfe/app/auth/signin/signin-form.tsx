@@ -32,7 +32,21 @@ export function SignInForm() {
         return
       }
 
-      router.push('/dashboard')
+      // Redirect based on user role
+      if (data.user?.role) {
+        const role = data.user.role
+        if (role === 'student') {
+          router.push('/dashboard/student')
+        } else if (role === 'professor') {
+          router.push('/dashboard/professor')
+        } else if (role === 'admin') {
+          router.push('/dashboard/admin')
+        } else {
+          router.push('/dashboard')
+        }
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     } catch (err) {
       setError('Erreur de connexion')

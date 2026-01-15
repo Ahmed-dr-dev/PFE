@@ -1,71 +1,38 @@
 import Link from 'next/link'
 
-export default function SupervisionPage() {
-  const supervisor = {
-    id: '1',
-    full_name: 'Prof. Ahmed Benali',
-    email: 'ahmed.benali@isaeg.ma',
-    phone: '+212 6XX XXX XXX',
-    department: 'informatique',
-    office: 'Bureau 205, Bâtiment A',
-    office_hours: 'Lundi - Vendredi: 14h00 - 17h00',
-    bio: 'Professeur en informatique avec plus de 15 ans d\'expérience dans le développement web et les systèmes distribués. Spécialisé en architecture logicielle et bases de données.',
-    expertise: ['Développement Web', 'Bases de données', 'Architecture logicielle', 'Systèmes distribués'],
+async function getSupervision() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/student/supervision`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return { supervisor: null, meetings: [], documents: [] }
+    return await res.json()
+  } catch (error) {
+    return { supervisor: null, meetings: [], documents: [] }
   }
+}
 
-  const meetings = [
-    {
-      id: '1',
-      date: '2024-03-15',
-      time: '14:00',
-      type: 'Suivi',
-      status: 'planned',
-      notes: 'Discussion sur l\'avancement du projet et les prochaines étapes',
-    },
-    {
-      id: '2',
-      date: '2024-03-01',
-      time: '15:30',
-      type: 'Révision',
-      status: 'completed',
-      notes: 'Révision du code et validation de l\'architecture',
-    },
-    {
-      id: '3',
-      date: '2024-02-15',
-      time: '14:00',
-      type: 'Kick-off',
-      status: 'completed',
-      notes: 'Première réunion de lancement du projet',
-    },
-  ]
-
-  const documents = [
-    {
-      id: '1',
-      name: 'Cahier des charges',
-      type: 'PDF',
-      size: '2.4 MB',
-      uploaded_at: '2024-01-20',
-      uploaded_by: 'Prof. Ahmed Benali',
-    },
-    {
-      id: '2',
-      name: 'Guide de développement',
-      type: 'PDF',
-      size: '1.8 MB',
-      uploaded_at: '2024-02-01',
-      uploaded_by: 'Prof. Ahmed Benali',
-    },
-    {
-      id: '3',
-      name: 'Rapport d\'avancement - Février',
-      type: 'DOCX',
-      size: '456 KB',
-      uploaded_at: '2024-02-28',
-      uploaded_by: 'Vous',
-    },
-  ]
+export default async function SupervisionPage() {
+  const data = await getSupervision()
+  const supervisor = data.supervisor
+  const meetings = data.meetings || []
+  const documents = data.documents || []
+  
+  if (!supervisor) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+            Mon <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Encadrement</span>
+          </h1>
+          <p className="text-gray-400 text-lg">Informations sur votre encadrant et suivi du projet</p>
+        </div>
+        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
+          <p className="text-gray-400 text-lg">Aucun encadrant assigné pour le moment</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -90,16 +57,18 @@ export default function SupervisionPage() {
                 <div className="flex-1">
                   <h2 className="text-2xl font-bold text-white mb-2">{supervisor.full_name}</h2>
                   <p className="text-gray-400 capitalize mb-4">{supervisor.department}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {supervisor.expertise.map((skill, index) => (
-                      <span
-                        key={index}
-                        className="px-3 py-1 bg-slate-700/50 border border-slate-600/50 rounded-lg text-xs font-medium text-gray-300"
-                      >
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
+                  {supervisor.expertise && supervisor.expertise.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {supervisor.expertise.map((skill: string, index: number) => (
+                        <span
+                          key={index}
+                          className="px-3 py-1 bg-slate-700/50 border border-slate-600/50 rounded-lg text-xs font-medium text-gray-300"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -157,7 +126,7 @@ export default function SupervisionPage() {
               Réunions de suivi
             </h2>
             <div className="space-y-4">
-              {meetings.map((meeting) => (
+              {meetings && meetings.length > 0 ? meetings.map((meeting: any) => (
                 <div
                   key={meeting.id}
                   className="p-6 bg-slate-700/30 border border-slate-600/50 rounded-xl hover:border-emerald-500/50 transition-all duration-200"
@@ -193,7 +162,9 @@ export default function SupervisionPage() {
                     <p className="text-gray-300 text-sm leading-relaxed">{meeting.notes}</p>
                   )}
                 </div>
-              ))}
+              )) : (
+                <p className="text-gray-400 text-sm text-center py-8">Aucune réunion planifiée</p>
+              )}
             </div>
           </div>
         </div>
@@ -209,7 +180,7 @@ export default function SupervisionPage() {
               Documents partagés
             </h2>
             <div className="space-y-3">
-              {documents.map((doc) => (
+              {documents && documents.length > 0 ? documents.map((doc: any) => (
                 <div
                   key={doc.id}
                   className="p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl hover:border-emerald-500/50 transition-all duration-200 group"
@@ -228,17 +199,24 @@ export default function SupervisionPage() {
                         <span className="text-xs text-gray-500">{doc.size}</span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        Par {doc.uploaded_by} • {new Date(doc.uploaded_at).toLocaleDateString('fr-FR')}
+                        Par {doc.uploader?.full_name || 'N/A'} • {new Date(doc.uploaded_at).toLocaleDateString('fr-FR')}
                       </p>
                     </div>
-                    <button className="p-2 rounded-lg hover:bg-slate-600/50 transition-colors">
+                    <a
+                      href={doc.file_path}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 rounded-lg hover:bg-slate-600/50 transition-colors"
+                    >
                       <svg className="w-5 h-5 text-gray-400 hover:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
-                    </button>
+                    </a>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <p className="text-gray-400 text-sm text-center py-8">Aucun document partagé</p>
+              )}
             </div>
           </div>
 

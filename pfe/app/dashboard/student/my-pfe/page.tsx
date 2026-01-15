@@ -1,23 +1,20 @@
 import Link from 'next/link'
 
-export default function MyPfePage() {
-  const myPfe = {
-    id: '1',
-    status: 'in_progress',
-    created_at: '2024-01-15T10:00:00Z',
-    updated_at: '2024-02-20T14:30:00Z',
-    pfe_topics: {
-      title: 'Système de gestion de bibliothèque',
-      description: 'Développement d\'une application web pour la gestion d\'une bibliothèque avec authentification, recherche de livres, et système de prêt.',
-    },
-    supervisor: {
-      id: '1',
-      full_name: 'Prof. Ahmed Benali',
-      email: 'ahmed.benali@isaeg.ma',
-      phone: '+212 6XX XXX XXX',
-      department: 'informatique',
-    },
+async function getMyPfe() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/student/my-pfe`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.pfe
+  } catch (error) {
+    return null
   }
+}
+
+export default async function MyPfePage() {
+  const myPfe = await getMyPfe()
 
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
@@ -113,14 +110,14 @@ export default function MyPfePage() {
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Titre du sujet</p>
                   <p className="text-white font-bold text-xl leading-tight">
-                    {myPfe.pfe_topics?.title || 'N/A'}
+                    {myPfe.topic?.title || 'N/A'}
                   </p>
                 </div>
 
-                {myPfe.pfe_topics?.description && (
+                {myPfe.topic?.description && (
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</p>
-                    <p className="text-gray-300 leading-relaxed">{myPfe.pfe_topics.description}</p>
+                    <p className="text-gray-300 leading-relaxed">{myPfe.topic.description}</p>
                   </div>
                 )}
 

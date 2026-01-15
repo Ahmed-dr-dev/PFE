@@ -1,36 +1,38 @@
-export default function DocumentsPage() {
-  const documents = [
-    {
-      id: '1',
-      name: 'Cahier des charges - Système bibliothèque',
-      type: 'PDF',
-      size: '2.4 MB',
-      category: 'Cahier des charges',
-      uploaded_at: '2024-01-20',
-      shared_with: ['Abdelrahman Ali'],
-    },
-    {
-      id: '2',
-      name: 'Guide de développement',
-      type: 'PDF',
-      size: '1.8 MB',
-      category: 'Documentation',
-      uploaded_at: '2024-02-01',
-      shared_with: ['Tous les étudiants'],
-    },
-    {
-      id: '3',
-      name: 'Rapport d\'avancement - Février 2024',
-      type: 'DOCX',
-      size: '456 KB',
-      category: 'Rapports',
-      uploaded_at: '2024-02-28',
-      uploaded_by: 'Abdelrahman Ali',
-    },
-  ]
+import React from 'react'
+import { UploadButton } from './upload-button'
+import { DocumentActions } from './document-actions'
+
+async function getDocuments() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/professor/documents`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.documents || []
+  } catch (error) {
+    return []
+  }
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
+}
+
+function getFileType(fileName: string): string {
+  const ext = fileName.split('.').pop()?.toUpperCase() || 'FILE'
+  return ext
+}
+
+export default async function DocumentsPage() {
+  const documents = await getDocuments()
 
   const getFileIcon = (type: string) => {
-    const icons: Record<string, JSX.Element> = {
+    const icons: Record<string, React.ReactElement> = {
       PDF: (
         <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -54,27 +56,25 @@ export default function DocumentsPage() {
           </h1>
           <p className="text-gray-400 text-lg">Gérez tous vos documents et ressources</p>
         </div>
-        <button className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-xl hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 hover:-translate-y-0.5">
-          Téléverser un document
-        </button>
+        <UploadButton />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {documents.map((doc) => (
+        {documents && documents.length > 0 ? documents.map((doc: any, index: number) => (
           <div
-            key={doc.id}
+            key={doc.id || index}
             className="group relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 hover:border-emerald-500/50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1"
           >
             <div className="flex items-start gap-4 mb-4">
               <div className="w-14 h-14 rounded-xl bg-slate-700/50 flex items-center justify-center border border-slate-600/50 group-hover:scale-110 transition-transform duration-300">
-                {getFileIcon(doc.type)}
+                {getFileIcon(getFileType(doc.file_name || doc.name || ''))}
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-white font-semibold text-lg mb-1 truncate">{doc.name}</h3>
+                <h3 className="text-white font-semibold text-lg mb-1 truncate">{doc.file_name || doc.name || 'Document'}</h3>
                 <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <span>{doc.type}</span>
+                  <span>{getFileType(doc.file_name || doc.name || '')}</span>
                   <span>•</span>
-                  <span>{doc.size}</span>
+                  <span>{doc.file_size ? formatFileSize(doc.file_size) : 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -88,10 +88,12 @@ export default function DocumentsPage() {
 
               <div className="pt-3 border-t border-slate-700/50">
                 <p className="text-xs text-gray-500 mb-1">
-                  {doc.uploaded_by ? `Par ${doc.uploaded_by}` : 'Partagé avec'}
+                  {doc.uploader ? `Par ${doc.uploader.full_name || 'N/A'}` : 'Partagé avec les étudiants'}
                 </p>
-                {doc.shared_with && (
-                  <p className="text-xs text-gray-400">{doc.shared_with.join(', ')}</p>
+                {doc.project?.student && (
+                  <p className="text-xs text-gray-400">
+                    Étudiant: {doc.project.student.full_name || 'N/A'}
+                  </p>
                 )}
                 <p className="text-xs text-gray-500 mt-2">
                   {new Date(doc.uploaded_at).toLocaleDateString('fr-FR', {
@@ -103,18 +105,25 @@ export default function DocumentsPage() {
               </div>
 
               <div className="flex gap-2 pt-2">
-                <button className="flex-1 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 border border-slate-600/50 rounded-xl text-sm font-semibold text-white transition-all duration-200">
-                  Télécharger
-                </button>
-                <button className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 border border-slate-600/50 rounded-xl text-sm font-semibold text-white transition-all duration-200">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                  </svg>
-                </button>
+                {doc.file_path && (
+                  <a
+                    href={doc.file_path}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 px-4 py-2 bg-slate-700/50 hover:bg-slate-700 border border-slate-600/50 rounded-xl text-sm font-semibold text-white transition-all duration-200 text-center"
+                  >
+                    Télécharger
+                  </a>
+                )}
+                <DocumentActions documentId={doc.id} />
               </div>
             </div>
           </div>
-        ))}
+        )) : (
+          <div className="col-span-full relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
+            <p className="text-gray-400 text-lg">Aucun document disponible</p>
+          </div>
+        )}
       </div>
     </div>
   )

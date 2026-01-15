@@ -1,13 +1,20 @@
 import Link from 'next/link'
 
-export default function DashboardPage() {
-  const myPfe = {
-    status: 'pending',
-    pfe_topics: {
-      title: 'Sujet de PFE',
-      description: 'Description du sujet de PFE',
-    },
+async function getMyPfe() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/student/my-pfe`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.pfe
+  } catch (error) {
+    return null
   }
+}
+
+export default async function DashboardPage() {
+  const myPfe = await getMyPfe()
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
     approved: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50',
@@ -118,35 +125,7 @@ export default function DashboardPage() {
           </div>
         </Link>
 
-        <Link
-          href="/dashboard/calendar"
-          className="group relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 hover:border-orange-500/50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-orange-500/10 hover:-translate-y-1"
-        >
-          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/0 to-orange-500/0 group-hover:from-orange-500/10 group-hover:to-red-500/10 rounded-2xl transition-all duration-300" />
-          <div className="relative">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-xl flex items-center justify-center border border-orange-500/30 group-hover:scale-110 transition-transform duration-300">
-                <svg
-                  className="w-7 h-7 text-orange-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-white">Calendrier</h3>
-            </div>
-            <p className="text-gray-400 text-sm leading-relaxed">
-              Suivez vos rendez-vous et échéances importantes
-            </p>
-          </div>
-        </Link>
+       
 
         <Link
           href="/dashboard/documents"
@@ -200,12 +179,12 @@ export default function DashboardPage() {
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Sujet</p>
-                <p className="text-white font-semibold text-lg">{myPfe.pfe_topics?.title}</p>
+                <p className="text-white font-semibold text-lg">{myPfe.topic?.title || 'N/A'}</p>
               </div>
-              {myPfe.pfe_topics?.description && (
+              {myPfe.topic?.description && (
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</p>
-                  <p className="text-gray-300 leading-relaxed">{myPfe.pfe_topics.description}</p>
+                  <p className="text-gray-300 leading-relaxed">{myPfe.topic.description}</p>
                 </div>
               )}
               <Link

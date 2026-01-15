@@ -1,48 +1,61 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 export default function AssignmentsPage() {
-  const [assignments, setAssignments] = useState([
-    {
-      id: '1',
-      student: {
-        id: '1',
-        name: 'Abdelrahman Ali',
-        email: 'abdelrahman.ali@student.isaeg.ma',
-        department: 'Informatique',
-      },
-      topic: {
-        id: '1',
-        title: 'Système de gestion de bibliothèque',
-        professor: 'Prof. Ahmed Benali',
-      },
-      status: 'pending',
-    },
-    {
-      id: '2',
-      student: {
-        id: '2',
-        name: 'Fatima Zahra',
-        email: 'fatima.zahra@student.isaeg.ma',
-        department: 'Informatique',
-      },
-      topic: {
-        id: '2',
-        title: 'Plateforme e-learning',
-        professor: 'Prof. Fatima Zahra',
-      },
-      status: 'pending',
-    },
-  ])
+  const router = useRouter()
+  const [assignments, setAssignments] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const handleAssign = (assignmentId: string) => {
-    setAssignments(assignments.map(a => a.id === assignmentId ? { ...a, status: 'assigned' } : a))
+  useEffect(() => {
+    async function fetchAssignments() {
+      try {
+        const res = await fetch('/api/admin/assignments')
+        if (res.ok) {
+          const data = await res.json()
+          setAssignments(data.assignments || [])
+        }
+      } catch (error) {
+        console.error('Error fetching assignments:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchAssignments()
+  }, [])
+   
+ 
+
+  const handleAssign = async (assignmentId: string) => {
+    try {
+      const res = await fetch(`/api/admin/assignments/${assignmentId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'assigned' }),
+      })
+      if (res.ok) {
+        router.refresh()
+        setAssignments(assignments.map(a => a.id === assignmentId ? { ...a, status: 'assigned' } : a))
+      }
+    } catch (error) {
+      console.error('Error updating assignment:', error)
+    }
   }
 
-  const pendingAssignments = assignments.filter(a => a.status === 'pending')
-  const assigned = assignments.filter(a => a.status === 'assigned')
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div className="flex items-center justify-center py-12">
+          <p className="text-gray-400">Chargement...</p>
+        </div>
+      </div>
+    )
+  }
+
+  const pendingAssignments = assignments.filter((a: any) => a.status === 'pending')
+  const assigned = assignments.filter((a: any) => a.status === 'assigned')
 
   return (
     <div className="space-y-8">
@@ -69,7 +82,7 @@ export default function AssignmentsPage() {
                     <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Étudiant</h3>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm">
-                        {assignment.student.name.split(' ').map(n => n[0]).join('')}
+                        {assignment.student.name.split(' ').map((n: string) => n[0]).join('')}
                       </div>
                       <div>
                         <p className="text-white font-semibold">{assignment.student.name}</p>
@@ -81,8 +94,8 @@ export default function AssignmentsPage() {
                   <div>
                     <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Sujet & Encadrant</h3>
                     <div>
-                      <p className="text-white font-semibold mb-1">{assignment.topic.title}</p>
-                      <p className="text-gray-400 text-sm">{assignment.topic.professor}</p>
+                      <p className="text-white font-semibold mb-1">{assignment.topic?.title || 'N/A'}</p>
+                      <p className="text-gray-400 text-sm">{assignment.topic?.professor?.full_name || assignment.supervisor?.full_name || 'N/A'}</p>
                     </div>
                   </div>
                 </div>
@@ -121,7 +134,7 @@ export default function AssignmentsPage() {
                     <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Étudiant</h3>
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm">
-                        {assignment.student.name.split(' ').map(n => n[0]).join('')}
+                        {assignment.student.name.split(' ').map((n: string) => n[0]).join('')}
                       </div>
                       <div>
                         <p className="text-white font-semibold">{assignment.student.name}</p>
@@ -132,8 +145,8 @@ export default function AssignmentsPage() {
                   <div>
                     <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Sujet & Encadrant</h3>
                     <div>
-                      <p className="text-white font-semibold mb-1">{assignment.topic.title}</p>
-                      <p className="text-gray-400 text-sm">{assignment.topic.professor}</p>
+                      <p className="text-white font-semibold mb-1">{assignment.topic?.title || 'N/A'}</p>
+                      <p className="text-gray-400 text-sm">{assignment.topic?.professor?.full_name || assignment.supervisor?.full_name || 'N/A'}</p>
                     </div>
                   </div>
                 </div>

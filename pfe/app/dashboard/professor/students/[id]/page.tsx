@@ -1,31 +1,32 @@
 import Link from 'next/link'
 
-export default function StudentDetailPage({ params }: { params: { id: string } }) {
-  const student = {
-    id: params.id,
-    name: 'Abdelrahman Ali',
-    email: 'abdelrahman.ali@student.isaeg.ma',
-    phone: '+212 6XX XXX XXX',
-    department: 'Informatique',
-    year: '5ème année',
-    topic: {
-      id: '1',
-      title: 'Système de gestion de bibliothèque',
-      description: 'Développement d\'une application web pour la gestion d\'une bibliothèque avec authentification, recherche de livres, et système de prêt.',
-    },
-    status: 'in_progress',
-    progress: 65,
-    startDate: '2024-01-20',
-    lastMeeting: '2024-02-15',
+async function getStudent(id: string) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/professor/students/${id}`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data
+  } catch (error) {
+    return null
   }
+}
 
-  const milestones = [
-    { id: '1', title: 'Cahier des charges', status: 'completed', date: '2024-01-25' },
-    { id: '2', title: 'Architecture du système', status: 'completed', date: '2024-02-05' },
-    { id: '3', title: 'Développement backend', status: 'in_progress', date: null },
-    { id: '4', title: 'Développement frontend', status: 'pending', date: null },
-    { id: '5', title: 'Tests et déploiement', status: 'pending', date: null },
-  ]
+export default async function StudentDetailPage({ params }: { params: { id: string } }) {
+  const data = await getStudent(params.id)
+  
+  if (!data) {
+    return (
+      <div className="space-y-8">
+        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
+          <p className="text-gray-400 text-lg">Étudiant non trouvé</p>
+        </div>
+      </div>
+    )
+  }
+  
+  const { student, topic, status, progress, startDate, lastMeeting, milestones } = data
 
   return (
     <div className="space-y-8">
@@ -40,7 +41,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
             </svg>
             Retour aux étudiants
           </Link>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">{student.name}</h1>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">{student?.full_name || 'N/A'}</h1>
           <p className="text-gray-400 text-lg">Profil étudiant et suivi du PFE</p>
         </div>
         <div className="flex items-center gap-3">
@@ -57,10 +58,12 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
         <div className="lg:col-span-2 space-y-6">
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-6">Sujet de PFE</h2>
-            <div className="mb-4">
-              <h3 className="text-xl font-semibold text-white mb-2">{student.topic.title}</h3>
-              <p className="text-gray-300 leading-relaxed">{student.topic.description}</p>
-            </div>
+            {topic && (
+              <div className="mb-4">
+                <h3 className="text-xl font-semibold text-white mb-2">{topic.title}</h3>
+                <p className="text-gray-300 leading-relaxed">{topic.description}</p>
+              </div>
+            )}
             <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Progression</p>
@@ -68,10 +71,10 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
                   <div className="w-48 bg-slate-700/50 rounded-full h-2">
                     <div
                       className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${student.progress}%` }}
+                      style={{ width: `${progress || 0}%` }}
                     />
                   </div>
-                  <span className="text-white font-semibold">{student.progress}%</span>
+                  <span className="text-white font-semibold">{progress || 0}%</span>
                 </div>
               </div>
             </div>
@@ -80,7 +83,7 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
             <h2 className="text-2xl font-bold text-white mb-6">Jalons du projet</h2>
             <div className="space-y-4">
-              {milestones.map((milestone, index) => (
+              {milestones && milestones.length > 0 ? milestones.map((milestone: any, index: number) => (
                 <div
                   key={milestone.id}
                   className="flex items-start gap-4 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl"
@@ -96,9 +99,9 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
                   </div>
                   <div className="flex-1">
                     <h3 className="text-white font-semibold mb-1">{milestone.title}</h3>
-                    {milestone.date && (
+                    {milestone.completed_date && (
                       <p className="text-gray-500 text-xs">
-                        Terminé le {new Date(milestone.date).toLocaleDateString('fr-FR')}
+                        Terminé le {new Date(milestone.completed_date).toLocaleDateString('fr-FR')}
                       </p>
                     )}
                   </div>
@@ -112,7 +115,9 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
                     {milestone.status === 'completed' ? 'Terminé' : milestone.status === 'in_progress' ? 'En cours' : 'En attente'}
                   </span>
                 </div>
-              ))}
+              )) : (
+                <p className="text-gray-400 text-sm text-center py-8">Aucun jalon défini</p>
+              )}
             </div>
           </div>
         </div>
@@ -120,25 +125,25 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
         <div className="space-y-6">
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
             <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-2xl shadow-lg mb-4">
-              {student.name.split(' ').map(n => n[0]).join('')}
+              {student?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'N/A'}
             </div>
             <h3 className="text-lg font-bold text-white mb-4">Informations</h3>
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Email</p>
-                <p className="text-white font-medium text-sm">{student.email}</p>
+                <p className="text-white font-medium text-sm">{student?.email || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Téléphone</p>
-                <p className="text-white font-medium text-sm">{student.phone}</p>
+                <p className="text-white font-medium text-sm">{student?.phone || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Département</p>
-                <p className="text-white font-medium text-sm">{student.department}</p>
+                <p className="text-white font-medium text-sm">{student?.department || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Année</p>
-                <p className="text-white font-medium text-sm">{student.year}</p>
+                <p className="text-white font-medium text-sm">{student?.year || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -146,14 +151,16 @@ export default function StudentDetailPage({ params }: { params: { id: string } }
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
             <h3 className="text-lg font-bold text-white mb-4">Statistiques</h3>
             <div className="space-y-4">
-              <div>
-                <p className="text-gray-400 text-sm mb-1">Début du projet</p>
-                <p className="text-white font-semibold">{new Date(student.startDate).toLocaleDateString('fr-FR')}</p>
-              </div>
-              {student.lastMeeting && (
+              {startDate && (
+                <div>
+                  <p className="text-gray-400 text-sm mb-1">Début du projet</p>
+                  <p className="text-white font-semibold">{new Date(startDate).toLocaleDateString('fr-FR')}</p>
+                </div>
+              )}
+              {lastMeeting && (
                 <div>
                   <p className="text-gray-400 text-sm mb-1">Dernière réunion</p>
-                  <p className="text-white font-semibold">{new Date(student.lastMeeting).toLocaleDateString('fr-FR')}</p>
+                  <p className="text-white font-semibold">{new Date(lastMeeting).toLocaleDateString('fr-FR')}</p>
                 </div>
               )}
             </div>

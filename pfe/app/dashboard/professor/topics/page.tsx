@@ -1,32 +1,30 @@
 import Link from 'next/link'
 
-export default function TopicsPage() {
-  const topics = [
-    {
-      id: '1',
-      title: 'Système de gestion de bibliothèque',
-      description: 'Développement d\'une application web pour la gestion d\'une bibliothèque avec authentification, recherche de livres, et système de prêt.',
-      status: 'active',
-      applications: 3,
-      assigned: 1,
-    },
-    {
-      id: '2',
-      title: 'Plateforme e-learning',
-      description: 'Création d\'une plateforme d\'apprentissage en ligne avec suivi des progrès et évaluations.',
-      status: 'active',
-      applications: 5,
-      assigned: 2,
-    },
-    {
-      id: '3',
-      title: 'Application mobile de gestion de tâches',
-      description: 'Développement d\'une application mobile cross-platform pour la gestion de tâches avec synchronisation cloud.',
-      status: 'draft',
-      applications: 0,
-      assigned: 0,
-    },
-  ]
+async function getTopics() {
+  try {
+    const res = await fetch('/api/professor/topics/id', {
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.topics || []
+  } catch (error) {
+    return []
+  }
+}
+
+export default async function TopicsPage() {
+  const topics = await getTopics()
+  
+  // Map status values
+  const statusMap: Record<string, string> = {
+    'pending': 'draft',
+    'approved': 'active',
+    'rejected': 'archived',
+    'draft': 'draft',
+    'archived': 'archived',
+  }
+ 
 
   const statusColors: Record<string, string> = {
     active: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50',
@@ -61,7 +59,7 @@ export default function TopicsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {topics.map((topic) => (
+        {topics.map((topic: any) => (
           <div
             key={topic.id}
             className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
@@ -72,10 +70,10 @@ export default function TopicsPage() {
                   <h3 className="text-xl font-bold text-white">{topic.title}</h3>
                   <span
                     className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm ${
-                      statusColors[topic.status] || statusColors.draft
+                      statusColors[statusMap[topic.status] || 'draft'] || statusColors.draft
                     }`}
                   >
-                    {statusLabels[topic.status]}
+                    {statusLabels[statusMap[topic.status] || 'draft']}
                   </span>
                 </div>
                 <p className="text-gray-300 leading-relaxed">{topic.description}</p>
@@ -87,13 +85,13 @@ export default function TopicsPage() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <span>{topic.applications} demandes</span>
+                <span>{Array.isArray(topic.applications) ? topic.applications.length : topic.applications || 0} demandes</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-400">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>{topic.assigned} affecté(s)</span>
+                <span>{Array.isArray(topic.projects) ? topic.projects.length : topic.assigned || 0} affecté(s)</span>
               </div>
               <div className="ml-auto flex items-center gap-2">
                 <Link

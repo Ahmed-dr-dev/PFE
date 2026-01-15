@@ -1,53 +1,43 @@
 import { TopicCard } from './topic-card'
 import { SubmitTopicForm } from './submit-topic-form'
 
-export default function TopicsPage() {
-  const topics = [
-    {
-      id: '1',
-      title: 'Système de gestion de bibliothèque',
-      description: 'Développement d\'une application web pour la gestion d\'une bibliothèque avec authentification, recherche de livres, et système de prêt.',
-      teacher: { full_name: 'Prof. Ahmed Benali', email: 'ahmed.benali@isaeg.ma' },
-      department: 'informatique',
-    },
-    {
-      id: '2',
-      title: 'Plateforme e-commerce pour PME',
-      description: 'Création d\'une plateforme e-commerce complète avec gestion des produits, panier, paiement en ligne et tableau de bord administrateur.',
-      teacher: { full_name: 'Prof. Fatima Alami', email: 'fatima.alami@isaeg.ma' },
-      department: 'informatique',
-    },
-    {
-      id: '3',
-      title: 'Application mobile de gestion de budget',
-      description: 'Développement d\'une application mobile pour la gestion personnelle du budget avec suivi des dépenses et statistiques.',
-      teacher: { full_name: 'Prof. Youssef Idrissi', email: 'youssef.idrissi@isaeg.ma' },
-      department: 'gestion',
-    },
-    {
-      id: '4',
-      title: 'Système de gestion des ressources humaines',
-      description: 'Application web pour la gestion du personnel, congés, évaluations et planning dans une entreprise.',
-      teacher: { full_name: 'Prof. Karima Tazi', email: 'karima.tazi@isaeg.ma' },
-      department: 'rh',
-    },
-    {
-      id: '5',
-      title: 'Analyse de données marketing avec IA',
-      description: 'Développement d\'un système d\'analyse de données marketing utilisant l\'intelligence artificielle pour prédire les tendances.',
-      teacher: { full_name: 'Prof. Mehdi Bensaid', email: 'mehdi.bensaid@isaeg.ma' },
-      department: 'marketing',
-    },
-    {
-      id: '6',
-      title: 'Plateforme de gestion de projets collaboratifs',
-      description: 'Création d\'une plateforme web pour la gestion de projets en équipe avec suivi des tâches, deadlines et communication.',
-      teacher: { full_name: 'Prof. Salma Amrani', email: 'salma.amrani@isaeg.ma' },
-      department: 'informatique',
-    },
-  ]
+async function getTopics() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/student/topics`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.topics || []
+  } catch (error) {
+    return []
+  }
+}
 
-  const myPfe = null
+async function getMyPfe() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/student/my-pfe`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.pfe
+  } catch (error) {
+    return null
+  }
+}
+
+export default async function TopicsPage() {
+  const [topics, myPfe] = await Promise.all([getTopics(), getMyPfe()])
+  
+  // Transform topics to match TopicCard expected format
+  const formattedTopics = topics.map((topic: any) => ({
+    id: topic.id,
+    title: topic.title,
+    description: topic.description,
+    teacher: topic.professor || { full_name: 'N/A', email: '' },
+    department: topic.department || 'N/A',
+  }))
 
   return (
     <div className="space-y-8">
@@ -75,9 +65,9 @@ export default function TopicsPage() {
         </div>
       )}
 
-      {topics && topics.length > 0 ? (
+      {formattedTopics && formattedTopics.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {topics.map((topic) => (
+          {formattedTopics.map((topic: any) => (
             <TopicCard key={topic.id} topic={topic} hasPfe={!!myPfe} />
           ))}
         </div>

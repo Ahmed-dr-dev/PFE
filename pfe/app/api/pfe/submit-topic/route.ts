@@ -1,16 +1,22 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
+
+async function getUserId(): Promise<string | null> {
+  const cookieStore = await cookies()
+  const userId = cookieStore.get('user_id')?.value
+  return userId || null
+}
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
+    const userId = await getUserId()
+    
+    if (!userId) {
       return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
     }
 
-    const { title, description } = await request.json()
+    const { title, description, requirements, department } = await request.json()
 
     if (!title || !description) {
       return NextResponse.json(
@@ -19,19 +25,37 @@ export async function POST(request: Request) {
       )
     }
 
+    const supabase = await createClient()
+
+    // Get user profile to verify role
     const { data: profile } = await supabase
       .from('profiles')
-      .select('role')
-      .eq('id', user.id)
+      .select('role, department')
+      .eq('id', userId)
       .single()
 
+    if (!profile) {
+      return NextResponse.json({ error: 'Profil non trouvé' }, { status: 404 })
+    }
+
+    // Only professors can submit topics
+    if (profile.role !== 'professor') {
+      return NextResponse.json(
+        { error: 'Seuls les enseignants peuvent proposer des sujets' },
+        { status: 403 }
+      )
+    }
+
+    // Insert topic
     const { data: topic, error } = await supabase
       .from('pfe_topics')
       .insert({
         title,
         description,
-        teacher_id: profile?.role === 'teacher' ? user.id : null,
-        status: 'available',
+        requirements: requirements || null,
+        department: department || profile.department || null,
+        professor_id: userId,
+        status: 'pending', // Topics need admin approval
       })
       .select()
       .single()
@@ -41,9 +65,9 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ topic })
-  } catch (error) {
+  } catch (error: any) {
     return NextResponse.json(
-      { error: 'Erreur serveur' },
+      { error: error.message || 'Erreur serveur' },
       { status: 500 }
     )
   }

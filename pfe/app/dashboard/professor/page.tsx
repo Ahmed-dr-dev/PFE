@@ -1,11 +1,20 @@
 import Link from 'next/link'
 
-export default function DashboardPage() {
-  const stats = {
-    topicsProposed: 5,
-    studentsSupervised: 8,
-    pendingApplications: 3,
+async function getStats() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/professor/stats`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return { topicsProposed: 0, studentsSupervised: 0, pendingApplications: 0 }
+    const data = await res.json()
+    return data
+  } catch (error) {
+    return { topicsProposed: 0, studentsSupervised: 0, pendingApplications: 0 }
   }
+}
+
+export default async function DashboardPage() {
+  const stats = await getStats()
 
   return (
     <div className="space-y-8">

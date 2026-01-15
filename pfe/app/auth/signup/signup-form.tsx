@@ -18,15 +18,43 @@ export function SignUpForm() {
     const password = formData.get('password') as string
     const fullName = formData.get('fullName') as string
     const role = formData.get('role') as string
-    const studentId = formData.get('studentId') as string
     const department = formData.get('department') as string
     const phone = formData.get('phone') as string
+    const year = formData.get('year') as string
+    const office = formData.get('office') as string
+    const officeHours = formData.get('officeHours') as string
+    const bio = formData.get('bio') as string
+    const expertise = formData.get('expertise') as string
+
+    // Build request body
+    const body: any = {
+      email,
+      password,
+      fullName,
+      role,
+      department: department || null,
+      phone: phone || null,
+    }
+
+    // Add role-specific fields
+    if (role === 'student' && year) {
+      body.year = year
+    }
+
+    if (role === 'professor') {
+      if (office) body.office = office
+      if (officeHours) body.officeHours = officeHours
+      if (bio) body.bio = bio
+      if (expertise) {
+        body.expertise = expertise.split(',').map((e: string) => e.trim()).filter(Boolean)
+      }
+    }
 
     try {
       const res = await fetch('/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, fullName, role, studentId, department, phone }),
+        body: JSON.stringify(body),
       })
 
       const data = await res.json()
@@ -37,7 +65,21 @@ export function SignUpForm() {
         return
       }
 
-      router.push('/dashboard')
+      // Redirect based on role
+      if (data.user?.role) {
+        const role = data.user.role
+        if (role === 'student') {
+          router.push('/dashboard/student')
+        } else if (role === 'professor') {
+          router.push('/dashboard/professor')
+        } else if (role === 'admin') {
+          router.push('/dashboard/admin')
+        } else {
+          router.push('/dashboard')
+        }
+      } else {
+        router.push('/dashboard')
+      }
       router.refresh()
     } catch (err) {
       setError('Erreur lors de l\'inscription')
@@ -111,28 +153,84 @@ export function SignUpForm() {
         >
           <option value="" className="bg-slate-900">Sélectionnez votre rôle</option>
           <option value="student" className="bg-slate-900">Étudiant</option>
-          <option value="teacher" className="bg-slate-900">Enseignant</option>
+          <option value="professor" className="bg-slate-900">Enseignant</option>
           <option value="admin" className="bg-slate-900">Administration</option>
         </select>
       </div>
 
       {selectedRole === 'student' && (
         <div>
-          <label htmlFor="studentId" className="block text-sm font-medium text-gray-200 mb-1">
-            Numéro d'étudiant
+          <label htmlFor="year" className="block text-sm font-medium text-gray-200 mb-1">
+            Année
           </label>
-          <input
-            id="studentId"
-            name="studentId"
-            type="text"
+          <select
+            id="year"
+            name="year"
             required
-            className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-white placeholder:text-gray-400 backdrop-blur-sm"
-            placeholder="Ex: 2024001"
-          />
+            className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-white backdrop-blur-sm"
+          >
+            <option value="" className="bg-slate-900">Sélectionnez</option>
+            <option value="3ème année" className="bg-slate-900">3ème année</option>
+            <option value="4ème année" className="bg-slate-900">4ème année</option>
+            <option value="5ème année" className="bg-slate-900">5ème année</option>
+          </select>
         </div>
       )}
 
-      {(selectedRole === 'teacher' || selectedRole === 'admin') && (
+      {selectedRole === 'professor' && (
+        <>
+          <div>
+            <label htmlFor="office" className="block text-sm font-medium text-gray-200 mb-1">
+              Bureau
+            </label>
+            <input
+              id="office"
+              name="office"
+              type="text"
+              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-white placeholder:text-gray-400 backdrop-blur-sm"
+              placeholder="Ex: Bureau 205, Bâtiment A"
+            />
+          </div>
+          <div>
+            <label htmlFor="officeHours" className="block text-sm font-medium text-gray-200 mb-1">
+              Heures de bureau
+            </label>
+            <input
+              id="officeHours"
+              name="officeHours"
+              type="text"
+              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-white placeholder:text-gray-400 backdrop-blur-sm"
+              placeholder="Ex: Lundi-Vendredi 14h-16h"
+            />
+          </div>
+          <div>
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-200 mb-1">
+              Biographie
+            </label>
+            <textarea
+              id="bio"
+              name="bio"
+              rows={3}
+              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-white placeholder:text-gray-400 backdrop-blur-sm resize-none"
+              placeholder="Brève description de votre parcours..."
+            />
+          </div>
+          <div>
+            <label htmlFor="expertise" className="block text-sm font-medium text-gray-200 mb-1">
+              Domaines d'expertise (séparés par des virgules)
+            </label>
+            <input
+              id="expertise"
+              name="expertise"
+              type="text"
+              className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-white placeholder:text-gray-400 backdrop-blur-sm"
+              placeholder="Ex: Machine Learning, Web Development, Database"
+            />
+          </div>
+        </>
+      )}
+
+      {(selectedRole === 'professor' || selectedRole === 'admin') && (
         <div>
           <label htmlFor="department" className="block text-sm font-medium text-gray-200 mb-1">
             Département

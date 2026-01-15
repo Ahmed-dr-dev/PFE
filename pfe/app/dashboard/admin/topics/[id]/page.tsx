@@ -1,15 +1,30 @@
 import Link from 'next/link'
+import { TopicActions } from './topic-actions'
 
-export default function TopicDetailPage({ params }: { params: { id: string } }) {
-  const topic = {
-    id: params.id,
-    title: 'Système de gestion de bibliothèque',
-    description: 'Développement d\'une application web pour la gestion d\'une bibliothèque avec authentification, recherche de livres, et système de prêt.',
-    requirements: 'Connaissances en développement web (React, Node.js), bases de données (PostgreSQL), et authentification.',
-    department: 'Informatique',
-    professor: 'Prof. Ahmed Benali',
-    status: 'pending',
-    createdAt: '2024-02-10',
+async function getTopic(id: string) {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/topics/${id}`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data.topic
+  } catch (error) {
+    return null
+  }
+}
+
+export default async function TopicDetailPage({ params }: { params: { id: string } }) {
+  const topic = await getTopic(params.id)
+  
+  if (!topic) {
+    return (
+      <div className="space-y-8">
+        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
+          <p className="text-gray-400 text-lg">Sujet non trouvé</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -29,8 +44,14 @@ export default function TopicDetailPage({ params }: { params: { id: string } }) 
           <p className="text-gray-400 text-lg">Détails du sujet de PFE</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="px-4 py-2 rounded-xl text-sm font-semibold border bg-yellow-500/20 text-yellow-200 border-yellow-500/50">
-            En attente
+          <span className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
+            topic.status === 'approved'
+              ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50'
+              : topic.status === 'pending'
+              ? 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50'
+              : 'bg-red-500/20 text-red-200 border-red-500/50'
+          }`}>
+            {topic.status === 'approved' ? 'Approuvé' : topic.status === 'pending' ? 'En attente' : 'Rejeté'}
           </span>
         </div>
       </div>
@@ -54,15 +75,15 @@ export default function TopicDetailPage({ params }: { params: { id: string } }) 
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Enseignant</p>
-                <p className="text-white font-medium">{topic.professor}</p>
+                <p className="text-white font-medium">{topic.professor?.full_name || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Département</p>
-                <p className="text-white font-medium">{topic.department}</p>
+                <p className="text-white font-medium">{topic.department || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Créé le</p>
-                <p className="text-white font-medium">{new Date(topic.createdAt).toLocaleDateString('fr-FR')}</p>
+                <p className="text-white font-medium">{new Date(topic.created_at).toLocaleDateString('fr-FR')}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Statut</p>
@@ -73,14 +94,7 @@ export default function TopicDetailPage({ params }: { params: { id: string } }) 
 
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
             <h3 className="text-lg font-bold text-white mb-4">Actions</h3>
-            <div className="space-y-3">
-              <button className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold text-sm">
-                Approuver le sujet
-              </button>
-              <button className="w-full px-4 py-3 bg-gradient-to-r from-red-600/20 to-red-700/20 border border-red-500/50 text-red-200 rounded-lg hover:from-red-600/30 hover:to-red-700/30 transition-all duration-200 font-semibold text-sm">
-                Rejeter le sujet
-              </button>
-            </div>
+            <TopicActions topicId={topic.id} />
           </div>
         </div>
       </div>

@@ -1,32 +1,21 @@
 import Link from 'next/link'
 
-export default function ProfessorsPage() {
-  const professors = [
-    {
-      id: '1',
-      name: 'Prof. Ahmed Benali',
-      email: 'ahmed.benali@isaeg.ma',
-      department: 'Informatique',
-      topicsCount: 5,
-      studentsCount: 8,
-    },
-    {
-      id: '2',
-      name: 'Prof. Fatima Zahra',
-      email: 'fatima.zahra@isaeg.ma',
-      department: 'Informatique',
-      topicsCount: 3,
-      studentsCount: 6,
-    },
-    {
-      id: '3',
-      name: 'Prof. Mohamed Amine',
-      email: 'mohamed.amine@isaeg.ma',
-      department: 'Gestion',
-      topicsCount: 4,
-      studentsCount: 5,
-    },
-  ]
+async function getProfessors() {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/admin/professors`, {
+      cache: 'no-store',
+    })
+    if (!res.ok) return []
+    const data = await res.json()
+    return data.professors || []
+  } catch (error) {
+    return []
+  }
+}
+
+export default async function ProfessorsPage() {
+  const professors = await getProfessors()
+ 
 
   return (
     <div className="space-y-8">
@@ -40,7 +29,7 @@ export default function ProfessorsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {professors.map((professor) => (
+        {professors.map((professor: any) => (
           <div
             key={professor.id}
             className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
@@ -48,7 +37,7 @@ export default function ProfessorsPage() {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
               <div className="flex items-start gap-4 flex-1">
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
-                  {professor.name.split(' ').slice(1).map(n => n[0]).join('')}
+                  {professor.name.split(' ').slice(1).map((n: string) => n[0]).join('')}
                 </div>
                 <div className="flex-1">
                   <h3 className="text-xl font-bold text-white mb-1">{professor.name}</h3>
