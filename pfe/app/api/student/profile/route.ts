@@ -1,19 +1,19 @@
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const auth = await requireAuth('student')
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
-
+    const userId = auth.user!.id
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('*')
-      .eq('id', user.id)
+      .select('*') 
+      .eq('id', userId)
       .single()
 
     if (error) {
@@ -32,11 +32,11 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    const auth = await requireAuth('student')
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
+    const userId = auth.user!.id
 
     const body = await request.json()
     const { full_name, phone, department, year } = body
@@ -50,7 +50,7 @@ export async function PUT(request: Request) {
         year,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', user.id)
+      .eq('id', userId)
       .select()
       .single()
 

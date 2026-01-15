@@ -1,13 +1,19 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { requireAuth } from '@/lib/auth'
 import { SignOutButton } from './signout-button'
 import { MobileMenu } from './mobile-menu'
 import { Sidebar } from './sidebar'
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  const auth = await requireAuth('admin')
+  if (auth.error) {
+    redirect('/auth/signin')
+  }
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <nav className="bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-50 shadow-lg shadow-black/20">

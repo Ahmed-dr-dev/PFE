@@ -9,18 +9,22 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState({
     full_name: '',
     phone: '',
+    department: '',
+    year: '',
   })
 
   useEffect(() => {
     async function fetchProfile() {
       try {
-        const res = await fetch('/api/admin/profile')
+        const res = await fetch('/api/student/profile')
         if (res.ok) {
           const data = await res.json()
           setProfile(data.profile)
           setFormData({
             full_name: data.profile?.full_name || '',
             phone: data.profile?.phone || '',
+            department: data.profile?.department || '',
+            year: data.profile?.year || '',
           })
         }
       } catch (error) {
@@ -36,7 +40,7 @@ export default function ProfilePage() {
     e.preventDefault()
     setSaving(true)
     try {
-      const res = await fetch('/api/admin/profile', {
+      const res = await fetch('/api/student/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -66,6 +70,9 @@ export default function ProfilePage() {
       </div>
     )
   }
+
+  const departments = ['informatique', 'gestion', 'finance', 'marketing', 'rh', 'comptabilite']
+  const years = ['1', '2', '3', '4', '5']
 
   return (
     <div className="space-y-8">
@@ -120,6 +127,42 @@ export default function ProfilePage() {
                   className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
                   placeholder="Votre numéro de téléphone"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">
+                  Département
+                </label>
+                <select
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                >
+                  <option value="">Sélectionner un département</option>
+                  {departments.map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept.charAt(0).toUpperCase() + dept.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">
+                  Année d'étude
+                </label>
+                <select
+                  value={formData.year}
+                  onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                >
+                  <option value="">Sélectionner une année</option>
+                  {years.map((year) => (
+                    <option key={year} value={year}>
+                      {year}ère année
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

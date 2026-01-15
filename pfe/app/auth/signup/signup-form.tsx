@@ -72,8 +72,6 @@ export function SignUpForm() {
           router.push('/dashboard/student')
         } else if (role === 'professor') {
           router.push('/dashboard/professor')
-        } else if (role === 'admin') {
-          router.push('/dashboard/admin')
         } else {
           router.push('/dashboard')
         }
@@ -154,7 +152,6 @@ export function SignUpForm() {
           <option value="" className="bg-slate-900">Sélectionnez votre rôle</option>
           <option value="student" className="bg-slate-900">Étudiant</option>
           <option value="professor" className="bg-slate-900">Enseignant</option>
-          <option value="admin" className="bg-slate-900">Administration</option>
         </select>
       </div>
 
@@ -230,7 +227,7 @@ export function SignUpForm() {
         </>
       )}
 
-      {(selectedRole === 'professor' || selectedRole === 'admin') && (
+      {selectedRole === 'professor' && (
         <div>
           <label htmlFor="department" className="block text-sm font-medium text-gray-200 mb-1">
             Département

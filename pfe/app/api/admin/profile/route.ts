@@ -42,14 +42,13 @@ export async function PUT(request: Request) {
     const supabase = await createClient()
 
     const body = await request.json()
-    const { full_name, phone, department } = body
+    const { full_name, phone } = body
 
     const { data: profile, error } = await supabase
       .from('profiles')
       .update({
         full_name,
         phone,
-        department,
         updated_at: new Date().toISOString(),
       })
       .eq('id', userId)

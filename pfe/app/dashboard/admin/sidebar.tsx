@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -62,6 +63,32 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const [profile, setProfile] = useState<any>(null)
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await fetch('/api/admin/profile')
+        if (res.ok) {
+          const data = await res.json()
+          setProfile(data.profile)
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error)
+      }
+    }
+    fetchProfile()
+  }, [])
+
+  const getInitials = (name: string) => {
+    if (!name) return 'AD'
+    return name
+      .split(' ')
+      .map(n => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 lg:pt-16">
@@ -91,11 +118,11 @@ export function Sidebar() {
         <div className="px-4 py-6 border-t border-slate-700/50">
           <div className="flex items-center gap-3 px-4 py-3 bg-slate-800/50 rounded-xl border border-slate-700/50">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
-              AD
+              {getInitials(profile?.full_name || '')}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white truncate">Administration</p>
-              <p className="text-xs text-gray-400 truncate">Département</p>
+              <p className="text-sm font-semibold text-white truncate">{profile?.full_name || 'Administration'}</p>
+              <p className="text-xs text-gray-400 truncate">{profile?.department || 'Admin'}</p>
             </div>
           </div>
         </div>
