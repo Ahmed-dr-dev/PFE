@@ -7,9 +7,15 @@ export function CredentialsModal() {
         </svg>
         <div>
           <h3 className="text-sm font-semibold text-amber-200 mb-1">Identifiants de connexion</h3>
-          <p className="text-gray-300 text-xs leading-relaxed">
-            Les comptes <strong className="text-white">étudiant</strong> et <strong className="text-white">enseignant</strong> sont créés par l&apos;administration.
-            Rapprochez-vous de l&apos;administration ISAEG pour obtenir vos identifiants (email et mot de passe) avant de vous connecter.
+          <p className="text-gray-300 text-xs leading-relaxed mb-2">
+            Pour les <strong className="text-white">étudiants</strong> et <strong className="text-white">enseignants</strong> :
+          </p>
+          <ul className="text-gray-300 text-xs leading-relaxed space-y-1">
+            <li><strong className="text-white">Identifiant (email)</strong> : votre numéro de carte d&apos;identité</li>
+            <li><strong className="text-white">Mot de passe</strong> : votre date de naissance (JJ/MM/AAAA)</li>
+          </ul>
+          <p className="text-gray-300 text-xs leading-relaxed mt-2">
+            En cas de problème, rapprochez-vous de l&apos;administration ISAEG.
           </p>
         </div>
       </div>
