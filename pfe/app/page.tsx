@@ -51,10 +51,10 @@ export default async function Home() {
                     Commencer maintenant
                   </Link>
                   <Link
-                    href="/auth/signup"
+                    href="/auth/signin"
                     className="px-6 py-3 bg-slate-800/50 border-2 border-slate-700/50 text-white rounded-lg hover:border-slate-600/50 transition-all font-semibold"
                   >
-                    Créer un compte
+                    Se connecter
                   </Link>
                 </div>
               </div>
@@ -148,10 +148,10 @@ export default async function Home() {
                 Se connecter
               </Link>
               <Link
-                href="/auth/signup"
+                href="/auth/signin"
                 className="px-8 py-3 bg-slate-800/50 border-2 border-slate-700/50 text-white rounded-lg hover:border-slate-600/50 transition-all font-semibold"
               >
-                Créer un compte
+                Obtenir des identifiants
               </Link>
             </div>
           </div>

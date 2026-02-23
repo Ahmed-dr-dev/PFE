@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { SignInForm } from './signin-form'
+import { CredentialsModal } from './credentials-modal'
 
 export default function SignInPage() {
   return (
@@ -12,13 +13,8 @@ export default function SignInPage() {
 
         <SignInForm />
 
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-300">
-            Pas de compte?{' '}
-            <Link href="/auth/signup" className="text-emerald-400 hover:text-emerald-300 font-medium">
-              S'inscrire
-            </Link>
-          </p>
+        <div className="mt-6 text-center space-y-3">
+          <CredentialsModal />
           <Link href="/" className="block text-sm text-gray-400 hover:text-gray-300 mt-4">
             ← Retour
           </Link>
