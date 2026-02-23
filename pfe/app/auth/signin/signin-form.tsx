@@ -64,15 +64,16 @@ export function SignInForm() {
 
       <div>
         <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-1">
-          Email
+          CIN / Email
         </label>
         <input
           id="email"
           name="email"
-          type="email"
+          type="text"
           required
+          autoComplete="username"
           className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-white placeholder:text-gray-400 backdrop-blur-sm"
-          placeholder="votre.email@isaeg.ma"
+          placeholder="CIN, email ou identifiant"
         />
       </div>
 

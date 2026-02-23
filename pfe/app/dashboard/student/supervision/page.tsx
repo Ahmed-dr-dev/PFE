@@ -28,6 +28,7 @@ export default function SupervisionPage() {
   const meetings = data.meetings || []
   const documents = data.documents || []
   const pfeStatus = data.pfeStatus
+  const defense = data.defense
   
   if (loading) {
     return (
@@ -155,7 +156,24 @@ export default function SupervisionPage() {
         </div>
 
         <div className="space-y-6">
-        
+          {defense && (
+            <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-emerald-500/30 p-6 shadow-xl">
+              <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/30">
+                  <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                Ma soutenance
+              </h2>
+              <div className="space-y-2 text-gray-300">
+                <p><span className="text-gray-400">Date :</span> {new Date(defense.scheduled_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                {defense.scheduled_time && <p><span className="text-gray-400">Heure :</span> {String(defense.scheduled_time).slice(0, 5)}</p>}
+                {defense.room && <p><span className="text-gray-400">Salle :</span> {defense.room}</p>}
+                {defense.jury_members?.length > 0 && <p><span className="text-gray-400">Jury :</span> {defense.jury_members.join(', ')}</p>}
+              </div>
+            </div>
+          )}
 
           <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
             <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">

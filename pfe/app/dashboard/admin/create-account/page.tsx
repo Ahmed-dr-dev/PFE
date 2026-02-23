@@ -58,7 +58,7 @@ export default function CreateAccountPage() {
         return
       }
 
-      setSuccess(`Compte créé : ${data.user?.full_name} (${data.user?.email}). Vous pouvez communiquer ces identifiants à l'utilisateur.`)
+      setSuccess(`Compte créé : ${data.user?.full_name}. Identifiants : CIN = ${data.user?.email}, mot de passe = date de naissance.`)
       ;(e.target as HTMLFormElement).reset()
       setSelectedRole('')
     } catch {
@@ -119,13 +119,13 @@ export default function CreateAccountPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-2">Email</label>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">CIN (identifiant de connexion)</label>
                 <input
                   name="email"
-                  type="email"
+                  type="text"
                   required
                   className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50"
-                  placeholder="email@isaeg.ma"
+                  placeholder="Numéro de carte d'identité"
                 />
               </div>
 
@@ -228,14 +228,14 @@ export default function CreateAccountPage() {
               )}
 
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-2">Mot de passe (à communiquer à l&apos;utilisateur)</label>
+                <label className="block text-sm font-semibold text-gray-400 mb-2">Date de naissance (mot de passe)</label>
                 <input
                   name="password"
                   type="text"
                   required
                   minLength={6}
                   className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50"
-                  placeholder="Min. 6 caractères"
+                  placeholder="JJ/MM/AAAA ou JJMMAAAA (ex: 01/02/2000)"
                 />
               </div>
             </div>

@@ -18,7 +18,7 @@ export async function GET() {
       .maybeSingle()
 
     if (!pfe || !pfe.supervisor_id) {
-      return NextResponse.json({ supervisor: null, pfeStatus: null, meetings: [], documents: [] })
+      return NextResponse.json({ supervisor: null, pfeStatus: null, meetings: [], documents: [], defense: null })
     }
 
     // Get supervisor details
@@ -60,11 +60,20 @@ export async function GET() {
       .eq('pfe_project_id', pfe.id)
       .order('uploaded_at', { ascending: false })
 
+    // Get defense (soutenance) - read-only for student, scheduled by admin
+    const { data: defense } = await supabase
+      .from('defenses')
+      .select('id, scheduled_date, scheduled_time, room, jury_members, status')
+      .eq('pfe_project_id', pfe.id)
+      .in('status', ['scheduled', 'postponed'])
+      .maybeSingle()
+
     return NextResponse.json({
       supervisor,
       meetings: meetings || [],
       documents: documents || [],
       pfeStatus: pfe.status,
+      defense: defense || null,
     })
   } catch (error) {
     return NextResponse.json(

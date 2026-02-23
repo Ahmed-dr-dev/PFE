@@ -14,38 +14,48 @@ async function hashPassword(password: string): Promise<string> {
 export async function POST(request: Request) {
   try {
     const { email, password } = await request.json()
+    const identifier = typeof email === 'string' ? email.trim() : ''
 
-    if (!email || !password) {
+    if (!identifier || !password) {
       return NextResponse.json(
-        { error: 'Email and password are required' },
+        { error: 'Identifiant et mot de passe requis' },
         { status: 400 }
       )
     }
 
     const supabase = await createClient()
 
-    // Get user from profiles table
-    const { data: profile, error: profileError } = await supabase
+    // Look up by email (or CIN stored in email) - try exact and ilike for case-insensitivity
+    let { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('*')
-      .eq('email', email)
-      .single()
+      .eq('email', identifier)
+      .maybeSingle()
 
+    if (!profile && !profileError) {
+      const { data: profileByIlike } = await supabase
+        .from('profiles')
+        .select('*')
+        .ilike('email', identifier)
+        .maybeSingle()
+      profile = profileByIlike
+    }
 
     if (profileError || !profile) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Identifiant ou mot de passe incorrect' },
         { status: 401 }
       )
     }
 
-
-    // Hash provided password and compare
     const hashedPassword = await hashPassword(password)
+    const hashedPasswordDigits = await hashPassword(password.replace(/\D/g, ''))
 
-    if (profile.password !== hashedPassword) {
+    const passwordMatch = profile.password === hashedPassword || profile.password === hashedPasswordDigits
+
+    if (!passwordMatch) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: 'Identifiant ou mot de passe incorrect' },
         { status: 401 }
       )
     }
