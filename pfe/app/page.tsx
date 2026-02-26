@@ -15,7 +15,10 @@ export default async function Home() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <nav className="bg-slate-900/80 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">ISAEG PFE</h1>
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/isaeg.jpg" alt="ISAEG" width={120} height={48} className="h-10 w-auto object-contain" />
+            <span className="text-xl font-bold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">ISAEG PFE</span>
+          </Link>
           <Link
             href="/auth/signin"
             className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all font-medium text-sm"

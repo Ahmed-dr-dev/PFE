@@ -89,7 +89,7 @@ export async function POST(request: Request) {
         requirements: requirements || null,
         department: department || null,
         professor_id: userId,
-        status: 'pending', // Needs admin approval
+        status: 'approved', // Professor's own topics are auto-approved
       })
       .select()
       .single()

@@ -1,28 +1,49 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { CreateUserModal } from '../components/CreateUserModal'
+import { EditUserModal } from '../components/EditUserModal'
 
 export default function ProfessorsPage() {
   const [professors, setProfessors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [departmentFilter, setDepartmentFilter] = useState<string>('all')
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [editUser, setEditUser] = useState<any | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  async function fetchProfessors() {
+    try {
+      const res = await fetch('/api/admin/professors')
+      if (res.ok) {
+        const data = await res.json()
+        setProfessors(data.professors || [])
+      }
+    } catch (error) {
+      console.error('Error fetching professors:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchProfessors() {
-      try {
-        const res = await fetch('/api/admin/professors')
-        if (res.ok) {
-          const data = await res.json()
-          setProfessors(data.professors || [])
-        }
-      } catch (error) {
-        console.error('Error fetching professors:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchProfessors()
   }, [])
+
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Supprimer le compte de ${name} ? Cette action est irréversible.`)) return
+    setDeletingId(id)
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+      await fetchProfessors()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Impossible de supprimer')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -54,7 +75,16 @@ export default function ProfessorsPage() {
           </h1>
           <p className="text-gray-400 text-lg">Gérez la liste des enseignants et leurs informations</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setCreateModalOpen(true)}
+          className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 font-semibold text-sm transition-all shrink-0"
+        >
+          Créer un compte
+        </button>
       </div>
+      <CreateUserModal role="professor" open={createModalOpen} onClose={() => setCreateModalOpen(false)} onSuccess={fetchProfessors} />
+      <EditUserModal role="professor" user={editUser} open={!!editUser} onClose={() => setEditUser(null)} onSuccess={fetchProfessors} />
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -76,55 +106,42 @@ export default function ProfessorsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {filteredProfessors && filteredProfessors.length > 0 ? filteredProfessors.map((professor: any) => (
-          <div
-            key={professor.id}
-            className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="flex items-start gap-4 flex-1">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
-                  {(professor.full_name || professor.name || 'N/A').split(' ').slice(1).map((n: string) => n[0]).join('')}
+      <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 overflow-hidden">
+        {filteredProfessors && filteredProfessors.length > 0 ? (
+          <div className="divide-y divide-slate-700/50">
+            {filteredProfessors.map((professor: any) => (
+              <div
+                key={professor.id}
+                className="flex flex-wrap items-center gap-3 px-4 py-2.5 hover:bg-slate-700/30 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center text-white font-semibold text-xs shrink-0">
+                  {(professor.full_name || professor.name || 'N/A').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold text-white mb-1">{professor.full_name || professor.name || 'N/A'}</h3>
-                  <p className="text-gray-400 text-sm mb-3">{professor.email}</p>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      <span>{professor.department}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <span>{professor.topicsCount} sujets</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                      <span>{professor.studentsCount} étudiants</span>
-                    </div>
-                  </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-semibold text-white text-sm truncate">{professor.full_name || professor.name || 'N/A'}</p>
+                  <p className="text-gray-400 text-xs truncate">{professor.email}</p>
+                </div>
+                <div className="text-gray-400 text-xs shrink-0">
+                  {professor.department && <span>{professor.department}</span>}
+                  <span className="text-slate-500"> · {professor.topicsCount} sujets · {professor.studentsCount} étudiants</span>
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Link href={`/dashboard/admin/professors/${professor.id}`} className="px-2.5 py-1.5 bg-slate-700/50 text-white rounded text-xs font-medium hover:bg-slate-600">
+                    Profil
+                  </Link>
+                  <button type="button" onClick={() => setEditUser(professor)} className="px-2.5 py-1.5 bg-amber-600/20 border border-amber-500/50 text-amber-200 rounded text-xs font-medium hover:bg-amber-600/30">
+                    Modifier
+                  </button>
+                  <button type="button" onClick={() => handleDelete(professor.id, professor.full_name || professor.name || '')} disabled={deletingId === professor.id} className="px-2.5 py-1.5 bg-red-600/20 border border-red-500/50 text-red-200 rounded text-xs font-medium hover:bg-red-600/30 disabled:opacity-50">
+                    {deletingId === professor.id ? '…' : 'Supprimer'}
+                  </button>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Link
-                  href={`/dashboard/admin/professors/${professor.id}`}
-                  className="px-4 py-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm"
-                >
-                  Voir profil
-                </Link>
-              </div>
-            </div>
+            ))}
           </div>
-        )) : (
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
-            <p className="text-gray-400 text-lg">Aucun enseignant trouvé</p>
+        ) : (
+          <div className="py-12 text-center">
+            <p className="text-gray-400 text-sm">Aucun enseignant trouvé</p>
           </div>
         )}
       </div>

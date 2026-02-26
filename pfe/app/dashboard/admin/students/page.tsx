@@ -1,29 +1,50 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { CreateUserModal } from '../components/CreateUserModal'
+import { EditUserModal } from '../components/EditUserModal'
 
 export default function StudentsPage() {
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [departmentFilter, setDepartmentFilter] = useState<string>('all')
+  const [createModalOpen, setCreateModalOpen] = useState(false)
+  const [editUser, setEditUser] = useState<any | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  async function fetchStudents() {
+    try {
+      const res = await fetch('/api/admin/students')
+      if (res.ok) {
+        const data = await res.json()
+        setStudents(data.students || [])
+      }
+    } catch (error) {
+      console.error('Error fetching students:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    async function fetchStudents() {
-      try {
-        const res = await fetch('/api/admin/students')
-        if (res.ok) {
-          const data = await res.json()
-          setStudents(data.students || [])
-        }
-      } catch (error) {
-        console.error('Error fetching students:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
     fetchStudents()
   }, [])
+
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Supprimer le compte de ${name} ? Cette action est irréversible.`)) return
+    setDeletingId(id)
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Erreur')
+      await fetchStudents()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Impossible de supprimer')
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   if (loading) {
     return (
@@ -70,7 +91,16 @@ export default function StudentsPage() {
           </h1>
           <p className="text-gray-400 text-lg">Gérez la liste des étudiants et leurs informations</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setCreateModalOpen(true)}
+          className="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 font-semibold text-sm transition-all shrink-0"
+        >
+          Créer un compte
+        </button>
       </div>
+      <CreateUserModal role="student" open={createModalOpen} onClose={() => setCreateModalOpen(false)} onSuccess={fetchStudents} />
+      <EditUserModal role="student" user={editUser} open={!!editUser} onClose={() => setEditUser(null)} onSuccess={fetchStudents} />
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -108,76 +138,58 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
-        {filteredStudents && filteredStudents.length > 0 ? filteredStudents.map((student: any) => (
-          <div
-            key={student.id}
-            className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
-          >
-            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div className="flex items-start gap-4 flex-1">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
-                  {(student.full_name || student.name || 'N/A').split(' ').map((n: string) => n[0]).join('')}
+      <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 overflow-hidden">
+        {filteredStudents && filteredStudents.length > 0 ? (
+          <div className="divide-y divide-slate-700/50">
+            {filteredStudents.map((student: any) => (
+              <div
+                key={student.id}
+                className="flex flex-wrap items-center gap-3 px-4 py-2.5 hover:bg-slate-700/30 transition-colors"
+              >
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-xs shrink-0">
+                  {(student.full_name || student.name || 'N/A').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-xl font-bold text-white">{student.full_name || student.name || 'N/A'}</h3>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-white text-sm truncate">{student.full_name || student.name || 'N/A'}</span>
                     {student.pfeStatus && (
-                      <span
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm ${
-                          statusColors[student.pfeStatus] || statusColors.pending
-                        }`}
-                      >
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${statusColors[student.pfeStatus] || statusColors.pending}`}>
                         {statusLabels[student.pfeStatus] || 'En attente'}
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-400 text-sm mb-2">{student.email}</p>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      <span>{student.department}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{student.year}</span>
-                    </div>
-                    {student.supervisor && (
-                      <div className="flex items-center gap-2">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                        </svg>
-                        <span>{student.supervisor.full_name || student.supervisor || 'N/A'}</span>
-                      </div>
-                    )}
-                  </div>
+                  <p className="text-gray-400 text-xs truncate">{student.email}</p>
+                </div>
+                <div className="text-gray-400 text-xs shrink-0">
+                  {student.department && <span>{student.department}</span>}
+                  {student.department && student.year && ' · '}
+                  {student.year && <span>{student.year}</span>}
+                  {student.supervisor && (
+                    <span className="hidden sm:inline"> · {typeof student.supervisor === 'object' ? student.supervisor?.full_name : student.supervisor}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <Link href={`/dashboard/admin/students/${student.id}`} className="px-2.5 py-1.5 bg-slate-700/50 text-white rounded text-xs font-medium hover:bg-slate-600">
+                    Profil
+                  </Link>
+                  <button type="button" onClick={() => setEditUser(student)} className="px-2.5 py-1.5 bg-amber-600/20 border border-amber-500/50 text-amber-200 rounded text-xs font-medium hover:bg-amber-600/30">
+                    Modifier
+                  </button>
+                  <button type="button" onClick={() => handleDelete(student.id, student.full_name || student.name || '')} disabled={deletingId === student.id} className="px-2.5 py-1.5 bg-red-600/20 border border-red-500/50 text-red-200 rounded text-xs font-medium hover:bg-red-600/30 disabled:opacity-50">
+                    {deletingId === student.id ? '…' : 'Supprimer'}
+                  </button>
+                  {!student.hasPfe && (
+                    <Link href={`/dashboard/admin/assignments?student=${student.id}`} className="px-2.5 py-1.5 bg-emerald-600/20 border border-emerald-500/50 text-emerald-200 rounded text-xs font-medium hover:bg-emerald-600/30">
+                      Affecter
+                    </Link>
+                  )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Link
-                  href={`/dashboard/admin/students/${student.id}`}
-                  className="px-4 py-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm"
-                >
-                  Voir profil
-                </Link>
-                {!student.hasPfe && (
-                  <Link
-                    href={`/dashboard/admin/assignments?student=${student.id}`}
-                    className="px-4 py-2 bg-gradient-to-r from-emerald-600/20 to-cyan-600/20 border border-emerald-500/50 text-emerald-200 rounded-lg hover:from-emerald-600/30 hover:to-cyan-600/30 transition-all duration-200 font-semibold text-sm"
-                  >
-                    Affecter
-                  </Link>
-                )}
-              </div>
-            </div>
+            ))}
           </div>
-        )) : (
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
-            <p className="text-gray-400 text-lg">Aucun étudiant trouvé</p>
+        ) : (
+          <div className="py-12 text-center">
+            <p className="text-gray-400 text-sm">Aucun étudiant trouvé</p>
           </div>
         )}
       </div>

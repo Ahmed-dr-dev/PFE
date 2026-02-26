@@ -102,16 +102,16 @@ export async function PUT(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+    if (title !== undefined) updates.title = title
+    if (description !== undefined) updates.description = description
+    if (requirements !== undefined) updates.requirements = requirements
+    if (department !== undefined) updates.department = department
+    if (status !== undefined) updates.status = status
+
     const { data: topic, error } = await supabase
       .from('pfe_topics')
-      .update({
-        title,
-        description,
-        requirements,
-        department,
-        status,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', id)
       .select()
       .single()

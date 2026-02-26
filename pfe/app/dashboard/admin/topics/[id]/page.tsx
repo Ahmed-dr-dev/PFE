@@ -2,7 +2,6 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { TopicActions } from './topic-actions'
 
 export default function TopicDetailPage() {
   const params = useParams()
@@ -107,14 +106,9 @@ export default function TopicDetailPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Statut</p>
-                <p className="text-white font-medium">En attente de validation</p>
+                <p className="text-white font-medium">{topic.status === 'approved' ? 'Approuvé' : topic.status === 'pending' ? 'En attente (validation par l\'enseignant)' : 'Rejeté'}</p>
               </div>
             </div>
-          </div>
-
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
-            <h3 className="text-lg font-bold text-white mb-4">Actions</h3>
-            <TopicActions topicId={topic.id} />
           </div>
         </div>
       </div>

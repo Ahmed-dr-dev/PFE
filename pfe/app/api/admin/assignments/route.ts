@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    const { studentId, topicId, supervisorId } = await request.json()
+    const { studentId, topicId, supervisorId, status: requestedStatus } = await request.json()
 
     if (!studentId || !supervisorId) {
       return NextResponse.json(
@@ -109,15 +109,20 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create PFE project with pending status (admin will approve/reject)
+    const status = requestedStatus === 'approved' ? 'approved' : 'pending'
+    const insertPayload: Record<string, unknown> = {
+      student_id: studentId,
+      topic_id: topicId || null,
+      supervisor_id: supervisorId,
+      status,
+    }
+    if (status === 'approved') {
+      insertPayload.start_date = new Date().toISOString().split('T')[0]
+    }
+
     const { data: pfeProject, error: pfeError } = await supabase
       .from('pfe_projects')
-      .insert({
-        student_id: studentId,
-        topic_id: topicId || null,
-        supervisor_id: supervisorId,
-        status: 'pending', // Admin will approve or reject
-      })
+      .insert(insertPayload)
       .select()
       .single()
 

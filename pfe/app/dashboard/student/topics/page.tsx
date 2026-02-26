@@ -43,9 +43,17 @@ export default function TopicsPage() {
             Sujets de PFE <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">disponibles</span>
           </h1>
           <p className="text-gray-400 text-lg">
-            Consultez les sujets proposés par votre encadrant
+            Consultez les sujets proposés par votre encadrant ou proposez-en un
           </p>
         </div>
+        {hasSupervisor && (
+          <Link
+            href="/dashboard/student/topics/propose"
+            className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 text-sm shrink-0"
+          >
+            Proposer un sujet
+          </Link>
+        )}
       </div>
 
       {!hasSupervisor && (

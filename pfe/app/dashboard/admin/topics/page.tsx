@@ -1,7 +1,6 @@
 'use client'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { TopicActions } from './topic-actions'
 
 export default function TopicsPage() {
   const [topics, setTopics] = useState<any[]>([])
@@ -68,9 +67,9 @@ export default function TopicsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
-            Sujets à <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">valider</span>
+            <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Sujets</span> PFE
           </h1>
-          <p className="text-gray-400 text-lg">Validez les sujets de PFE proposés par les enseignants</p>
+          <p className="text-gray-400 text-lg">Consulter tous les sujets de PFE (validation par les enseignants)</p>
         </div>
       </div>
 
@@ -176,10 +175,9 @@ export default function TopicsPage() {
                 </div>
 
                 <div className="flex items-center gap-3 pt-4 border-t border-slate-700/50">
-                  <TopicActions topicId={topic.id} />
                   <Link
                     href={`/dashboard/admin/topics/${topic.id}`}
-                    className="ml-auto px-4 py-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm"
+                    className="px-4 py-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm"
                   >
                     Voir détails
                   </Link>

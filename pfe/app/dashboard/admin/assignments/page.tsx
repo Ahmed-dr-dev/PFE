@@ -4,31 +4,95 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
+async function fetchAssignments() {
+  const res = await fetch('/api/admin/assignments')
+  if (!res.ok) return []
+  const data = await res.json()
+  return data.assignments || []
+}
+
 export default function AssignmentsPage() {
   const router = useRouter()
   const [assignments, setAssignments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [departmentFilter, setDepartmentFilter] = useState<string>('all')
+  const [forceModalOpen, setForceModalOpen] = useState(false)
+  const [students, setStudents] = useState<any[]>([])
+  const [professors, setProfessors] = useState<any[]>([])
+  const [topics, setTopics] = useState<any[]>([])
+  const [forceForm, setForceForm] = useState({ studentId: '', supervisorId: '', topicId: '', enforce: true })
+  const [forceSubmitting, setForceSubmitting] = useState(false)
+  const [forceError, setForceError] = useState('')
 
   useEffect(() => {
-    async function fetchAssignments() {
+    async function load() {
       try {
-        const res = await fetch('/api/admin/assignments')
-        if (res.ok) {
-          const data = await res.json()
-          setAssignments(data.assignments || [])
-        }
-      } catch (error) {
-        console.error('Error fetching assignments:', error)
+        const list = await fetchAssignments()
+        setAssignments(list)
+      } catch (e) {
+        console.error(e)
       } finally {
         setLoading(false)
       }
     }
-    fetchAssignments()
+    load()
   }, [])
-   
- 
+
+  async function openForceModal() {
+    setForceModalOpen(true)
+    setForceError('')
+    setForceForm({ studentId: '', supervisorId: '', topicId: '', enforce: true })
+    try {
+      const [studentsRes, professorsRes, topicsRes] = await Promise.all([
+        fetch('/api/admin/students'),
+        fetch('/api/admin/professors'),
+        fetch('/api/admin/topics'),
+      ])
+      const studentsData = studentsRes.ok ? (await studentsRes.json()).students || [] : []
+      const professorsData = professorsRes.ok ? (await professorsRes.json()).professors || [] : []
+      const topicsData = topicsRes.ok ? (await topicsRes.json()).topics || [] : []
+      setStudents(studentsData.filter((s: any) => !s.hasPfe))
+      setProfessors(professorsData)
+      setTopics((topicsData as any[]).filter((t: any) => t.status === 'approved'))
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async function submitForceAssignment(e: React.FormEvent) {
+    e.preventDefault()
+    if (!forceForm.studentId || !forceForm.supervisorId) {
+      setForceError('Sélectionnez un étudiant et un encadrant')
+      return
+    }
+    setForceSubmitting(true)
+    setForceError('')
+    try {
+      const res = await fetch('/api/admin/assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId: forceForm.studentId,
+          supervisorId: forceForm.supervisorId,
+          topicId: forceForm.topicId || null,
+          status: forceForm.enforce ? 'approved' : 'pending',
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setForceError(data.error || 'Erreur')
+        return
+      }
+      setAssignments(await fetchAssignments())
+      setForceModalOpen(false)
+      router.refresh()
+    } catch (e) {
+      setForceError('Erreur réseau')
+    } finally {
+      setForceSubmitting(false)
+    }
+  }
 
   const handleAssign = async (assignmentId: string) => {
     try {
@@ -38,8 +102,9 @@ export default function AssignmentsPage() {
         body: JSON.stringify({ status: 'approved' }),
       })
       if (res.ok) {
+        const list = await fetchAssignments()
+        setAssignments(list)
         router.refresh()
-        setAssignments(assignments.map(a => a.id === assignmentId ? { ...a, status: 'approved' } : a))
       }
     } catch (error) {
       console.error('Error updating assignment:', error)
@@ -81,7 +146,93 @@ export default function AssignmentsPage() {
           </h1>
           <p className="text-gray-400 text-lg">Affectez les encadrants aux étudiants</p>
         </div>
+        <button
+          type="button"
+          onClick={openForceModal}
+          className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-semibold text-sm transition-all shrink-0"
+        >
+          Forcer une affectation
+        </button>
       </div>
+
+      {forceModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setForceModalOpen(false)}>
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="p-6 border-b border-slate-700 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-white">Forcer une affectation</h2>
+              <button type="button" onClick={() => setForceModalOpen(false)} className="p-2 text-gray-400 hover:text-white rounded-lg">✕</button>
+            </div>
+            <form onSubmit={submitForceAssignment} className="p-6 space-y-4">
+              {forceError && <div className="p-3 bg-red-500/20 border border-red-500/50 text-red-200 rounded-lg text-sm">{forceError}</div>}
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-1">Étudiant *</label>
+                <select
+                  value={forceForm.studentId}
+                  onChange={e => setForceForm(f => ({ ...f, studentId: e.target.value }))}
+                  required
+                  className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
+                >
+                  <option value="">Sélectionner un étudiant</option>
+                  {students.map((s: any) => (
+                    <option key={s.id} value={s.id}>{s.full_name || s.name || s.email} {s.department ? `(${s.department})` : ''}</option>
+                  ))}
+                </select>
+                {students.length === 0 && <p className="text-gray-500 text-xs mt-1">Tous les étudiants ont déjà un PFE assigné.</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-1">Encadrant *</label>
+                <select
+                  value={forceForm.supervisorId}
+                  onChange={e => setForceForm(f => ({ ...f, supervisorId: e.target.value }))}
+                  required
+                  className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
+                >
+                  <option value="">Sélectionner un encadrant</option>
+                  {professors.map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.full_name || p.name || p.email}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-400 mb-1">Sujet (optionnel)</label>
+                <select
+                  value={forceForm.topicId}
+                  onChange={e => setForceForm(f => ({ ...f, topicId: e.target.value }))}
+                  className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500/50"
+                >
+                  <option value="">Aucun sujet</option>
+                  {topics
+                    .filter((t: any) => {
+                      const pid = Array.isArray(t.professor) ? t.professor[0]?.id : t.professor?.id
+                      return !forceForm.supervisorId || pid === forceForm.supervisorId
+                    })
+                    .map((t: any) => (
+                      <option key={t.id} value={t.id}>{t.title}</option>
+                    ))}
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="enforce"
+                  checked={forceForm.enforce}
+                  onChange={e => setForceForm(f => ({ ...f, enforce: e.target.checked }))}
+                  className="rounded border-slate-600 bg-slate-700 text-emerald-500 focus:ring-emerald-500"
+                />
+                <label htmlFor="enforce" className="text-sm text-gray-300">Approuver directement (forcer l&apos;affectation même si l&apos;encadrant n&apos;a pas validé)</label>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="submit" disabled={forceSubmitting || !forceForm.studentId || !forceForm.supervisorId} className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50">
+                  {forceSubmitting ? 'Création...' : 'Créer l\'affectation'}
+                </button>
+                <button type="button" onClick={() => setForceModalOpen(false)} className="px-4 py-2 bg-slate-700 text-white rounded-lg font-semibold hover:bg-slate-600">
+                  Annuler
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">

@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { ApplicationActions } from './application-actions'
+import { TopicStatusActions } from './topic-status-actions'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 
@@ -72,7 +73,7 @@ export default function TopicDetailPage() {
         </div>
         <div className="flex items-center gap-3">
           <span className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
-            topic.status === 'approved' 
+            topic.status === 'approved'
               ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50'
               : topic.status === 'pending'
               ? 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50'
@@ -80,6 +81,7 @@ export default function TopicDetailPage() {
           }`}>
             {topic.status === 'approved' ? 'Approuvé' : topic.status === 'pending' ? 'En attente' : 'Rejeté'}
           </span>
+          {topic.status === 'pending' && <TopicStatusActions topicId={topic.id} />}
         </div>
       </div>
 
