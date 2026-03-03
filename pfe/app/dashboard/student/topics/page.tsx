@@ -1,4 +1,5 @@
 'use client'
+import Link from 'next/link'
 import { TopicCard } from './topic-card'
 import { useEffect, useState } from 'react'
 
