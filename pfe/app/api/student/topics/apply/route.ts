@@ -53,13 +53,12 @@ export async function POST(request: Request) {
       )
     }
 
-    // Check if topic exists, is approved, and belongs to student's supervisor
+    // Check if topic exists and is approved (student can apply to any published topic; submission is to their encadrant)
     const { data: topic } = await supabase
       .from('pfe_topics')
-      .select('id, status, professor_id')
+      .select('id, status')
       .eq('id', topicId)
       .eq('status', 'approved')
-      .eq('professor_id', supervisorId)
       .maybeSingle()
 
     if (!topic) {

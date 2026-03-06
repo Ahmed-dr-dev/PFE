@@ -80,7 +80,7 @@ export default function InternshipRequestsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-gray-400">Chargement...</p>
+        <p className="text-gray-600">Chargement...</p>
       </div>
     )
   }
@@ -89,10 +89,10 @@ export default function InternshipRequestsPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Demandes de stage</span>
           </h1>
-          <p className="text-gray-400 text-lg">Gérer les demandes de stage des étudiants</p>
+          <p className="text-gray-600 text-lg">Gérer les demandes de stage des étudiants</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -103,16 +103,16 @@ export default function InternshipRequestsPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-white">Ajouter une demande</h3>
+        <form onSubmit={handleCreate} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">Ajouter une demande</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Étudiant</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Étudiant</label>
               <select
                 required
                 value={form.student_id}
                 onChange={(e) => setForm({ ...form, student_id: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               >
                 <option value="">Sélectionner</option>
                 {students.map((s) => (
@@ -121,32 +121,32 @@ export default function InternshipRequestsPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Entreprise</label>
-              <input required value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" placeholder="Nom de l'entreprise" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Entreprise</label>
+              <input required value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Nom de l'entreprise" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Poste</label>
-              <input required value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" placeholder="Intitulé du poste" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Poste</label>
+              <input required value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Intitulé du poste" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Description</label>
-              <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" placeholder="Description (optionnel)" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Description (optionnel)" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Date début</label>
-              <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date début</label>
+              <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Date fin</label>
-              <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date fin</label>
+              <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
             </div>
           </div>
-          <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold">Enregistrer</button>
+          <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700">Enregistrer</button>
         </form>
       )}
 
       <div>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white mb-4">
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
           <option value="all">Tous</option>
           <option value="pending">En attente</option>
           <option value="approved">Approuvées</option>
@@ -157,18 +157,18 @@ export default function InternshipRequestsPage() {
       <div className="space-y-4">
         {filtered.map((r) => {
           const s = r.student || {}
-          const statusColors = { pending: 'border-orange-500/50', approved: 'border-emerald-500/50', rejected: 'border-red-500/50' }
+          const statusColors = { pending: 'border-orange-500/50', approved: 'border-emerald-200', rejected: 'border-red-200' }
           return (
-            <div key={r.id} className={`bg-slate-800/50 rounded-2xl border ${statusColors[r.status] || 'border-slate-700/50'} p-6`}>
+            <div key={r.id} className={`bg-white rounded-2xl border shadow-sm ${statusColors[r.status] || 'border-gray-200'} p-6`}>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                  <p className="text-white font-semibold">{s.full_name || s.name || 'N/A'}</p>
-                  <p className="text-gray-400 text-sm">{s.email}</p>
+                  <p className="text-gray-900 font-semibold">{s.full_name || s.name || 'N/A'}</p>
+                  <p className="text-gray-600 text-sm">{s.email}</p>
                   <p className="text-gray-500 text-sm mt-1">{r.company} – {r.position}</p>
                   {r.start_date && <p className="text-gray-500 text-xs">{r.start_date} → {r.end_date || '—'}</p>}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${r.status === 'approved' ? 'bg-emerald-500/20 text-emerald-400' : r.status === 'rejected' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'}`}>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${r.status === 'approved' ? 'bg-emerald-50 text-emerald-700' : r.status === 'rejected' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700'}`}>
                     {r.status === 'pending' ? 'En attente' : r.status === 'approved' ? 'Approuvée' : 'Rejetée'}
                   </span>
                   {r.status === 'pending' && (
@@ -185,8 +185,8 @@ export default function InternshipRequestsPage() {
       </div>
 
       {filtered.length === 0 && (
-        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-12 text-center">
-          <p className="text-gray-400">Aucune demande de stage</p>
+        <div className="bg-white rounded-2xl border shadow-sm border-gray-200 p-12 text-center">
+          <p className="text-gray-600">Aucune demande de stage</p>
         </div>
       )}
     </div>

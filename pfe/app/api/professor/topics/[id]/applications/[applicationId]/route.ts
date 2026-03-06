@@ -22,18 +22,7 @@ export async function PUT(
       return NextResponse.json({ error: 'Statut invalide' }, { status: 400 })
     }
 
-    // Verify topic ownership
-    const { data: topic } = await supabase
-      .from('pfe_topics')
-      .select('id, professor_id')
-      .eq('id', id)
-      .single()
-
-    if (!topic || topic.professor_id !== userId) {
-      return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
-    }
-
-    // Get application data BEFORE updating (to check restrictions)
+    // Get application data
     const { data: applicationData } = await supabase
       .from('topic_applications')
       .select('student_id, topic_id, status')
@@ -43,6 +32,17 @@ export async function PUT(
 
     if (!applicationData) {
       return NextResponse.json({ error: 'Candidature non trouvée' }, { status: 404 })
+    }
+
+    // Only the student's encadrant (supervisor) can approve/reject the application
+    const { data: pfe } = await supabase
+      .from('pfe_projects')
+      .select('id, supervisor_id')
+      .eq('student_id', applicationData.student_id)
+      .maybeSingle()
+
+    if (!pfe || pfe.supervisor_id !== userId) {
+      return NextResponse.json({ error: 'Seul l\'encadrant de l\'étudiant peut approuver ou rejeter cette demande' }, { status: 403 })
     }
 
     // If approving, check restrictions BEFORE updating
@@ -110,39 +110,18 @@ export async function PUT(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // If approved, update PFE project to assign the topic
-    if (status === 'approved') {
-        // Update or create PFE project with topic assignment
-        const { data: existingPfe } = await supabase
-          .from('pfe_projects')
-          .select('id')
-          .eq('student_id', applicationData.student_id)
-          .maybeSingle()
-
-        if (existingPfe) {
-          // Update existing PFE project to assign the topic
-          await supabase
-            .from('pfe_projects')
-            .update({
-              topic_id: applicationData.topic_id,
-              status: 'approved',
-              start_date: new Date().toISOString().split('T')[0],
-              updated_at: new Date().toISOString(),
-            })
-            .eq('id', existingPfe.id)
-        } else {
-          // Create new PFE project
-          await supabase
-            .from('pfe_projects')
-            .insert({
-              student_id: applicationData.student_id,
-              topic_id: applicationData.topic_id,
-              supervisor_id: userId,
-              status: 'approved',
-              start_date: new Date().toISOString().split('T')[0],
-            })
-        }
-      }
+    // If approved, set topic on student's existing PFE (supervisor stays the same)
+    if (status === 'approved' && pfe?.id) {
+      await supabase
+        .from('pfe_projects')
+        .update({
+          topic_id: applicationData.topic_id,
+          status: 'approved',
+          start_date: new Date().toISOString().split('T')[0],
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', pfe.id)
+    }
 
     return NextResponse.json({ success: true, application })
   } catch (error) { 

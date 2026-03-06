@@ -36,7 +36,7 @@ export function DocumentActions({ documentId }: { documentId: string }) {
     <button
       onClick={handleDelete}
       disabled={deleting}
-      className="px-4 py-2 bg-slate-700/50 hover:bg-slate-700 border border-slate-600/50 rounded-xl text-sm font-semibold text-white transition-all duration-200 disabled:opacity-50"
+      className="px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900 transition-all duration-200 disabled:opacity-50"
     >
       {deleting ? (
         <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">

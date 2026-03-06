@@ -22,7 +22,7 @@ export function SignOutButton() {
     <button
       onClick={handleSignOut}
       disabled={loading}
-      className="px-4 py-2 bg-gradient-to-r from-red-600/20 to-red-700/20 border border-red-500/50 text-red-200 rounded-xl hover:from-red-600/30 hover:to-red-700/30 transition-all duration-200 font-semibold text-sm disabled:opacity-50 shadow-lg hover:shadow-xl hover:shadow-red-500/20"
+      className="px-4 py-2 bg-red-50 border border-red-200 text-red-700 rounded-xl hover:bg-red-100 transition-all duration-200 font-semibold text-sm disabled:opacity-50"
     >
       {loading ? 'Déconnexion...' : 'Déconnexion'}
     </button>

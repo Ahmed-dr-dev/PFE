@@ -61,17 +61,17 @@ export default function NewTopicPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             Proposer un <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">sujet</span>
           </h1>
-          <p className="text-gray-400 text-lg">Créez un nouveau sujet de PFE pour les étudiants</p>
+          <p className="text-gray-600 text-lg">Créez un nouveau sujet de PFE pour les étudiants</p>
         </div>
       </div>
 
-      <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
+      <div className="relative bg-white rounded-2xl border border-gray-200 p-8 shadow-2xl">
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="title" className="block text-sm font-semibold text-gray-300 mb-2">
+            <label htmlFor="title" className="block text-sm font-semibold text-gray-700 mb-2">
               Titre du sujet *
             </label>
             <input
@@ -80,13 +80,13 @@ export default function NewTopicPage() {
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+              className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 focus:ring-2 focus:ring-emerald-500/20 transition-all"
               placeholder="Ex: Système de gestion de bibliothèque"
             />
           </div>
 
           <div>
-            <label htmlFor="description" className="block text-sm font-semibold text-gray-300 mb-2">
+            <label htmlFor="description" className="block text-sm font-semibold text-gray-700 mb-2">
               Description *
             </label>
             <textarea
@@ -95,13 +95,13 @@ export default function NewTopicPage() {
               rows={6}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+              className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
               placeholder="Décrivez en détail le sujet de PFE, les objectifs, et les livrables attendus..."
             />
           </div>
 
           <div>
-            <label htmlFor="requirements" className="block text-sm font-semibold text-gray-300 mb-2">
+            <label htmlFor="requirements" className="block text-sm font-semibold text-gray-700 mb-2">
               Prérequis et compétences requises
             </label>
             <textarea
@@ -109,13 +109,13 @@ export default function NewTopicPage() {
               rows={4}
               value={formData.requirements}
               onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-900/50 border border-slate-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
+              className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none"
               placeholder="Listez les compétences techniques et prérequis nécessaires..."
             />
           </div>
 
           <div>
-            <label htmlFor="department" className="block text-sm font-semibold text-gray-300 mb-2">
+            <label htmlFor="department" className="block text-sm font-semibold text-gray-700 mb-2">
               Département
             </label>
             <input
@@ -123,7 +123,7 @@ export default function NewTopicPage() {
               id="department"
               value={formData.department || ''}
               disabled
-              className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-gray-400 cursor-not-allowed"
+              className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl text-gray-600 cursor-not-allowed"
             />
             <p className="text-xs text-gray-500 mt-1">Le département correspond à votre profil</p>
           </div>
@@ -138,7 +138,7 @@ export default function NewTopicPage() {
             </button>
             <Link
               href="/dashboard/professor/topics"
-              className="px-6 py-3 bg-slate-700/50 text-white rounded-xl hover:bg-slate-700 transition-all duration-200 font-semibold text-sm"
+              className="px-6 py-3 bg-gray-100 text-white rounded-xl hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
             >
               Annuler
             </Link>

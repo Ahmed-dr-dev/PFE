@@ -55,7 +55,21 @@ CREATE TABLE IF NOT EXISTS announcements (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 5. Messages (messagerie entre utilisateurs)
+-- 5. Supervision requests (demandes d'encadrement: student -> professor, professor accepts/rejects)
+CREATE TABLE IF NOT EXISTS supervision_requests (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  professor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  message TEXT,
+  status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(student_id, professor_id)
+);
+CREATE INDEX IF NOT EXISTS idx_supervision_requests_professor ON supervision_requests(professor_id);
+CREATE INDEX IF NOT EXISTS idx_supervision_requests_student ON supervision_requests(student_id);
+
+-- 6. Messages (messagerie entre utilisateurs)
 CREATE TABLE IF NOT EXISTS messages (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sender_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,

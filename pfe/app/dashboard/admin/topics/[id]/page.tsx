@@ -30,7 +30,7 @@ export default function TopicDetailPage() {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-center py-12">
-          <p className="text-gray-400">Chargement...</p>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -39,8 +39,8 @@ export default function TopicDetailPage() {
   if (!topic) {
     return (
       <div className="space-y-8">
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
-          <p className="text-gray-400 text-lg">Sujet non trouvé</p>
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xl">
+          <p className="text-gray-600 text-lg">Sujet non trouvé</p>
         </div>
       </div>
     )
@@ -52,23 +52,23 @@ export default function TopicDetailPage() {
         <div>
           <Link
             href="/dashboard/admin/topics"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Retour aux sujets
           </Link>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">{topic.title}</h1>
-          <p className="text-gray-400 text-lg">Détails du sujet de PFE</p>
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">{topic.title}</h1>
+          <p className="text-gray-600 text-lg">Détails du sujet de PFE</p>
         </div>
         <div className="flex items-center gap-3">
           <span className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
             topic.status === 'approved'
-              ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50'
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
               : topic.status === 'pending'
-              ? 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50'
-              : 'bg-red-500/20 text-red-200 border-red-500/50'
+              ? 'bg-yellow-50 text-yellow-800 border-yellow-200'
+              : 'bg-red-50 text-red-700 border-red-200'
           }`}>
             {topic.status === 'approved' ? 'Approuvé' : topic.status === 'pending' ? 'En attente' : 'Rejeté'}
           </span>
@@ -77,36 +77,36 @@ export default function TopicDetailPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
-            <h2 className="text-2xl font-bold text-white mb-4">Description</h2>
-            <p className="text-gray-300 leading-relaxed">{topic.description}</p>
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-8 shadow-2xl">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Description</h2>
+            <p className="text-gray-700 leading-relaxed">{topic.description}</p>
           </div>
 
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
-            <h2 className="text-2xl font-bold text-white mb-4">Prérequis</h2>
-            <p className="text-gray-300 leading-relaxed">{topic.requirements}</p>
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-8 shadow-2xl">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Prérequis</h2>
+            <p className="text-gray-700 leading-relaxed">{topic.requirements}</p>
           </div>
         </div>
 
         <div className="space-y-6">
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
-            <h3 className="text-lg font-bold text-white mb-4">Informations</h3>
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Informations</h3>
             <div className="space-y-4">
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Enseignant</p>
-                <p className="text-white font-medium">{topic.professor?.full_name || 'N/A'}</p>
+                <p className="text-gray-900 font-medium">{topic.professor?.full_name || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Département</p>
-                <p className="text-white font-medium">{topic.department || 'N/A'}</p>
+                <p className="text-gray-900 font-medium">{topic.department || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Créé le</p>
-                <p className="text-white font-medium">{new Date(topic.created_at).toLocaleDateString('fr-FR')}</p>
+                <p className="text-gray-900 font-medium">{new Date(topic.created_at).toLocaleDateString('fr-FR')}</p>
               </div>
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Statut</p>
-                <p className="text-white font-medium">{topic.status === 'approved' ? 'Approuvé' : topic.status === 'pending' ? 'En attente (validation par l\'enseignant)' : 'Rejeté'}</p>
+                <p className="text-gray-900 font-medium">{topic.status === 'approved' ? 'Approuvé' : topic.status === 'pending' ? 'En attente (validation par l\'enseignant)' : 'Rejeté'}</p>
               </div>
             </div>
           </div>

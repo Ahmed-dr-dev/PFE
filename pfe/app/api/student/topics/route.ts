@@ -11,21 +11,17 @@ export async function GET() {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    // Get student's PFE project - must be approved by admin
+    // Get student's PFE project (approved) to know if they have an encadrant and can apply
     const { data: pfe } = await supabase
       .from('pfe_projects')
       .select('supervisor_id, status')
       .eq('student_id', auth.user!.id)
-      .eq('status', 'approved') // Only approved PFE projects can see topics
+      .eq('status', 'approved')
       .maybeSingle()
 
-    if (!pfe || !pfe.supervisor_id) {
-      return NextResponse.json({ topics: [], hasSupervisor: false })
-    }
+    const hasSupervisor = !!(pfe && pfe.supervisor_id)
 
-    const supervisorId = pfe.supervisor_id
-
-    // Get topics from the student's supervisor only
+    // Get ALL published topics from all professors (student sees all, submits only to their encadrant)
     const { data: topics, error } = await supabase
       .from('pfe_topics')
       .select(`
@@ -44,7 +40,6 @@ export async function GET() {
         )
       `)
       .eq('status', 'approved')
-      .eq('professor_id', supervisorId)
       .order('created_at', { ascending: false })
 
     if (error) {
@@ -90,7 +85,7 @@ export async function GET() {
       applicationStatus: applicationMap.get(topic.id) || null,
     }))
 
-    return NextResponse.json({ topics: topicsWithApplications, hasSupervisor: true })
+    return NextResponse.json({ topics: topicsWithApplications, hasSupervisor })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },

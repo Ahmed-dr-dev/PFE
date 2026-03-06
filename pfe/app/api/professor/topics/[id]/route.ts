@@ -30,6 +30,7 @@ export async function GET(
         professor_id,
         applications:topic_applications(
           id,
+          student_id,
           status,
           submitted_at,
           reviewed_at,
@@ -65,7 +66,32 @@ export async function GET(
       return NextResponse.json({ error: 'Sujet non trouvé' }, { status: 404 })
     }
 
-    return NextResponse.json({ topic })
+    // Only the student's encadrant can approve; add can_review per application
+    const applications = (topic.applications || []) as Array<{ student_id?: string; student?: unknown }>
+    const studentIds = applications.map((a: any) => a.student_id).filter(Boolean)
+    let canReviewMap: Record<string, boolean> = {}
+    if (studentIds.length > 0) {
+      const { data: pfes } = await supabase
+        .from('pfe_projects')
+        .select('student_id, supervisor_id')
+        .in('student_id', studentIds)
+      canReviewMap = (pfes || []).reduce((acc: Record<string, boolean>, p: any) => {
+        acc[p.student_id] = p.supervisor_id === userId
+        return acc
+      }, {})
+    }
+    const applicationsWithReview = applications.map((app: any) => ({
+      ...app,
+      student: Array.isArray(app.student) ? app.student[0] : app.student,
+      can_review: canReviewMap[app.student_id] ?? false,
+    }))
+
+    return NextResponse.json({
+      topic: {
+        ...topic,
+        applications: applicationsWithReview,
+      },
+    })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },

@@ -26,7 +26,7 @@ export function TopicActions({ topicId }: { topicId: string }) {
   }
 
   return (
-    <div className="flex items-center gap-3 pt-4 border-t border-slate-700/50">
+    <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
       <button
         onClick={() => handleStatusChange('approved')}
         disabled={loading}
@@ -37,7 +37,7 @@ export function TopicActions({ topicId }: { topicId: string }) {
       <button
         onClick={() => handleStatusChange('rejected')}
         disabled={loading}
-        className="px-4 py-2 bg-gradient-to-r from-red-600/20 to-red-700/20 border border-red-500/50 text-red-200 rounded-lg hover:from-red-600/30 hover:to-red-700/30 transition-all duration-200 font-semibold text-sm disabled:opacity-50"
+        className="px-4 py-2 bg-gradient-to-r from-red-600/20 to-red-700/20 border border-red-200 text-red-700 rounded-lg hover:from-red-600/30 hover:to-red-700/30 transition-all duration-200 font-semibold text-sm disabled:opacity-50"
       >
         Rejeter
       </button>

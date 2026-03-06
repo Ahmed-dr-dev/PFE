@@ -51,16 +51,6 @@ const navigation = [
     ),
   },
   {
-    name: 'Paramètres',
-    href: '/dashboard/admin/settings',
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
-  {
     name: 'Demandes de stage',
     href: '/dashboard/admin/internship-requests',
     icon: (
@@ -79,11 +69,11 @@ const navigation = [
     ),
   },
   {
-    name: 'Communication',
-    href: '/dashboard/admin/communication',
+    name: 'Annonces',
+    href: '/dashboard/admin/annonces',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13a3 3 0 100-6M12 8c0 1.657-.895 3-2 3s-2-1.343-2-3 .895-3 2-3 2 1.343 2 3zm0 0c0 1.657.895 3 2 3s2-1.343 2-3-.895-3-2-3-2 1.343-2 3z" />
       </svg>
     ),
   },
@@ -115,7 +105,7 @@ export function MobileMenu() {
     <>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden text-gray-300 hover:text-white transition-colors p-2 rounded-lg hover:bg-slate-800/50"
+        className="lg:hidden text-gray-600 hover:text-gray-900 transition-colors p-2 rounded-lg hover:bg-gray-100"
       >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           {isOpen ? (
@@ -137,7 +127,7 @@ export function MobileMenu() {
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50 lg:hidden shadow-xl z-40">
+        <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 lg:hidden shadow-lg z-40">
           <div className="px-4 py-4 space-y-2">
             {navigation.map((item) => {
               const isActive = pathname === item.href || (item.href !== '/dashboard/admin' && pathname.startsWith(item.href))
@@ -148,11 +138,11 @@ export function MobileMenu() {
                   onClick={() => setIsOpen(false)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     isActive
-                      ? 'bg-gradient-to-r from-emerald-600/20 to-cyan-600/20 text-white border border-emerald-500/30'
-                      : 'text-gray-400 hover:text-white hover:bg-slate-800/50'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
-                  <span className={isActive ? 'text-emerald-400' : 'text-gray-500'}>
+                  <span className={isActive ? 'text-emerald-600' : 'text-gray-500'}>
                     {item.icon}
                   </span>
                   <span>{item.name}</span>

@@ -161,36 +161,36 @@ export function CreateUserModal({ role, open, onClose, onSuccess }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="p-6 border-b border-slate-700 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">{title}</h2>
-          <button type="button" onClick={onClose} className="p-2 text-gray-400 hover:text-white rounded-lg">✕</button>
+      <div className="bg-white border border-gray-200 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+          <button type="button" onClick={onClose} className="p-2 text-gray-600 hover:text-gray-900 rounded-lg">✕</button>
         </div>
         <div className="p-6">
           <div className="flex gap-2 mb-6">
             <button
               type="button"
               onClick={() => { setMode('single'); setError(''); setSuccess(''); setBulkResult(null) }}
-              className={`px-4 py-2 rounded-lg font-medium text-sm ${mode === 'single' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+              className={`px-4 py-2 rounded-lg font-medium text-sm ${mode === 'single' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'}`}
             >
               Un utilisateur
             </button>
             <button
               type="button"
               onClick={() => { setMode('csv'); setError(''); setSuccess(''); setBulkResult(null) }}
-              className={`px-4 py-2 rounded-lg font-medium text-sm ${mode === 'csv' ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-gray-300 hover:bg-slate-600'}`}
+              className={`px-4 py-2 rounded-lg font-medium text-sm ${mode === 'csv' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'}`}
             >
               Importer CSV
             </button>
           </div>
 
-          {error && <div className="mb-4 p-3 bg-red-500/20 border border-red-500/50 text-red-200 rounded-lg text-sm">{error}</div>}
-          {success && <div className="mb-4 p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 rounded-lg text-sm">{success}</div>}
+          {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
+          {success && <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm">{success}</div>}
           {bulkResult && (
-            <div className="mb-4 p-3 bg-slate-700/50 border border-slate-600 rounded-lg text-sm">
-              <p className="text-white">Créés : {bulkResult.created} — Échecs : {bulkResult.failed}</p>
+            <div className="mb-4 p-3 bg-gray-100 border border-gray-200 rounded-lg text-sm">
+              <p className="text-gray-900">Créés : {bulkResult.created} — Échecs : {bulkResult.failed}</p>
               {bulkResult.errors.length > 0 && (
-                <ul className="mt-2 text-red-200 text-xs max-h-32 overflow-y-auto">
+                <ul className="mt-2 text-red-700 text-xs max-h-32 overflow-y-auto">
                   {bulkResult.errors.slice(0, 10).map((err, i) => <li key={i}>{err}</li>)}
                   {bulkResult.errors.length > 10 && <li>… et {bulkResult.errors.length - 10} autres</li>}
                 </ul>
@@ -201,21 +201,21 @@ export function CreateUserModal({ role, open, onClose, onSuccess }: Props) {
           {mode === 'single' && (
             <form onSubmit={handleSingleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-1">Nom complet</label>
-                <input name="fullName" type="text" required className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" placeholder="Nom complet" />
+                <label className="block text-sm font-semibold text-gray-600 mb-1">Nom complet</label>
+                <input name="fullName" type="text" required className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200" placeholder="Nom complet" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-1">CIN (identifiant)</label>
-                <input name="email" type="text" required className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" placeholder="Numéro CIN" />
+                <label className="block text-sm font-semibold text-gray-600 mb-1">CIN (identifiant)</label>
+                <input name="email" type="text" required className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200" placeholder="Numéro CIN" />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-1">Téléphone</label>
-                <input name="phone" type="tel" className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" placeholder="+212 6XX XXX XXX" />
+                <label className="block text-sm font-semibold text-gray-600 mb-1">Téléphone</label>
+                <input name="phone" type="tel" className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200" placeholder="+212 6XX XXX XXX" />
               </div>
               {role === 'student' && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-400 mb-1">Année</label>
-                  <select name="year" className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500/50">
+                  <label className="block text-sm font-semibold text-gray-600 mb-1">Année</label>
+                  <select name="year" className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200">
                     {YEARS.map(o => <option key={o.value || 'x'} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
@@ -223,40 +223,40 @@ export function CreateUserModal({ role, open, onClose, onSuccess }: Props) {
               {role === 'professor' && (
                 <>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-400 mb-1">Département</label>
-                    <select name="department" className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500/50">
+                    <label className="block text-sm font-semibold text-gray-600 mb-1">Département</label>
+                    <select name="department" className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200">
                       {DEPARTMENTS.map(o => <option key={o.value || 'x'} value={o.value}>{o.label}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-400 mb-1">Bureau</label>
-                    <input name="office" type="text" className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" placeholder="Ex: Bureau 205" />
+                    <label className="block text-sm font-semibold text-gray-600 mb-1">Bureau</label>
+                    <input name="office" type="text" className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200" placeholder="Ex: Bureau 205" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-400 mb-1">Heures de bureau</label>
-                    <input name="officeHours" type="text" className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" placeholder="Lundi-Vendredi 14h-16h" />
+                    <label className="block text-sm font-semibold text-gray-600 mb-1">Heures de bureau</label>
+                    <input name="officeHours" type="text" className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200" placeholder="Lundi-Vendredi 14h-16h" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-400 mb-1">Biographie</label>
-                    <textarea name="bio" rows={2} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 resize-none" placeholder="Brève description" />
+                    <label className="block text-sm font-semibold text-gray-600 mb-1">Biographie</label>
+                    <textarea name="bio" rows={2} className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 resize-none" placeholder="Brève description" />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-gray-400 mb-1">Expertise (virgules)</label>
-                    <input name="expertise" type="text" className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" placeholder="IA, Web, BDD" />
+                    <label className="block text-sm font-semibold text-gray-600 mb-1">Expertise (virgules)</label>
+                    <input name="expertise" type="text" className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200" placeholder="IA, Web, BDD" />
                   </div>
                 </>
               )}
               {role === 'student' && (
                 <div>
-                  <label className="block text-sm font-semibold text-gray-400 mb-1">Département (optionnel)</label>
-                  <select name="department" className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-emerald-500/50">
+                  <label className="block text-sm font-semibold text-gray-600 mb-1">Département (optionnel)</label>
+                  <select name="department" className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200">
                     {DEPARTMENTS.map(o => <option key={o.value || 'x'} value={o.value}>{o.label}</option>)}
                   </select>
                 </div>
               )}
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-1">Date de naissance (mot de passe)</label>
-                <input name="password" type="text" required minLength={6} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50" placeholder="JJ/MM/AAAA ou JJMMAAAA" />
+                <label className="block text-sm font-semibold text-gray-600 mb-1">Date de naissance (mot de passe)</label>
+                <input name="password" type="text" required minLength={6} className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200" placeholder="JJ/MM/AAAA ou JJMMAAAA" />
               </div>
               <button type="submit" disabled={loading} className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 font-semibold disabled:opacity-50">
                 {loading ? 'Création...' : 'Créer le compte'}
@@ -266,7 +266,7 @@ export function CreateUserModal({ role, open, onClose, onSuccess }: Props) {
 
           {mode === 'csv' && (
             <div className="space-y-4">
-              <p className="text-gray-400 text-sm">
+              <p className="text-gray-600 text-sm">
                 CSV avec en-têtes : <code className="text-emerald-400">email, fullName, password</code> (obligatoires), puis <code className="text-emerald-400">phone, year, department</code> (étudiants) ou <code className="text-emerald-400">department, office, officeHours, bio, expertise</code> (enseignants).
               </p>
               <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
@@ -274,7 +274,7 @@ export function CreateUserModal({ role, open, onClose, onSuccess }: Props) {
                 type="button"
                 disabled={loading}
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full px-4 py-3 bg-slate-700 text-white rounded-lg hover:bg-slate-600 font-semibold disabled:opacity-50 border border-slate-600"
+                className="w-full px-4 py-3 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 font-semibold disabled:opacity-50 border border-gray-200"
               >
                 {loading ? 'Import en cours...' : 'Choisir un fichier CSV'}
               </button>

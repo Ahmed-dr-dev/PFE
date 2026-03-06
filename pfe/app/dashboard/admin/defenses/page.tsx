@@ -78,7 +78,7 @@ export default function DefensesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-gray-400">Chargement...</p>
+        <p className="text-gray-600">Chargement...</p>
       </div>
     )
   }
@@ -87,10 +87,10 @@ export default function DefensesPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Soutenances</span>
           </h1>
-          <p className="text-gray-400 text-lg">Gérer les soutenances de PFE</p>
+          <p className="text-gray-600 text-lg">Gérer les soutenances de PFE</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -102,16 +102,16 @@ export default function DefensesPage() {
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-6 space-y-4">
-          <h3 className="text-lg font-semibold text-white">Nouvelle soutenance</h3>
+        <form onSubmit={handleCreate} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">Nouvelle soutenance</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Projet PFE</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Projet PFE</label>
               <select
                 required
                 value={form.pfe_project_id}
                 onChange={(e) => setForm({ ...form, pfe_project_id: e.target.value })}
-                className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
               >
                 <option value="">Sélectionner</option>
                 {availableProjects.map((p) => {
@@ -126,27 +126,27 @@ export default function DefensesPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Date</label>
-              <input required type="date" value={form.scheduled_date} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <input required type="date" value={form.scheduled_date} onChange={(e) => setForm({ ...form, scheduled_date: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Heure</label>
-              <input type="time" value={form.scheduled_time} onChange={(e) => setForm({ ...form, scheduled_time: e.target.value })} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Heure</label>
+              <input type="time" value={form.scheduled_time} onChange={(e) => setForm({ ...form, scheduled_time: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" />
             </div>
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Salle</label>
-              <input value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" placeholder="Ex: Amphi A" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Salle</label>
+              <input value={form.room} onChange={(e) => setForm({ ...form, room: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Ex: Amphi A" />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm text-gray-400 mb-1">Membres du jury (séparés par des virgules)</label>
-              <input value={form.jury_members} onChange={(e) => setForm({ ...form, jury_members: e.target.value })} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" placeholder="Pr. X, Dr. Y, ..." />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Membres du jury (séparés par des virgules)</label>
+              <input value={form.jury_members} onChange={(e) => setForm({ ...form, jury_members: e.target.value })} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Pr. X, Dr. Y, ..." />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm text-gray-400 mb-1">Notes</label>
-              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white" />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+              <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" placeholder="Notes optionnelles" />
             </div>
           </div>
-          <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold">Planifier</button>
+          <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700">Planifier</button>
         </form>
       )}
 
@@ -157,13 +157,13 @@ export default function DefensesPage() {
             const pp = d.pfe_projects
             const student = pp?.student || {}
             const topic = pp?.topic || {}
-            const statusColors = { scheduled: 'border-emerald-500/50', completed: 'border-slate-600', cancelled: 'border-red-500/50', postponed: 'border-orange-500/50' }
+            const statusColors = { scheduled: 'border-emerald-200', completed: 'border-gray-200', cancelled: 'border-red-200', postponed: 'border-orange-500/50' }
             return (
-              <div key={d.id} className={`bg-slate-800/50 rounded-2xl border ${statusColors[d.status] || 'border-slate-700/50'} p-6`}>
+              <div key={d.id} className={`bg-white rounded-2xl border shadow-sm ${statusColors[d.status] || 'border-gray-200'} p-6`}>
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                   <div>
-                    <p className="text-white font-semibold">{student.full_name || student.name || 'N/A'}</p>
-                    <p className="text-gray-400 text-sm">{topic.title || 'Sans sujet'}</p>
+                    <p className="text-gray-900 font-semibold">{student.full_name || student.name || 'N/A'}</p>
+                    <p className="text-gray-600 text-sm">{topic.title || 'Sans sujet'}</p>
                     <p className="text-gray-500 text-sm mt-1">
                       {d.scheduled_date} {d.scheduled_time && `à ${d.scheduled_time}`} {d.room && `– ${d.room}`}
                     </p>
@@ -171,9 +171,9 @@ export default function DefensesPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      d.status === 'scheduled' ? 'bg-emerald-500/20 text-emerald-400' :
-                      d.status === 'completed' ? 'bg-slate-500/20 text-gray-400' :
-                      d.status === 'cancelled' ? 'bg-red-500/20 text-red-400' : 'bg-orange-500/20 text-orange-400'
+                      d.status === 'scheduled' ? 'bg-emerald-50 text-emerald-700' :
+                      d.status === 'completed' ? 'bg-blue-50 text-blue-700' :
+                      d.status === 'cancelled' ? 'bg-red-50 text-red-700' : 'bg-orange-50 text-orange-700'
                     }`}>
                       {d.status === 'scheduled' ? 'Planifiée' : d.status === 'completed' ? 'Terminée' : d.status === 'cancelled' ? 'Annulée' : 'Reportée'}
                     </span>
@@ -192,8 +192,8 @@ export default function DefensesPage() {
       </div>
 
       {defenses.length === 0 && (
-        <div className="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-12 text-center">
-          <p className="text-gray-400">Aucune soutenance planifiée</p>
+        <div className="bg-white rounded-2xl border shadow-sm border-gray-200 p-12 text-center">
+          <p className="text-gray-600">Aucune soutenance planifiée</p>
         </div>
       )}
     </div>

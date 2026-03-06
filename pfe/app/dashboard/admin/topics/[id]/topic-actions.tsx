@@ -37,7 +37,7 @@ export function TopicActions({ topicId }: { topicId: string }) {
       <button
         onClick={() => handleStatusChange('rejected')}
         disabled={loading}
-        className="w-full px-4 py-3 bg-gradient-to-r from-red-600/20 to-red-700/20 border border-red-500/50 text-red-200 rounded-lg hover:from-red-600/30 hover:to-red-700/30 transition-all duration-200 font-semibold text-sm disabled:opacity-50"
+        className="w-full px-4 py-3 bg-gradient-to-r from-red-600/20 to-red-700/20 border border-red-200 text-red-700 rounded-lg hover:from-red-600/30 hover:to-red-700/30 transition-all duration-200 font-semibold text-sm disabled:opacity-50"
       >
         Rejeter le sujet
       </button>

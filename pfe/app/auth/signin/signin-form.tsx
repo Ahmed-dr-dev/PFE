@@ -57,13 +57,13 @@ export function SignInForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {error && (
-        <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg text-sm backdrop-blur-sm">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-200 mb-1">
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
           CIN / Email
         </label>
         <input
@@ -72,13 +72,13 @@ export function SignInForm() {
           type="text"
           required
           autoComplete="username"
-          className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-white placeholder:text-gray-400 backdrop-blur-sm"
+          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-900 placeholder:text-gray-500"
           placeholder="CIN, email ou identifiant"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-200 mb-1">
+        <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
           Mot de passe
         </label>
         <input
@@ -86,7 +86,7 @@ export function SignInForm() {
           name="password"
           type="password"
           required
-          className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-white placeholder:text-gray-400 backdrop-blur-sm"
+          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none text-gray-900 placeholder:text-gray-500"
           placeholder="••••••••"
         />
       </div>

@@ -50,16 +50,16 @@ export default function StudentsPage() {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-center py-12">
-          <p className="text-gray-400">Chargement...</p>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
   }
 
   const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
-    in_progress: 'bg-blue-500/20 text-blue-200 border-blue-500/50',
-    completed: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50',
+    pending: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+    in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
+    completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   }
 
   const statusLabels: Record<string, string> = {
@@ -86,10 +86,10 @@ export default function StudentsPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             Gestion des <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">étudiants</span>
           </h1>
-          <p className="text-gray-400 text-lg">Gérez la liste des étudiants et leurs informations</p>
+          <p className="text-gray-600 text-lg">Gérez la liste des étudiants et leurs informations</p>
         </div>
         <button
           type="button"
@@ -110,7 +110,7 @@ export default function StudentsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+            className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
           >
             <option value="all">Tous les statuts</option>
             <option value="pending">Sans PFE</option>
@@ -126,7 +126,7 @@ export default function StudentsPage() {
           <select
             value={departmentFilter}
             onChange={(e) => setDepartmentFilter(e.target.value)}
-            className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+            className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
           >
             <option value="all">Tous les départements</option>
             {departments.map((dept) => (
@@ -138,29 +138,29 @@ export default function StudentsPage() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-700/50 bg-slate-800/50 overflow-hidden">
+      <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         {filteredStudents && filteredStudents.length > 0 ? (
           <div className="divide-y divide-slate-700/50">
             {filteredStudents.map((student: any) => (
               <div
                 key={student.id}
-                className="flex flex-wrap items-center gap-3 px-4 py-2.5 hover:bg-slate-700/30 transition-colors"
+                className="flex flex-wrap items-center gap-3 px-4 py-2.5 hover:bg-gray-200/30 transition-colors"
               >
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-xs shrink-0">
+                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-gray-900 font-semibold text-xs shrink-0">
                   {(student.full_name || student.name || 'N/A').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-white text-sm truncate">{student.full_name || student.name || 'N/A'}</span>
+                    <span className="font-semibold text-gray-900 text-sm truncate">{student.full_name || student.name || 'N/A'}</span>
                     {student.pfeStatus && (
                       <span className={`px-2 py-0.5 rounded text-xs font-medium border ${statusColors[student.pfeStatus] || statusColors.pending}`}>
                         {statusLabels[student.pfeStatus] || 'En attente'}
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-400 text-xs truncate">{student.email}</p>
+                  <p className="text-gray-600 text-xs truncate">{student.email}</p>
                 </div>
-                <div className="text-gray-400 text-xs shrink-0">
+                <div className="text-gray-600 text-xs shrink-0">
                   {student.department && <span>{student.department}</span>}
                   {student.department && student.year && ' · '}
                   {student.year && <span>{student.year}</span>}
@@ -169,17 +169,17 @@ export default function StudentsPage() {
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <Link href={`/dashboard/admin/students/${student.id}`} className="px-2.5 py-1.5 bg-slate-700/50 text-white rounded text-xs font-medium hover:bg-slate-600">
+                  <Link href={`/dashboard/admin/students/${student.id}`} className="px-2.5 py-1.5 bg-emerald-600 text-white rounded text-xs font-medium hover:bg-emerald-700">
                     Profil
                   </Link>
-                  <button type="button" onClick={() => setEditUser(student)} className="px-2.5 py-1.5 bg-amber-600/20 border border-amber-500/50 text-amber-200 rounded text-xs font-medium hover:bg-amber-600/30">
+                  <button type="button" onClick={() => setEditUser(student)} className="px-2.5 py-1.5 bg-amber-500 text-white rounded text-xs font-medium hover:bg-amber-600">
                     Modifier
                   </button>
-                  <button type="button" onClick={() => handleDelete(student.id, student.full_name || student.name || '')} disabled={deletingId === student.id} className="px-2.5 py-1.5 bg-red-600/20 border border-red-500/50 text-red-200 rounded text-xs font-medium hover:bg-red-600/30 disabled:opacity-50">
+                  <button type="button" onClick={() => handleDelete(student.id, student.full_name || student.name || '')} disabled={deletingId === student.id} className="px-2.5 py-1.5 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 disabled:opacity-50">
                     {deletingId === student.id ? '…' : 'Supprimer'}
                   </button>
                   {!student.hasPfe && (
-                    <Link href={`/dashboard/admin/assignments?student=${student.id}`} className="px-2.5 py-1.5 bg-emerald-600/20 border border-emerald-500/50 text-emerald-200 rounded text-xs font-medium hover:bg-emerald-600/30">
+                    <Link href={`/dashboard/admin/assignments?student=${student.id}`} className="px-2.5 py-1.5 bg-cyan-600 text-white rounded text-xs font-medium hover:bg-cyan-700">
                       Affecter
                     </Link>
                   )}
@@ -189,7 +189,7 @@ export default function StudentsPage() {
           </div>
         ) : (
           <div className="py-12 text-center">
-            <p className="text-gray-400 text-sm">Aucun étudiant trouvé</p>
+            <p className="text-gray-600 text-sm">Aucun étudiant trouvé</p>
           </div>
         )}
       </div>

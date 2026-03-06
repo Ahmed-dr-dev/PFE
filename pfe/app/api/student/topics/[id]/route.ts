@@ -23,12 +23,6 @@ export async function GET(
       .eq('status', 'approved') // Only approved PFE projects can see topics
       .maybeSingle()
 
-    if (!pfe || !pfe.supervisor_id) {
-      return NextResponse.json({ error: 'Aucun encadrant assigné ou affectation non approuvée' }, { status: 404 })
-    }
-
-    const supervisorId = pfe.supervisor_id
-
     // Check if student already applied (to allow viewing rejected topics)
     const { data: application } = await supabase
       .from('topic_applications')
@@ -37,8 +31,7 @@ export async function GET(
       .eq('topic_id', id)
       .maybeSingle()
 
-    // Get topic from supervisor
-    // Allow viewing if student has applied (even if rejected) or if topic is available
+    // Get topic: any approved published topic (from any professor)
     const { data: topic, error } = await supabase
       .from('pfe_topics')
       .select(`
@@ -62,17 +55,15 @@ export async function GET(
         )
       `)
       .eq('id', id)
-      .eq('professor_id', supervisorId)
       .eq('status', 'approved')
       .single()
 
     if (error || !topic) {
-      // If topic not found but student has applied, still allow viewing
-      if (application) {
-        return NextResponse.json({ error: 'Sujet non trouvé' }, { status: 404 })
-      }
       return NextResponse.json({ error: 'Sujet non trouvé' }, { status: 404 })
     }
+
+    // Student can apply only if they have an encadrant
+    const hasSupervisor = !!(pfe && pfe.supervisor_id)
 
     // Check if topic is reserved by another student
     const { data: reservedBy } = await supabase
@@ -104,6 +95,7 @@ export async function GET(
       application: application || null,
       hasTopic: !!studentPfe?.topic_id,
       currentTopicId: studentPfe?.topic_id || null,
+      hasSupervisor,
     })
   } catch (error) {
     return NextResponse.json(

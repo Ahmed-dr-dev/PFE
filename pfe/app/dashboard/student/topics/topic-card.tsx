@@ -13,20 +13,20 @@ interface Topic {
 
 export function TopicCard({ topic, hasPfe }: { topic: Topic; hasPfe: boolean }) {
   return (
-    <div className="group relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 hover:border-emerald-500/50 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1 overflow-hidden">
+    <div className="group relative bg-white rounded-2xl border border-gray-200 p-6 hover:border-emerald-200 transition-all duration-300 shadow-xl hover:shadow-2xl hover:shadow-emerald-500/10 hover:-translate-y-1 overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 to-emerald-500/0 group-hover:from-emerald-500/5 group-hover:to-cyan-500/5 rounded-2xl transition-all duration-300" />
       <div className="relative">
         <div className="mb-4">
-          <h3 className="text-xl font-bold text-white mb-3 leading-tight">{topic.title}</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-3 leading-tight">{topic.title}</h3>
           {topic.description && (
-            <p className="text-gray-400 text-sm line-clamp-3 leading-relaxed">{topic.description}</p>
+            <p className="text-gray-600 text-sm line-clamp-3 leading-relaxed">{topic.description}</p>
           )}
         </div>
 
         <div className="space-y-3 mb-6">
           {topic.teacher && (
             <div className="flex items-center gap-2.5 text-sm">
-              <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center border border-slate-600/50">
+              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
                 <svg
                   className="w-4 h-4 text-emerald-400"
                   fill="none"
@@ -41,12 +41,12 @@ export function TopicCard({ topic, hasPfe }: { topic: Topic; hasPfe: boolean }) 
                   />
                 </svg>
               </div>
-              <span className="text-gray-300 font-medium">{topic.teacher.full_name}</span>
+              <span className="text-gray-700 font-medium">{topic.teacher.full_name}</span>
             </div>
           )}
           {topic.department && (
             <div className="flex items-center gap-2.5 text-sm">
-              <div className="w-8 h-8 rounded-lg bg-slate-700/50 flex items-center justify-center border border-slate-600/50">
+              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center border border-gray-200">
                 <svg
                   className="w-4 h-4 text-blue-400"
                   fill="none"
@@ -61,7 +61,7 @@ export function TopicCard({ topic, hasPfe }: { topic: Topic; hasPfe: boolean }) 
                   />
                 </svg>
               </div>
-              <span className="text-gray-300 capitalize font-medium">{topic.department}</span>
+              <span className="text-gray-700 capitalize font-medium">{topic.department}</span>
             </div>
           )}
         </div>
@@ -69,7 +69,7 @@ export function TopicCard({ topic, hasPfe }: { topic: Topic; hasPfe: boolean }) 
         <div className="flex gap-2">
           <Link
             href={`/dashboard/student/topics/${topic.id}`}
-            className="flex-1 bg-slate-700/50 text-white py-3 px-4 rounded-xl hover:bg-slate-700 font-semibold transition-all duration-200 text-sm text-center"
+            className="flex-1 bg-gray-100 text-gray-900 py-3 px-4 rounded-xl hover:bg-gray-200 font-semibold transition-all duration-200 text-sm text-center"
           >
             Voir détails
           </Link>
@@ -77,10 +77,10 @@ export function TopicCard({ topic, hasPfe }: { topic: Topic; hasPfe: boolean }) 
             <span
               className={`px-3 py-3 rounded-xl text-xs font-semibold border ${
                 topic.applicationStatus === 'approved'
-                  ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50'
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                   : topic.applicationStatus === 'rejected'
-                  ? 'bg-red-500/20 text-red-200 border-red-500/50'
-                  : 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50'
+                  ? 'bg-red-50 text-red-700 border-red-200'
+                  : 'bg-yellow-50 text-yellow-800 border-yellow-200'
               }`}
             >
               {topic.applicationStatus === 'approved'

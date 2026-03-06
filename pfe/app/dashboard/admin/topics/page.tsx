@@ -30,7 +30,7 @@ export default function TopicsPage() {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-center py-12">
-          <p className="text-gray-400">Chargement...</p>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -66,31 +66,31 @@ export default function TopicsPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Sujets</span> PFE
           </h1>
-          <p className="text-gray-400 text-lg">Consulter tous les sujets de PFE (validation par les enseignants)</p>
+          <p className="text-gray-600 text-lg">Consulter tous les sujets de PFE (validation par les enseignants)</p>
         </div>
       </div>
 
-      <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
+      <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-400 mb-2">Rechercher</label>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">Rechercher</label>
             <input
               type="text"
               placeholder="Titre, description, professeur..."
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-400 mb-2">Statut</label>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">Statut</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
             >
               <option value="all">Tous les statuts</option>
               <option value="pending">En attente</option>
@@ -99,11 +99,11 @@ export default function TopicsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-400 mb-2">Département</label>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">Département</label>
             <select
               value={departmentFilter}
               onChange={(e) => setDepartmentFilter(e.target.value)}
-              className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
             >
               <option value="all">Tous les départements</option>
               {departments.map((dept) => (
@@ -116,7 +116,7 @@ export default function TopicsPage() {
         </div>
         {(searchText || statusFilter !== 'all' || departmentFilter !== 'all') && (
           <div className="mt-4 flex items-center gap-2">
-            <span className="text-sm text-gray-400">
+            <span className="text-sm text-gray-600">
               {filteredTopics.length} résultat{filteredTopics.length !== 1 ? 's' : ''} trouvé{filteredTopics.length !== 1 ? 's' : ''}
             </span>
             <button
@@ -135,23 +135,23 @@ export default function TopicsPage() {
 
       {pendingTopics.length > 0 && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-white">En attente de validation ({pendingTopics.length})</h2>
+          <h2 className="text-2xl font-bold text-gray-900">En attente de validation ({pendingTopics.length})</h2>
           <div className="grid grid-cols-1 gap-6">
             {pendingTopics.map((topic: any) => (
               <div
                 key={topic.id}
-                className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-yellow-500/30 p-6 shadow-xl"
+                className="relative bg-white rounded-2xl border border-yellow-500/30 p-6 shadow-xl"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-white">{topic.title}</h3>
-                      <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-yellow-500/20 text-yellow-200 border-yellow-500/50">
+                      <h3 className="text-xl font-bold text-gray-900">{topic.title}</h3>
+                      <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-yellow-50 text-yellow-800 border-yellow-200">
                         En attente
                       </span>
                     </div>
-                    <p className="text-gray-300 leading-relaxed mb-3">{topic.description}</p>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                    <p className="text-gray-700 leading-relaxed mb-3">{topic.description}</p>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -174,10 +174,10 @@ export default function TopicsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-700/50">
+                <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
                   <Link
                     href={`/dashboard/admin/topics/${topic.id}`}
-                    className="px-4 py-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm"
+                    className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
                   >
                     Voir détails
                   </Link>
@@ -190,23 +190,23 @@ export default function TopicsPage() {
 
       {approvedTopics.length > 0 && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-white">Sujets approuvés ({approvedTopics.length})</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Sujets approuvés ({approvedTopics.length})</h2>
           <div className="grid grid-cols-1 gap-6">
             {approvedTopics.map((topic: any) => (
               <div
                 key={topic.id}
-                className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl"
+                className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-white">{topic.title}</h3>
-                      <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-emerald-500/20 text-emerald-200 border-emerald-500/50">
+                      <h3 className="text-xl font-bold text-gray-900">{topic.title}</h3>
+                      <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-emerald-50 text-emerald-700 border-emerald-200">
                         Approuvé
                       </span>
                     </div>
-                    <p className="text-gray-300 leading-relaxed mb-3">{topic.description}</p>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                    <p className="text-gray-700 leading-relaxed mb-3">{topic.description}</p>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -222,10 +222,10 @@ export default function TopicsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-700/50">
+                <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
                   <Link
                     href={`/dashboard/admin/topics/${topic.id}`}
-                    className="px-4 py-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm"
+                    className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
                   >
                     Voir détails
                   </Link>
@@ -238,23 +238,23 @@ export default function TopicsPage() {
 
       {rejectedTopics.length > 0 && (
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-white">Sujets rejetés ({rejectedTopics.length})</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Sujets rejetés ({rejectedTopics.length})</h2>
           <div className="grid grid-cols-1 gap-6">
             {rejectedTopics.map((topic: any) => (
               <div
                 key={topic.id}
-                className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-red-500/30 p-6 shadow-xl"
+                className="relative bg-white rounded-2xl border border-red-500/30 p-6 shadow-xl"
               >
                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-xl font-bold text-white">{topic.title}</h3>
-                      <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-red-500/20 text-red-200 border-red-500/50">
+                      <h3 className="text-xl font-bold text-gray-900">{topic.title}</h3>
+                      <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-red-50 text-red-700 border-red-200">
                         Rejeté
                       </span>
                     </div>
-                    <p className="text-gray-300 leading-relaxed mb-3">{topic.description}</p>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-400">
+                    <p className="text-gray-700 leading-relaxed mb-3">{topic.description}</p>
+                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center gap-2">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
@@ -276,10 +276,10 @@ export default function TopicsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 pt-4 border-t border-slate-700/50">
+                <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
                   <Link
                     href={`/dashboard/admin/topics/${topic.id}`}
-                    className="px-4 py-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm"
+                    className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
                   >
                     Voir détails
                   </Link>
@@ -291,8 +291,8 @@ export default function TopicsPage() {
       )}
 
       {pendingTopics.length === 0 && approvedTopics.length === 0 && rejectedTopics.length === 0 && (
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 shadow-xl text-center">
-          <p className="text-gray-400 text-lg">
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-12 shadow-xl text-center">
+          <p className="text-gray-600 text-lg">
             {(searchText || statusFilter !== 'all' || departmentFilter !== 'all')
               ? 'Aucun sujet ne correspond aux filtres sélectionnés'
               : 'Aucun sujet à valider'}

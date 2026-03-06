@@ -30,15 +30,15 @@ export default function DashboardPage() {
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             Bienvenue, <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Administration</span>
           </h1>
-          <p className="text-gray-400 text-lg">Gérez les étudiants, enseignants et sujets de PFE</p>
+          <p className="text-gray-600 text-lg">Gérez les étudiants, enseignants et sujets de PFE</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1">
-        <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-xl flex flex-col justify-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-xl flex flex-col justify-center">
           <div className="flex items-center justify-between mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl flex items-center justify-center border border-blue-500/30">
               <svg className="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,11 +46,11 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className="text-5xl font-bold text-white mb-2">{stats.totalStudents}</p>
-          <p className="text-gray-400 text-lg">Étudiants</p>
+          <p className="text-5xl font-bold text-gray-900 mb-2">{stats.totalStudents}</p>
+          <p className="text-gray-600 text-lg">Étudiants</p>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-xl flex flex-col justify-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-xl flex flex-col justify-center">
           <div className="flex items-center justify-between mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl flex items-center justify-center border border-purple-500/30">
               <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -58,11 +58,11 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className="text-5xl font-bold text-white mb-2">{stats.totalProfessors}</p>
-          <p className="text-gray-400 text-lg">Enseignants</p>
+          <p className="text-5xl font-bold text-gray-900 mb-2">{stats.totalProfessors}</p>
+          <p className="text-gray-600 text-lg">Enseignants</p>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-xl flex flex-col justify-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-xl flex flex-col justify-center">
           <div className="flex items-center justify-between mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-xl flex items-center justify-center border border-emerald-500/30">
               <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -70,11 +70,11 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className="text-5xl font-bold text-white mb-2">{stats.activePFE}</p>
-          <p className="text-gray-400 text-lg">PFE actifs</p>
+          <p className="text-5xl font-bold text-gray-900 mb-2">{stats.activePFE}</p>
+          <p className="text-gray-600 text-lg">PFE actifs</p>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-xl flex flex-col justify-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-xl flex flex-col justify-center">
           <div className="flex items-center justify-between mb-6">
             <div className="w-16 h-16 bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-xl flex items-center justify-center border border-orange-500/30">
               <svg className="w-8 h-8 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,8 +82,8 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className="text-5xl font-bold text-white mb-2">{stats.pendingAssignments}</p>
-          <p className="text-gray-400 text-lg">Affectations en attente</p>
+          <p className="text-5xl font-bold text-gray-900 mb-2">{stats.pendingAssignments}</p>
+          <p className="text-gray-600 text-lg">Affectations en attente</p>
         </div>
       </div>
     </div>

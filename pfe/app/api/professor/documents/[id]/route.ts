@@ -18,10 +18,21 @@ export async function PATCH(
     const userId = auth.user!.id
     const supabase = await createClient()
 
-    const { status } = await request.json()
+    const body = await request.json()
+    const { status, professor_review } = body
 
-    if (!['pending', 'approved', 'rejected'].includes(status)) {
-      return NextResponse.json({ error: 'Statut invalide' }, { status: 400 })
+    const updates: Record<string, unknown> = {}
+    if (status !== undefined) {
+      if (!['pending', 'approved', 'rejected'].includes(status)) {
+        return NextResponse.json({ error: 'Statut invalide' }, { status: 400 })
+      }
+      updates.status = status
+    }
+    if (professor_review !== undefined) {
+      updates.professor_review = professor_review === '' ? null : professor_review
+    }
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'Aucune modification' }, { status: 400 })
     }
 
     // Get document
@@ -53,10 +64,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Non autorisé' }, { status: 403 })
     }
 
-    // Update document status
+    // Update document
     const { data: updatedDoc, error } = await supabase
       .from('documents')
-      .update({ status })
+      .update(updates)
       .eq('id', id)
       .select(`
         *,

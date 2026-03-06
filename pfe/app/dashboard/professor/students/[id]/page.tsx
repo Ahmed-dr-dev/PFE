@@ -32,8 +32,8 @@ export default function StudentDetailPage() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
-          <p className="text-gray-400 text-lg">Chargement...</p>
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xl">
+          <p className="text-gray-600 text-lg">Chargement...</p>
         </div>
       </div>
     )
@@ -42,8 +42,8 @@ export default function StudentDetailPage() {
   if (!data) {
     return (
       <div className="space-y-8">
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
-          <p className="text-gray-400 text-lg">Étudiant non trouvé</p>
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xl">
+          <p className="text-gray-600 text-lg">Étudiant non trouvé</p>
         </div>
       </div>
     )
@@ -64,15 +64,15 @@ export default function StudentDetailPage() {
         <div>
           <Link
             href="/dashboard/professor/students"
-            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-4"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Retour aux étudiants
           </Link>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">{student?.name || student?.full_name || 'N/A'}</h1>
-          <p className="text-gray-400 text-lg">Profil étudiant et suivi du PFE</p>
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">{student?.name || student?.full_name || 'N/A'}</h1>
+          <p className="text-gray-600 text-lg">Profil étudiant et suivi du PFE</p>
         </div>
         <div className="flex items-center gap-3">
           <Link
@@ -85,50 +85,50 @@ export default function StudentDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl flex flex-col min-h-[400px]">
-          <h2 className="text-2xl font-bold text-white mb-6">Sujet de PFE</h2>
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-8 shadow-2xl flex flex-col min-h-[400px]">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Sujet de PFE</h2>
           {topic ? (
             <div className="flex-1 flex flex-col">
-              <h3 className="text-xl font-semibold text-white mb-4">{topic.title}</h3>
-              <p className="text-gray-300 leading-relaxed flex-1">{topic.description}</p>
+              <h3 className="text-xl font-semibold text-gray-900 mb-4">{topic.title}</h3>
+              <p className="text-gray-700 leading-relaxed flex-1">{topic.description}</p>
             </div>
           ) : (
             <div className="flex-1 flex items-center justify-center">
-              <p className="text-gray-400 text-lg">Aucun sujet assigné</p>
+              <p className="text-gray-600 text-lg">Aucun sujet assigné</p>
             </div>
           )}
         </div>
 
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl flex flex-col min-h-[400px]">
-          <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-2xl shadow-lg mb-6">
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-8 shadow-2xl flex flex-col min-h-[400px]">
+          <div className="w-20 h-20 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-gray-900 font-semibold text-2xl shadow-lg mb-6">
             {(student?.name || student?.full_name || 'N/A').split(' ').map((n: string) => n[0]).join('')}
           </div>
-          <h3 className="text-2xl font-bold text-white mb-6">Informations</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mb-6">Informations</h3>
           <div className="space-y-6 flex-1">
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Email</p>
-              <p className="text-white font-medium">{student?.email || 'N/A'}</p>
+              <p className="text-gray-900 font-medium">{student?.email || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Téléphone</p>
-              <p className="text-white font-medium">{student?.phone || 'N/A'}</p>
+              <p className="text-gray-900 font-medium">{student?.phone || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Département</p>
-              <p className="text-white font-medium">{student?.department || 'N/A'}</p>
+              <p className="text-gray-900 font-medium">{student?.department || 'N/A'}</p>
             </div>
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Année</p>
-              <p className="text-white font-medium">{student?.year || 'N/A'}</p>
+              <p className="text-gray-900 font-medium">{student?.year || 'N/A'}</p>
             </div>
           </div>
         </div>
       </div>
 
       {meetings && Array.isArray(meetings) && meetings.length > 0 && (
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl">
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-8 shadow-2xl">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Réunions</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Réunions</h2>
             <Link
               href={`/dashboard/professor/students/${id}/meetings`}
               className="text-emerald-400 hover:text-emerald-300 text-sm font-semibold transition-colors"
@@ -144,34 +144,34 @@ export default function StudentDetailPage() {
                 return (
                   <div
                     key={meeting.id}
-                    className="flex items-start gap-4 p-4 bg-slate-700/30 border border-slate-600/50 rounded-xl"
+                    className="flex items-start gap-4 p-4 bg-slate-700/30 border border-gray-200 rounded-xl"
                   >
                     <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex flex-col items-center justify-center border border-blue-500/30">
-                      <span className="text-xs font-bold text-blue-300">
+                      <span className="text-xs font-bold text-blue-700">
                         {meetingDate.toLocaleDateString('fr-FR', { day: 'numeric' })}
                       </span>
-                      <span className="text-xs font-medium text-blue-300">
+                      <span className="text-xs font-medium text-blue-700">
                         {meetingDate.toLocaleDateString('fr-FR', { month: 'short' })}
                       </span>
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-white font-semibold">{meeting.type || meeting.meeting_type || 'Réunion'}</h3>
+                        <h3 className="text-gray-900 font-semibold">{meeting.type || meeting.meeting_type || 'Réunion'}</h3>
                         <span
                           className={`px-2 py-1 rounded text-xs font-semibold ${
                             meeting.status === 'completed'
-                              ? 'bg-emerald-500/20 text-emerald-200'
+                              ? 'bg-emerald-50 text-emerald-700'
                               : meeting.status === 'cancelled'
-                              ? 'bg-red-500/20 text-red-200'
+                              ? 'bg-red-50 text-red-700'
                               : isPast
-                              ? 'bg-gray-500/20 text-gray-300'
-                              : 'bg-blue-500/20 text-blue-200'
+                              ? 'bg-gray-500/20 text-gray-700'
+                              : 'bg-blue-50 text-blue-700'
                           }`}
                         >
                           {meeting.status === 'completed' ? 'Terminé' : meeting.status === 'cancelled' ? 'Annulé' : isPast ? 'Passé' : 'Planifié'}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 text-sm text-gray-400">
+                      <div className="flex items-center gap-3 text-sm text-gray-600">
                         <span className="flex items-center gap-1">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -189,7 +189,7 @@ export default function StudentDetailPage() {
                         )}
                       </div>
                       {meeting.notes && (
-                        <p className="text-gray-300 text-sm mt-2">{meeting.notes}</p>
+                        <p className="text-gray-700 text-sm mt-2">{meeting.notes}</p>
                       )}
                     </div>
                   </div>
@@ -197,7 +197,7 @@ export default function StudentDetailPage() {
               })}
             </div>
           ) : (
-            <p className="text-gray-400 text-center py-4">Aucune réunion à venir</p>
+            <p className="text-gray-600 text-center py-4">Aucune réunion à venir</p>
           )}
         </div>
       )}

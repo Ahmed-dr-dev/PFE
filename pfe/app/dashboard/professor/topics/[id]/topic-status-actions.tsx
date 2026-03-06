@@ -37,7 +37,7 @@ export function TopicStatusActions({ topicId }: { topicId: string }) {
         type="button"
         onClick={() => handleStatus('rejected')}
         disabled={loading}
-        className="px-4 py-2 bg-red-600/20 border border-red-500/50 text-red-200 rounded-lg hover:bg-red-600/30 font-semibold text-sm disabled:opacity-50"
+        className="px-4 py-2 bg-red-600/20 border border-red-200 text-red-700 rounded-lg hover:bg-red-600/30 font-semibold text-sm disabled:opacity-50"
       >
         Rejeter
       </button>

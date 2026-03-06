@@ -27,15 +27,15 @@ export default function DashboardPage() {
     <div className="h-[calc(100vh-8rem)] flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             Bienvenue, <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Professeur</span>
           </h1>
-          <p className="text-gray-400 text-lg">Gérez vos sujets et encadrez vos étudiants</p>
+          <p className="text-gray-600 text-lg">Gérez vos sujets et encadrez vos étudiants</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 flex-1">
-        <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-xl flex flex-col justify-center items-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-xl flex flex-col justify-center items-center">
           <div className="flex items-center justify-center mb-6">
             <div className="w-20 h-20 bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-xl flex items-center justify-center border border-emerald-500/30">
               <svg className="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -43,11 +43,11 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className="text-5xl font-bold text-white mb-2">{stats.topicsProposed}</p>
-          <p className="text-gray-400 text-lg">Sujets proposés</p>
+          <p className="text-5xl font-bold text-gray-900 mb-2">{stats.topicsProposed}</p>
+          <p className="text-gray-600 text-lg">Sujets proposés</p>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-xl flex flex-col justify-center items-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-xl flex flex-col justify-center items-center">
           <div className="flex items-center justify-center mb-6">
             <div className="w-20 h-20 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl flex items-center justify-center border border-blue-500/30">
               <svg className="w-10 h-10 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,11 +55,11 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className="text-5xl font-bold text-white mb-2">{stats.studentsSupervised}</p>
-          <p className="text-gray-400 text-lg">Étudiants encadrés</p>
+          <p className="text-5xl font-bold text-gray-900 mb-2">{stats.studentsSupervised}</p>
+          <p className="text-gray-600 text-lg">Étudiants encadrés</p>
         </div>
 
-        <div className="bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-xl flex flex-col justify-center items-center">
+        <div className="bg-white rounded-2xl border border-gray-200 p-8 shadow-xl flex flex-col justify-center items-center">
           <div className="flex items-center justify-center mb-6">
             <div className="w-20 h-20 bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-xl flex items-center justify-center border border-yellow-500/30">
               <svg className="w-10 h-10 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,8 +67,8 @@ export default function DashboardPage() {
               </svg>
             </div>
           </div>
-          <p className="text-5xl font-bold text-white mb-2">{stats.pendingApplications}</p>
-          <p className="text-gray-400 text-lg">Demandes en attente</p>
+          <p className="text-5xl font-bold text-gray-900 mb-2">{stats.pendingApplications}</p>
+          <p className="text-gray-600 text-lg">Demandes en attente</p>
         </div>
       </div>
     </div>

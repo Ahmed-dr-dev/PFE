@@ -29,10 +29,10 @@ export default function MyPfePage() {
   }, [])
 
   const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
-    approved: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50',
-    rejected: 'bg-red-500/20 text-red-200 border-red-500/50',
-    in_progress: 'bg-blue-500/20 text-blue-200 border-blue-500/50',
+    pending: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+    approved: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    rejected: 'bg-red-50 text-red-700 border-red-200',
+    in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
     completed: 'bg-purple-500/20 text-purple-200 border-purple-500/50',
   }
 
@@ -47,8 +47,8 @@ export default function MyPfePage() {
   if (loading) {
     return (
       <div className="space-y-8">
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl">
-          <p className="text-gray-400 text-lg">Chargement...</p>
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xl">
+          <p className="text-gray-600 text-lg">Chargement...</p>
         </div>
       </div>
     )
@@ -58,10 +58,10 @@ export default function MyPfePage() {
       <>
       {showModal && !myPfe && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="relative bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl max-w-md w-full">
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-8 shadow-2xl max-w-md w-full">
             <button
               onClick={() => setShowModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -83,10 +83,10 @@ export default function MyPfePage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
                 Aucun PFE approuvé
               </h3>
-              <p className="text-gray-400 mb-6 text-base leading-relaxed">
+              <p className="text-gray-600 mb-6 text-base leading-relaxed">
                 Vous n'avez pas encore de sujet de PFE approuvé par votre encadrant. 
                 Consultez les sujets disponibles et postulez pour en obtenir un.
               </p>
@@ -103,7 +103,7 @@ export default function MyPfePage() {
                 </Link>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="px-6 py-3 bg-slate-700/50 text-gray-300 rounded-xl hover:bg-slate-700 transition-all duration-200 font-semibold border border-slate-600/50"
+                  className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-all duration-200 font-semibold border border-gray-200"
                 >
                   Fermer
                 </button>
@@ -115,14 +115,14 @@ export default function MyPfePage() {
 
       <div className="space-y-8">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             Mon <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">PFE</span>
           </h1>
-          <p className="text-gray-400 text-lg">Suivez l'état de votre projet</p>
+          <p className="text-gray-600 text-lg">Suivez l'état de votre projet</p>
         </div>
 
         {!myPfe ? (
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-2xl overflow-hidden">
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xl overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5" />
             <div className="relative">
               <div className="w-24 h-24 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/30">
@@ -140,10 +140,10 @@ export default function MyPfePage() {
                   />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
                 Aucun PFE assigné
               </h3>
-              <p className="text-gray-400 mb-8 text-lg">
+              <p className="text-gray-600 mb-8 text-lg">
                 Consultez les sujets disponibles et choisissez-en un pour commencer.
               </p>
               <Link
@@ -159,11 +159,11 @@ export default function MyPfePage() {
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl overflow-hidden">
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-8 shadow-2xl overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 rounded-full blur-3xl -mr-32 -mt-32" />
             <div className="relative">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-                <h2 className="text-2xl font-bold text-white">Informations du projet</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Informations du projet</h2>
                 <span
                   className={`px-4 py-2 rounded-xl text-sm font-semibold border backdrop-blur-sm ${
                     statusColors[myPfe.status] || statusColors.pending
@@ -176,7 +176,7 @@ export default function MyPfePage() {
               <div className="space-y-6">
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Titre du sujet</p>
-                  <p className="text-white font-bold text-xl leading-tight">
+                  <p className="text-gray-900 font-bold text-xl leading-tight">
                     {myPfe.topic?.title || 'N/A'}
                   </p>
                 </div>
@@ -184,14 +184,14 @@ export default function MyPfePage() {
                 {myPfe.topic?.description && (
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Description</p>
-                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{myPfe.topic.description}</p>
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{myPfe.topic.description}</p>
                   </div>
                 )}
 
                 {myPfe.topic?.requirements && (
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Prérequis et compétences</p>
-                    <p className="text-gray-300 leading-relaxed whitespace-pre-wrap">{myPfe.topic.requirements}</p>
+                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{myPfe.topic.requirements}</p>
                   </div>
                 )}
 
@@ -199,9 +199,9 @@ export default function MyPfePage() {
                   <div>
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Progression</p>
-                      <span className="text-sm font-semibold text-white">{myPfe.progress || 0}%</span>
+                      <span className="text-sm font-semibold text-gray-900">{myPfe.progress || 0}%</span>
                     </div>
-                    <div className="w-full bg-slate-700/50 rounded-full h-3">
+                    <div className="w-full bg-gray-100 rounded-full h-3">
                       <div
                         className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-3 rounded-full transition-all duration-300"
                         style={{ width: `${myPfe.progress || 0}%` }}
@@ -210,11 +210,11 @@ export default function MyPfePage() {
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-slate-700/50">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                   {myPfe.start_date && (
                     <div>
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Date de début</p>
-                      <p className="text-gray-300 font-medium">
+                      <p className="text-gray-700 font-medium">
                         {new Date(myPfe.start_date).toLocaleDateString('fr-FR', {
                           year: 'numeric',
                           month: 'long',
@@ -226,7 +226,7 @@ export default function MyPfePage() {
                   {myPfe.created_at && (
                     <div>
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Date de soumission</p>
-                      <p className="text-gray-300 font-medium">
+                      <p className="text-gray-700 font-medium">
                         {new Date(myPfe.created_at).toLocaleDateString('fr-FR', {
                           year: 'numeric',
                           month: 'long',
@@ -239,7 +239,7 @@ export default function MyPfePage() {
                   {myPfe.updated_at && (
                     <div>
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Dernière mise à jour</p>
-                      <p className="text-gray-300 font-medium">
+                      <p className="text-gray-700 font-medium">
                         {new Date(myPfe.updated_at).toLocaleDateString('fr-FR', {
                           year: 'numeric',
                           month: 'long',
@@ -254,8 +254,8 @@ export default function MyPfePage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center border border-blue-500/30">
                 <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -267,7 +267,7 @@ export default function MyPfePage() {
               <div className="space-y-4">
                 <div>
                   <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Encadrant</p>
-                  <p className="text-white font-semibold text-lg">{myPfe.supervisor.full_name}</p>
+                  <p className="text-gray-900 font-semibold text-lg">{myPfe.supervisor.full_name}</p>
                 </div>
                 {myPfe.supervisor.email && (
                   <div>
@@ -300,25 +300,25 @@ export default function MyPfePage() {
                 {myPfe.supervisor.department && (
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Département</p>
-                    <p className="text-gray-300 capitalize font-medium">{myPfe.supervisor.department}</p>
+                    <p className="text-gray-700 capitalize font-medium">{myPfe.supervisor.department}</p>
                   </div>
                 )}
                 {myPfe.supervisor.office && (
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Bureau</p>
-                    <p className="text-gray-300 font-medium text-sm">{myPfe.supervisor.office}</p>
+                    <p className="text-gray-700 font-medium text-sm">{myPfe.supervisor.office}</p>
                   </div>
                 )}
                 {myPfe.supervisor.office_hours && (
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Heures de bureau</p>
-                    <p className="text-gray-300 font-medium text-sm">{myPfe.supervisor.office_hours}</p>
+                    <p className="text-gray-700 font-medium text-sm">{myPfe.supervisor.office_hours}</p>
                   </div>
                 )}
                 {myPfe.supervisor.bio && (
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Biographie</p>
-                    <p className="text-gray-300 text-sm leading-relaxed">{myPfe.supervisor.bio}</p>
+                    <p className="text-gray-700 text-sm leading-relaxed">{myPfe.supervisor.bio}</p>
                   </div>
                 )}
                 {myPfe.supervisor.expertise && Array.isArray(myPfe.supervisor.expertise) && myPfe.supervisor.expertise.length > 0 && (
@@ -328,7 +328,7 @@ export default function MyPfePage() {
                       {myPfe.supervisor.expertise.map((exp: string, idx: number) => (
                         <span
                           key={idx}
-                          className="px-3 py-1 bg-emerald-500/20 text-emerald-200 border border-emerald-500/50 rounded-lg text-xs font-semibold"
+                          className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-semibold"
                         >
                           {exp}
                         </span>
@@ -338,12 +338,12 @@ export default function MyPfePage() {
                 )}
               </div>
             ) : (
-              <p className="text-gray-400 text-sm">Aucun encadrant assigné pour le moment</p>
+              <p className="text-gray-600 text-sm">Aucun encadrant assigné pour le moment</p>
             )}
           </div>
 
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
+            <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center border border-purple-500/30">
                 <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
@@ -352,37 +352,37 @@ export default function MyPfePage() {
               État du projet
             </h2>
             <div className="space-y-3">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-700/30 border border-slate-600/50">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-100 border border-gray-200">
                 <div
                   className={`w-3 h-3 rounded-full ${
-                    myPfe.status === 'pending' ? 'bg-yellow-400 shadow-lg shadow-yellow-400/50' : 'bg-slate-600'
+                    myPfe.status === 'pending' ? 'bg-yellow-400 shadow-lg shadow-yellow-400/50' : 'bg-gray-400'
                   }`}
                 />
-                <span className="text-sm text-gray-300 font-medium">En attente</span>
+                <span className="text-sm text-gray-700 font-medium">En attente</span>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-700/30 border border-slate-600/50">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-100 border border-gray-200">
                 <div
                   className={`w-3 h-3 rounded-full ${
-                    myPfe.status === 'approved' ? 'bg-emerald-400 shadow-lg shadow-emerald-400/50' : 'bg-slate-600'
+                    myPfe.status === 'approved' ? 'bg-emerald-400 shadow-lg shadow-emerald-400/50' : 'bg-gray-400'
                   }`}
                 />
-                <span className="text-sm text-gray-300 font-medium">Approuvé</span>
+                <span className="text-sm text-gray-700 font-medium">Approuvé</span>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-700/30 border border-slate-600/50">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-100 border border-gray-200">
                 <div
                   className={`w-3 h-3 rounded-full ${
-                    myPfe.status === 'in_progress' ? 'bg-blue-400 shadow-lg shadow-blue-400/50' : 'bg-slate-600'
+                    myPfe.status === 'in_progress' ? 'bg-blue-400 shadow-lg shadow-blue-400/50' : 'bg-gray-400'
                   }`}
                 />
-                <span className="text-sm text-gray-300 font-medium">En cours</span>
+                <span className="text-sm text-gray-700 font-medium">En cours</span>
               </div>
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-700/30 border border-slate-600/50">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-100 border border-gray-200">
                 <div
                   className={`w-3 h-3 rounded-full ${
-                    myPfe.status === 'completed' ? 'bg-purple-400 shadow-lg shadow-purple-400/50' : 'bg-slate-600'
+                    myPfe.status === 'completed' ? 'bg-purple-400 shadow-lg shadow-purple-400/50' : 'bg-gray-400'
                   }`}
                 />
-                <span className="text-sm text-gray-300 font-medium">Terminé</span>
+                <span className="text-sm text-gray-700 font-medium">Terminé</span>
               </div>
             </div>
           </div>

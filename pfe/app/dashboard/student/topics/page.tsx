@@ -1,6 +1,6 @@
 'use client'
-import Link from 'next/link'
 import { TopicCard } from './topic-card'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
 export default function TopicsPage() {
@@ -40,11 +40,11 @@ export default function TopicsPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             Sujets de PFE <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">disponibles</span>
           </h1>
-          <p className="text-gray-400 text-lg">
-            Consultez les sujets proposés par votre encadrant ou proposez-en un
+          <p className="text-gray-600 text-lg">
+            Consultez tous les sujets publiés. Vous ne pouvez postuler qu&apos;après avoir un encadrant ; la demande sera soumise à votre encadrant.
           </p>
         </div>
         {hasSupervisor && (
@@ -58,16 +58,16 @@ export default function TopicsPage() {
       </div>
 
       {!hasSupervisor && (
-        <div className="bg-yellow-500/20 border border-yellow-500/50 text-yellow-200 px-6 py-4 rounded-lg backdrop-blur-sm">
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-lg">
           <p className="font-medium">
-            Vous n'avez pas encore d'encadrant assigné. Les sujets de votre encadrant apparaîtront ici une fois qu'un encadrant vous sera assigné.
+            Vous n&apos;avez pas encore d&apos;encadrant. Demandez un encadrement (page Encadrement) pour pouvoir postuler aux sujets. Vous pouvez consulter tous les sujets ci-dessous.
           </p>
         </div>
       )}
 
       {loading ? (
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
-          <p className="text-gray-400 text-lg">Chargement...</p>
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-xl">
+          <p className="text-gray-600 text-lg">Chargement...</p>
         </div>
       ) : formattedTopics && formattedTopics.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -76,7 +76,7 @@ export default function TopicsPage() {
           ))}
         </div>
       ) : (
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl overflow-hidden">
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5" />
           <div className="relative">
             <div className="w-20 h-20 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/30">
@@ -94,10 +94,8 @@ export default function TopicsPage() {
                 />
               </svg>
             </div>
-            <p className="text-gray-300 text-lg font-medium">
-              {hasSupervisor 
-                ? 'Aucun sujet disponible de votre encadrant pour le moment' 
-                : 'Aucun encadrant assigné'}
+            <p className="text-gray-700 text-lg font-medium">
+              Aucun sujet publié pour le moment
             </p>
           </div>
         </div>

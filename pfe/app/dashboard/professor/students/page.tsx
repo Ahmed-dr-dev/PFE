@@ -85,9 +85,9 @@ export default function StudentsPage() {
   }
 
   const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-500/20 text-yellow-200 border-yellow-500/50',
-    in_progress: 'bg-blue-500/20 text-blue-200 border-blue-500/50',
-    completed: 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50',
+    pending: 'bg-yellow-50 text-yellow-800 border-yellow-200',
+    in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
+    completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   }
 
   const statusLabels: Record<string, string> = {
@@ -102,10 +102,10 @@ export default function StudentsPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             Mes <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">étudiants</span>
           </h1>
-          <p className="text-gray-400 text-lg">Gérez et encadrez vos étudiants affectés</p>
+          <p className="text-gray-600 text-lg">Gérez et encadrez vos étudiants affectés</p>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -116,24 +116,24 @@ export default function StudentsPage() {
       </div>
 
       {loading ? (
-        <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
-          <p className="text-gray-400 text-lg">Chargement...</p>
+        <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-xl">
+          <p className="text-gray-600 text-lg">Chargement...</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
           {students && students.length > 0 ? students.map((student: any) => (
           <div
             key={student.id}
-            className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-300"
+            className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl hover:border-emerald-200 transition-all duration-300"
           >
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
               <div className="flex items-start gap-4 flex-1">
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-lg shadow-lg">
+                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-gray-900 font-semibold text-lg shadow-lg">
                   {student.full_name?.split(' ').map((n: string) => n[0]).join('') || 'N/A'}
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
-                    <h3 className="text-xl font-bold text-white">{student.full_name || student.name || 'N/A'}</h3>
+                    <h3 className="text-xl font-bold text-gray-900">{student.full_name || student.name || 'N/A'}</h3>
                  
                     {student.status && (
                       console.log(student.status),
@@ -146,17 +146,17 @@ export default function StudentsPage() {
                       </span>
                     )}
                   </div>
-                  <p className="text-gray-400 text-sm mb-2">{student.email || 'N/A'}</p>
-                  <p className="text-gray-300 font-medium">{student.topic?.title || 'N/A'}</p>
+                  <p className="text-gray-600 text-sm mb-2">{student.email || 'N/A'}</p>
+                  <p className="text-gray-700 font-medium">{student.topic?.title || 'N/A'}</p>
                 </div>
               </div>
             </div>
 
           
 
-            <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-700/50">
+            <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-gray-200">
               {student.last_meeting && (
-                <div className="flex items-center gap-2 text-sm text-gray-400">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
@@ -166,13 +166,13 @@ export default function StudentsPage() {
               <div className="ml-auto flex items-center gap-2">
                 <Link
                   href={`/dashboard/professor/students/${student.id}`}
-                  className="px-4 py-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm"
+                  className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
                 >
                   Voir profil
                 </Link>
                 <Link
                   href={`/dashboard/professor/students/${student.id}/meetings`}
-                  className="px-4 py-2 bg-gradient-to-r from-emerald-600/20 to-cyan-600/20 border border-emerald-500/50 text-emerald-200 rounded-lg hover:from-emerald-600/30 hover:to-cyan-600/30 transition-all duration-200 font-semibold text-sm"
+                  className="px-4 py-2 bg-gradient-to-r from-emerald-600/20 to-cyan-600/20 border border-emerald-200 text-emerald-700 rounded-lg hover:from-emerald-600/30 hover:to-cyan-600/30 transition-all duration-200 font-semibold text-sm"
                 >
                   Planifier
                 </Link>
@@ -180,8 +180,8 @@ export default function StudentsPage() {
             </div>
           </div>
         )) : (
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
-            <p className="text-gray-400 text-lg">Aucun étudiant assigné</p>
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-xl">
+            <p className="text-gray-600 text-lg">Aucun étudiant assigné</p>
           </div>
         )}
         </div>
@@ -189,31 +189,31 @@ export default function StudentsPage() {
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="relative bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-8 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="relative bg-gradient-to-br from-slate-800/95 to-slate-900/95 backdrop-blur-xl rounded-2xl border border-gray-200 p-8 shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => {
                 setShowModal(false)
                 setSelectedStudent('')
               }}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+              className="absolute top-4 right-4 text-gray-600 hover:text-gray-900 transition-colors"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
 
-            <h2 className="text-2xl font-bold text-white mb-6">Ajouter un étudiant à votre supervision</h2>
-            <p className="text-gray-400 text-sm mb-6">L'étudiant pourra ensuite appliquer pour vos sujets approuvés.</p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6">Ajouter un étudiant à votre supervision</h2>
+            <p className="text-gray-600 text-sm mb-6">L'étudiant pourra ensuite appliquer pour vos sujets approuvés.</p>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-semibold text-gray-400 mb-2">
+                <label className="block text-sm font-semibold text-gray-600 mb-2">
                   Étudiant
                 </label>
                 <select
                   value={selectedStudent}
                   onChange={(e) => setSelectedStudent(e.target.value)}
-                  className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
                   required
                 >
                   <option value="">Sélectionner un étudiant</option>
@@ -242,7 +242,7 @@ export default function StudentsPage() {
                     setShowModal(false)
                     setSelectedStudent('')
                   }}
-                  className="px-6 py-3 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold"
+                  className="px-6 py-3 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold"
                 >
                   Annuler
                 </button>

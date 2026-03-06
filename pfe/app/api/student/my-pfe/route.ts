@@ -20,6 +20,7 @@ export async function GET() {
         start_date,
         created_at,
         updated_at,
+        supervisor_notes,
         topic:pfe_topics(
           id,
           title,

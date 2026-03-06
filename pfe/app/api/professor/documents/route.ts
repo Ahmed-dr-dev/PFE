@@ -13,21 +13,27 @@ export async function GET(request: Request) {
 
     const userId = auth.user!.id
     const supabase = await createClient()
-    const { searchParams } = new URL(request.url)
-    const filter = searchParams.get('filter') || 'all' // all, public, student-submitted
 
-    // Get all projects supervised by this professor
+    // Get all projects supervised by this professor (with student info)
     const { data: projects } = await supabase
       .from('pfe_projects')
-      .select('id, student_id')
+      .select(`
+        id,
+        student_id,
+        student:profiles!pfe_projects_student_id_fkey(id, full_name, email, department)
+      `)
       .eq('supervisor_id', userId)
 
-    const projectIds = projects?.map(p => p.id) || []
-    const studentIds = projects?.map(p => p.student_id) || []
+    const projectIds = projects?.map((p: any) => p.id) || []
+    const projectByStudentId = (projects || []).reduce((acc: Record<string, any>, p: any) => {
+      acc[p.student_id] = p
+      return acc
+    }, {})
 
-    if (filter === 'public') {
-      // Only public documents uploaded by professor
-      const { data: documents, error } = await supabase
+    // Student-submitted documents (by project)
+    let studentDocs: any[] = []
+    if (projectIds.length > 0) {
+      const { data } = await supabase
         .from('documents')
         .select(`
           id,
@@ -37,122 +43,60 @@ export async function GET(request: Request) {
           file_size,
           category,
           status,
+          professor_review,
           uploaded_at,
           uploaded_by,
           pfe_project_id,
-          uploader:profiles!documents_uploaded_by_fkey(
-            full_name,
-            role
-          )
-        `)
-        .is('pfe_project_id', null)
-        .eq('uploaded_by', userId)
-        .order('uploaded_at', { ascending: false })
-
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
-      }
-
-      return NextResponse.json({ documents: documents || [] })
-    } else if (filter === 'student-submitted') {
-      // Documents submitted by students
-      if (projectIds.length === 0) {
-        return NextResponse.json({ documents: [] })
-      }
-
-      const { data: documents, error } = await supabase
-        .from('documents')
-        .select(`
-          id,
-          name,
-          file_path,
-          file_type,
-          file_size,
-          category,
-          status,
-          uploaded_at,
-          uploaded_by,
-          pfe_project_id,
-          uploader:profiles!documents_uploaded_by_fkey(
-            full_name,
-            role
-          ),
-          project:pfe_projects(
-            student:profiles!pfe_projects_student_id_fkey(
-              full_name
-            )
-          )
+          uploader:profiles!documents_uploaded_by_fkey(full_name, role)
         `)
         .in('pfe_project_id', projectIds)
-        .in('uploaded_by', studentIds)
         .order('uploaded_at', { ascending: false })
-
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
-      }
-
-      return NextResponse.json({ documents: documents || [] })
-    } else {
-      // All: public documents + student-submitted documents
-      const { data: publicDocs } = await supabase
-        .from('documents')
-        .select(`
-          id,
-          name,
-          file_path,
-          file_type,
-          file_size,
-          category,
-          status,
-          uploaded_at,
-          uploaded_by,
-          pfe_project_id,
-          uploader:profiles!documents_uploaded_by_fkey(
-            full_name,
-            role
-          )
-        `)
-        .is('pfe_project_id', null)
-        .eq('uploaded_by', userId)
-        .order('uploaded_at', { ascending: false })
-
-      let studentDocs: any[] = []
-      if (projectIds.length > 0) {
-        const { data } = await supabase
-          .from('documents')
-          .select(`
-            id,
-            name,
-            file_path,
-            file_type,
-            file_size,
-            category,
-            status,
-            uploaded_at,
-            uploaded_by,
-            pfe_project_id,
-            uploader:profiles!documents_uploaded_by_fkey(
-              full_name,
-              role
-            ),
-            project:pfe_projects(
-              student:profiles!pfe_projects_student_id_fkey(
-                full_name
-              )
-            )
-          `)
-          .in('pfe_project_id', projectIds)
-          .in('uploaded_by', studentIds)
-          .order('uploaded_at', { ascending: false })
-
-        studentDocs = data || []
-      }
-
-      const allDocs = [...(publicDocs || []), ...studentDocs]
-      allDocs.sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime())
-
-      return NextResponse.json({ documents: allDocs })
+      studentDocs = data || []
     }
+
+    // Group by student (pfe_project_id -> project -> student_id)
+    const docsByProjectId: Record<string, any[]> = {}
+    for (const doc of studentDocs) {
+      const pid = doc.pfe_project_id
+      if (!pid) continue
+      if (!docsByProjectId[pid]) docsByProjectId[pid] = []
+      docsByProjectId[pid].push(doc)
+    }
+
+    const byStudent = (projects || []).map((p: any) => {
+      const student = Array.isArray(p.student) ? p.student[0] : p.student
+      const docs = docsByProjectId[p.id] || []
+      return {
+        student: student ? { id: p.student_id, full_name: student.full_name, email: student.email, department: student.department } : { id: p.student_id, full_name: 'Étudiant', email: '', department: '' },
+        documents: docs,
+      }
+    })
+
+    // Public documents uploaded by professor (shared with all students)
+    const { data: publicDocs } = await supabase
+      .from('documents')
+      .select(`
+        id,
+        name,
+        file_path,
+        file_type,
+        file_size,
+        category,
+        status,
+        professor_review,
+        uploaded_at,
+        uploaded_by,
+        pfe_project_id,
+        uploader:profiles!documents_uploaded_by_fkey(full_name, role)
+      `)
+      .is('pfe_project_id', null)
+      .eq('uploaded_by', userId)
+      .order('uploaded_at', { ascending: false })
+
+    return NextResponse.json({
+      byStudent,
+      publicDocuments: publicDocs || [],
+    })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },

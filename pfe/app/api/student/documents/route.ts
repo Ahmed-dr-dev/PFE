@@ -36,6 +36,7 @@ export async function GET() {
         file_size,
         category,
         status,
+        professor_review,
         uploaded_at,
         uploaded_by,
         pfe_project_id,

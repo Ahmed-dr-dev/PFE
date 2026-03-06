@@ -52,7 +52,7 @@ export default function MeetingsPage() {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-center py-12">
-          <p className="text-gray-400">Chargement...</p>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -61,15 +61,15 @@ export default function MeetingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
           Mes <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Réunions</span>
         </h1>
-        <p className="text-gray-400 text-lg">Réunions planifiées par votre encadrant</p>
+        <p className="text-gray-600 text-lg">Réunions planifiées par votre encadrant</p>
       </div>
 
-      <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-2xl">
+      <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-2xl">
         <div className="flex items-center gap-3 mb-4">
-          <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -77,7 +77,7 @@ export default function MeetingsPage() {
             placeholder="Rechercher par date, heure, type, lieu ou notes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/20"
+            className="flex-1 bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 focus:ring-2 focus:ring-emerald-500/20"
           />
         </div>
       </div>
@@ -91,29 +91,29 @@ export default function MeetingsPage() {
             return (
               <div
                 key={meeting.id}
-                className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl hover:border-emerald-500/50 transition-all duration-200"
+                className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl hover:border-emerald-200 transition-all duration-200"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex flex-col items-center justify-center border border-blue-500/30 shrink-0">
-                    <span className="text-xs font-bold text-blue-300">
+                    <span className="text-xs font-bold text-blue-700">
                       {meetingDate.toLocaleDateString('fr-FR', { day: 'numeric' })}
                     </span>
-                    <span className="text-xs font-medium text-blue-300">
+                    <span className="text-xs font-medium text-blue-700">
                       {meetingDate.toLocaleDateString('fr-FR', { month: 'short' })}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2 flex-wrap">
-                      <h3 className="text-white font-semibold text-lg">
+                      <h3 className="text-gray-900 font-semibold text-lg">
                         {meeting.type || meeting.meeting_type || 'Réunion'}
                       </h3>
                       <span
                         className={`px-3 py-1 rounded-lg text-xs font-semibold border shrink-0 ${
                           meeting.status === 'completed'
-                            ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : meeting.status === 'cancelled'
-                            ? 'bg-red-500/20 text-red-200 border-red-500/50'
-                            : 'bg-blue-500/20 text-blue-200 border-blue-500/50'
+                            ? 'bg-red-50 text-red-700 border-red-200'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
                         }`}
                       >
                         {meeting.status === 'completed'
@@ -123,7 +123,7 @@ export default function MeetingsPage() {
                           : 'Planifié'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-400 mb-2 flex-wrap">
+                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2 flex-wrap">
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
@@ -172,8 +172,8 @@ export default function MeetingsPage() {
                       )}
                     </div>
                     {meeting.notes && (
-                      <div className="mt-3 pt-3 border-t border-slate-700/50">
-                        <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-wrap">{meeting.notes}</p>
+                      <div className="mt-3 pt-3 border-t border-gray-200">
+                        <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap">{meeting.notes}</p>
                       </div>
                     )}
                   </div>
@@ -182,8 +182,8 @@ export default function MeetingsPage() {
             )
           })
         ) : (
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
-            <div className="w-16 h-16 bg-slate-700/50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-xl">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
                   strokeLinecap="round"
@@ -193,7 +193,7 @@ export default function MeetingsPage() {
                 />
               </svg>
             </div>
-            <p className="text-gray-400 text-lg">
+            <p className="text-gray-600 text-lg">
               {searchTerm ? 'Aucune réunion ne correspond à votre recherche' : 'Aucune réunion planifiée'}
             </p>
             {!searchTerm && (

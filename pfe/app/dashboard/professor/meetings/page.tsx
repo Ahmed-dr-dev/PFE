@@ -50,7 +50,7 @@ export default function MyMeetingsPage() {
     return (
       <div className="space-y-8">
         <div className="flex items-center justify-center py-12">
-          <p className="text-gray-400">Chargement...</p>
+          <p className="text-gray-600">Chargement...</p>
         </div>
       </div>
     )
@@ -59,41 +59,41 @@ export default function MyMeetingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2">
+        <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
           Mes <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">réunions</span>
         </h1>
-        <p className="text-gray-400 text-lg">Gérez toutes vos réunions avec vos étudiants</p>
+        <p className="text-gray-600 text-lg">Gérez toutes vos réunions avec vos étudiants</p>
       </div>
 
-      <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-2xl">
-        <h2 className="text-xl font-bold text-white mb-4">Rechercher</h2>
+      <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-2xl">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Rechercher</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-sm font-semibold text-gray-400 mb-2">Date</label>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">Date</label>
             <input
               type="date"
               value={searchQuery.date}
               onChange={(e) => setSearchQuery({ ...searchQuery, date: e.target.value })}
-              className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-400 mb-2">Heure</label>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">Heure</label>
             <input
               type="time"
               value={searchQuery.time}
               onChange={(e) => setSearchQuery({ ...searchQuery, time: e.target.value })}
-              className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white focus:outline-none focus:border-emerald-500/50 transition-colors"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-gray-400 mb-2">Étudiant</label>
+            <label className="block text-sm font-semibold text-gray-600 mb-2">Étudiant</label>
             <input
               type="text"
               value={searchQuery.student}
               onChange={(e) => setSearchQuery({ ...searchQuery, student: e.target.value })}
               placeholder="Nom ou email..."
-              className="w-full px-4 py-2 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 transition-colors"
             />
           </div>
         </div>
@@ -107,34 +107,34 @@ export default function MyMeetingsPage() {
           return (
             <div
               key={meeting.id}
-              className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-6 shadow-xl"
+              className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl"
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4 flex-1">
                   <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex flex-col items-center justify-center border border-blue-500/30">
-                    <span className="text-xs font-bold text-blue-300">
+                    <span className="text-xs font-bold text-blue-700">
                       {meetingDate.toLocaleDateString('fr-FR', { day: 'numeric' })}
                     </span>
-                    <span className="text-xs font-medium text-blue-300">
+                    <span className="text-xs font-medium text-blue-700">
                       {meetingDate.toLocaleDateString('fr-FR', { month: 'short' })}
                     </span>
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-white font-semibold text-lg">{meeting.type || 'Réunion'}</h3>
+                      <h3 className="text-gray-900 font-semibold text-lg">{meeting.type || 'Réunion'}</h3>
                       <span
                         className={`px-3 py-1 rounded-lg text-xs font-semibold border ${
                           meeting.status === 'completed'
-                            ? 'bg-emerald-500/20 text-emerald-200 border-emerald-500/50'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             : meeting.status === 'cancelled'
-                            ? 'bg-red-500/20 text-red-200 border-red-500/50'
-                            : 'bg-blue-500/20 text-blue-200 border-blue-500/50'
+                            ? 'bg-red-50 text-red-700 border-red-200'
+                            : 'bg-blue-50 text-blue-700 border-blue-200'
                         }`}
                       >
                         {meeting.status === 'completed' ? 'Terminé' : meeting.status === 'cancelled' ? 'Annulé' : 'Planifié'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-400 mb-2">
+                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -160,7 +160,7 @@ export default function MyMeetingsPage() {
                       )}
                     </div>
                     {meeting.notes && (
-                      <p className="text-gray-300 text-sm">{meeting.notes}</p>
+                      <p className="text-gray-700 text-sm">{meeting.notes}</p>
                     )}
                   </div>
                 </div>
@@ -168,8 +168,8 @@ export default function MyMeetingsPage() {
             </div>
           )
         }) : (
-          <div className="relative bg-gradient-to-br from-slate-800/90 to-slate-900/90 backdrop-blur-xl rounded-2xl border border-slate-700/50 p-12 text-center shadow-xl">
-            <p className="text-gray-400 text-lg">
+          <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-xl">
+            <p className="text-gray-600 text-lg">
               {Object.values(searchQuery).some(v => v) ? 'Aucune réunion trouvée' : 'Aucune réunion planifiée'}
             </p>
           </div>

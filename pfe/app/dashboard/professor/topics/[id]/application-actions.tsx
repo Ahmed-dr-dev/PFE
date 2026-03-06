@@ -40,12 +40,12 @@ export function ApplicationActions({ applicationId, topicId }: { applicationId: 
   return (
     <div className="mt-4">
       {error && (
-        <div className="mb-3 p-3 bg-red-500/20 border border-red-500/50 text-red-200 rounded-lg text-sm">
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
           {error}
         </div>
       )}
       {success && (
-        <div className="mb-3 p-3 bg-emerald-500/20 border border-emerald-500/50 text-emerald-200 rounded-lg text-sm">
+        <div className="mb-3 p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg text-sm">
           Mise à jour réussie
         </div>
       )}
@@ -60,7 +60,7 @@ export function ApplicationActions({ applicationId, topicId }: { applicationId: 
         <button
           onClick={() => handleStatusChange('rejected')}
           disabled={loading}
-          className="px-4 py-2 bg-slate-700/50 text-white rounded-lg hover:bg-slate-700 transition-all duration-200 font-semibold text-sm disabled:opacity-50"
+          className="px-4 py-2 bg-gray-100 text-gray-900 rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm disabled:opacity-50"
         >
           Rejeter
         </button>
