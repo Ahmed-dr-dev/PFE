@@ -84,7 +84,7 @@ export async function POST(
       return NextResponse.json({ error: 'Étudiant non trouvé' }, { status: 404 })
     }
 
-    // Create meeting
+    // Create meeting (individual: from student detail page)
     const { data: meeting, error } = await supabase
       .from('meetings')
       .insert({
@@ -98,6 +98,7 @@ export async function POST(
         notes: notes || null,
         location: location || null,
         status: 'planned',
+        audience_type: 'individual',
       })
       .select()
       .single()

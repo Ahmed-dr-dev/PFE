@@ -108,6 +108,15 @@ export default function MeetingsPage() {
                         {meeting.type || meeting.meeting_type || 'Réunion'}
                       </h3>
                       <span
+                        className={`px-2 py-0.5 rounded-md text-xs font-medium shrink-0 ${
+                          meeting.audience_type === 'group'
+                            ? 'bg-violet-100 text-violet-700'
+                            : 'bg-gray-100 text-gray-700'
+                        }`}
+                      >
+                        {meeting.audience_type === 'group' ? 'Groupe' : 'Seul'}
+                      </span>
+                      <span
                         className={`px-3 py-1 rounded-lg text-xs font-semibold border shrink-0 ${
                           meeting.status === 'completed'
                             ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
