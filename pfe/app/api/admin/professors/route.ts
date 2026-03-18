@@ -18,6 +18,7 @@ export async function GET() {
         phone,
         department,
         office,
+        supervision_capacity,
         topics:pfe_topics(
           id
         ),
@@ -42,6 +43,7 @@ export async function GET() {
       office: professor.office,
       topicsCount: professor.topics?.length || 0,
       studentsCount: professor.students?.length || 0,
+      supervisionCapacity: professor.supervision_capacity ?? 8,
     })) || []
 
     return NextResponse.json({ professors: formattedProfessors })

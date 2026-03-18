@@ -121,6 +121,13 @@ export async function PUT(
           updated_at: new Date().toISOString(),
         })
         .eq('id', pfe.id)
+
+      // Remove other demands for this topic once reserved
+      await supabase
+        .from('topic_applications')
+        .delete()
+        .eq('topic_id', applicationData.topic_id)
+        .neq('id', applicationId)
     }
 
     return NextResponse.json({ success: true, application })

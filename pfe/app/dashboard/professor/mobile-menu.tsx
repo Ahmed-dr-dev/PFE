@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -118,31 +118,52 @@ const navigation = [
 export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
+  const [capacity, setCapacity] = useState<{ current: number; capacity: number } | null>(null)
+
+  useEffect(() => {
+    async function fetchCapacity() {
+      try {
+        const res = await fetch('/api/professor/supervision-capacity')
+        if (res.ok) {
+          const data = await res.json()
+          setCapacity({ current: data.current || 0, capacity: data.capacity || 8 })
+        }
+      } catch {}
+    }
+    fetchCapacity()
+  }, [])
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="lg:hidden text-gray-600 hover:text-gray-900 transition-colors p-2 rounded-lg hover:bg-gray-100"
-      >
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          {isOpen ? (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M6 18L18 6M6 6l12 12"
-            />
-          ) : (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 6h16M4 12h16M4 18h16"
-            />
-          )}
-        </svg>
-      </button>
+      <div className="lg:hidden flex items-center gap-2">
+        {capacity && (
+          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200">
+            Encadrement {capacity.current}/{capacity.capacity}
+          </span>
+        )}
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="text-gray-600 hover:text-gray-900 transition-colors p-2 rounded-lg hover:bg-gray-100"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {isOpen ? (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            ) : (
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            )}
+          </svg>
+        </button>
+      </div>
 
       {isOpen && (
         <div className="absolute top-full left-0 right-0 bg-white border-b border-gray-200 lg:hidden shadow-lg z-40">

@@ -14,10 +14,54 @@ export default function AnnoncesPage() {
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [settingsSaving, setSettingsSaving] = useState(false)
 
+  const [stats, setStats] = useState<{ totalStudents: number; totalProfessors: number } | null>(null)
+  const [statsLoading, setStatsLoading] = useState(true)
+
+  const [professors, setProfessors] = useState<any[]>([])
+  const [professorsLoading, setProfessorsLoading] = useState(true)
+  const [capacitySavingId, setCapacitySavingId] = useState<string | null>(null)
+
   const [announcements, setAnnouncements] = useState<any[]>([])
   const [announcementsLoading, setAnnouncementsLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ title: '', content: '', target_audience: 'all' })
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch('/api/admin/stats')
+        if (res.ok) {
+          const data = await res.json()
+          setStats({
+            totalStudents: data.totalStudents || 0,
+            totalProfessors: data.totalProfessors || 0,
+          })
+        }
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setStatsLoading(false)
+      }
+    }
+    fetchStats()
+  }, [])
+
+  useEffect(() => {
+    async function fetchProfessors() {
+      try {
+        const res = await fetch('/api/admin/professors')
+        if (res.ok) {
+          const data = await res.json()
+          setProfessors(data.professors || [])
+        }
+      } catch (e) {
+        console.error(e)
+      } finally {
+        setProfessorsLoading(false)
+      }
+    }
+    fetchProfessors()
+  }, [])
 
   useEffect(() => {
     async function fetchSettings() {
@@ -49,6 +93,31 @@ export default function AnnoncesPage() {
     }
     load()
   }, [])
+
+  const saveCapacity = async (professorId: string, nextCapacity: number) => {
+    setCapacitySavingId(professorId)
+    try {
+      const res = await fetch(`/api/admin/professors/${professorId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ supervision_capacity: nextCapacity }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data.error || 'Erreur')
+        return
+      }
+      setProfessors((prev) =>
+        prev.map((p) =>
+          p.id === professorId ? { ...p, supervisionCapacity: data.professor?.supervisionCapacity ?? nextCapacity } : p
+        )
+      )
+    } catch (e) {
+      alert('Erreur réseau')
+    } finally {
+      setCapacitySavingId(null)
+    }
+  }
 
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -109,6 +178,108 @@ export default function AnnoncesPage() {
         </h1>
         <p className="text-gray-600 text-lg">Paramètres de la plateforme et annonces</p>
       </div>
+
+      {/* Statistiques */}
+      <section>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Statistiques</h2>
+        {statsLoading ? (
+          <p className="text-gray-600">Chargement...</p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <p className="text-sm font-semibold text-gray-600">Total étudiants</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalStudents ?? 0}</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
+              <p className="text-sm font-semibold text-gray-600">Total enseignants</p>
+              <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.totalProfessors ?? 0}</p>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Capacité d'encadrement */}
+      <section>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Capacité d'encadrement</h2>
+        {professorsLoading ? (
+          <p className="text-gray-600">Chargement...</p>
+        ) : (
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Enseignant</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Encadrés</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Capacité</th>
+                    <th className="text-left px-6 py-3 font-semibold text-gray-700">État</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {professors.map((p) => {
+                    const capacity = Number(p.supervisionCapacity ?? 8)
+                    const count = Number(p.studentsCount ?? 0)
+                    const over = count > capacity
+                    return (
+                      <tr key={p.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="font-semibold text-gray-900">{p.name || p.email}</div>
+                          <div className="text-xs text-gray-500">{p.email}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-semibold text-gray-900">{count}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={capacity}
+                              onChange={(e) =>
+                                setProfessors((prev) =>
+                                  prev.map((x) =>
+                                    x.id === p.id ? { ...x, supervisionCapacity: Number(e.target.value) } : x
+                                  )
+                                )
+                              }
+                              className="w-24 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            />
+                            <button
+                              type="button"
+                              disabled={capacitySavingId === p.id}
+                              onClick={() => saveCapacity(p.id, capacity)}
+                              className="px-3 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50"
+                            >
+                              {capacitySavingId === p.id ? '...' : 'Enregistrer'}
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2 py-1 rounded-md text-xs font-semibold ${
+                              over ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+                            }`}
+                          >
+                            {over ? 'Dépassement' : 'OK'}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                  {professors.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="px-6 py-10 text-center text-gray-600">
+                        Aucun enseignant
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </section>
 
       {/* Paramètres */}
       <section>

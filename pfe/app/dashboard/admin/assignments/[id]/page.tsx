@@ -33,6 +33,7 @@ export default function AssignmentDetailPage() {
   const [assignment, setAssignment] = useState<any>(null)
   const [assignmentData, setAssignmentData] = useState<any>(null)
   const [professors, setProfessors] = useState<any[]>([])
+  const [profSpecialityFilter, setProfSpecialityFilter] = useState<string>('all')
   const [selectedSupervisor, setSelectedSupervisor] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -133,6 +134,17 @@ export default function AssignmentDetailPage() {
       </div>
     )
   }
+
+  const allDepartments = ['informatique', 'gestion', 'finance', 'marketing', 'rh', 'comptabilite']
+  const availableProfessors = professors
+    .map((p: any) => {
+      const capacity = Number(p.supervisionCapacity ?? 8)
+      const count = Number(p.studentsCount ?? 0)
+      const available = Math.max(0, capacity - count)
+      return { ...p, capacity, count, available }
+    })
+    .filter((p: any) => p.available > 0 || p.id === selectedSupervisor) // keep current selection visible
+    .filter((p: any) => profSpecialityFilter === 'all' || p.department === profSpecialityFilter)
 
   return (
     <div className="space-y-8">

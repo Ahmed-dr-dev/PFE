@@ -93,7 +93,9 @@ export async function PUT(
     }
 
     const { id } = await params
-    const { studentId, topicId, supervisorId, status } = await request.json()
+    const body = await request.json()
+    const { studentId, topicId, supervisorId, status } = body
+    const supervisorToSet = supervisorId || body.supervisor_id
 
     // Update PFE project
     const updateData: any = {
@@ -102,7 +104,7 @@ export async function PUT(
 
     if (studentId) updateData.student_id = studentId
     if (topicId !== undefined) updateData.topic_id = topicId
-    if (supervisorId) updateData.supervisor_id = supervisorId
+    if (supervisorToSet) updateData.supervisor_id = supervisorToSet
     if (status) {
       updateData.status = status
       // If approving, set start_date if not already set
@@ -116,6 +118,38 @@ export async function PUT(
         
         if (!currentProject?.start_date) {
           updateData.start_date = new Date().toISOString().split('T')[0]
+        }
+      }
+    }
+
+    // Capacity check if supervisor is changing/being set
+    if (supervisorToSet) {
+      const { data: currentProject } = await supabase
+        .from('pfe_projects')
+        .select('supervisor_id')
+        .eq('id', id)
+        .single()
+
+      const currentSupervisorId = currentProject?.supervisor_id
+      if (!currentSupervisorId || currentSupervisorId !== supervisorToSet) {
+        const { data: supervisorProfile, error: supervisorErr } = await supabase
+          .from('profiles')
+          .select('id, role, supervision_capacity')
+          .eq('id', supervisorToSet)
+          .single()
+        if (supervisorErr || !supervisorProfile || supervisorProfile.role !== 'professor') {
+          return NextResponse.json({ error: 'Encadrant invalide' }, { status: 400 })
+        }
+        const capacity = supervisorProfile.supervision_capacity ?? 8
+        const { count: currentCount } = await supabase
+          .from('pfe_projects')
+          .select('*', { count: 'exact', head: true })
+          .eq('supervisor_id', supervisorToSet)
+        if ((currentCount || 0) >= capacity) {
+          return NextResponse.json(
+            { error: `Capacité d'encadrement atteinte (${currentCount || 0}/${capacity})` },
+            { status: 400 }
+          )
         }
       }
     }

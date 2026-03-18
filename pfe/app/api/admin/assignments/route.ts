@@ -95,6 +95,27 @@ export async function POST(request: Request) {
       )
     }
 
+    // Capacity check (default 8)
+    const { data: supervisorProfile, error: supervisorErr } = await supabase
+      .from('profiles')
+      .select('id, role, supervision_capacity')
+      .eq('id', supervisorId)
+      .single()
+    if (supervisorErr || !supervisorProfile || supervisorProfile.role !== 'professor') {
+      return NextResponse.json({ error: 'Encadrant invalide' }, { status: 400 })
+    }
+    const capacity = supervisorProfile.supervision_capacity ?? 8
+    const { count: currentCount } = await supabase
+      .from('pfe_projects')
+      .select('*', { count: 'exact', head: true })
+      .eq('supervisor_id', supervisorId)
+    if ((currentCount || 0) >= capacity) {
+      return NextResponse.json(
+        { error: `Capacité d'encadrement atteinte (${currentCount || 0}/${capacity})` },
+        { status: 400 }
+      )
+    }
+
     // Check if student already has a PFE
     const { data: existingPfe } = await supabase
       .from('pfe_projects')

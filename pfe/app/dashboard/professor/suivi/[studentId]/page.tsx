@@ -260,6 +260,17 @@ export default function ProfessorSuiviStudentPage() {
   }
 
   const { student, project, topic, documents } = data
+  const docStructure = [
+    'Cahier des charges',
+    'CHP01',
+    'CHP02',
+    'CHP03',
+    'CHP04',
+    'Conclusion',
+    'Bibliographie',
+    'Annexes',
+    'Présentation',
+  ]
 
   return (
     <div className="space-y-8">
@@ -318,6 +329,16 @@ export default function ProfessorSuiviStudentPage() {
 
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">Documents et avancement</h2>
+            <div className="mb-4 bg-violet-50 border border-violet-200 rounded-xl p-4">
+              <p className="text-sm font-semibold text-violet-800 mb-2">Structure des documents (titres à utiliser)</p>
+              <div className="flex flex-wrap gap-2">
+                {docStructure.map((t) => (
+                  <span key={t} className="px-2 py-1 rounded-lg text-xs font-semibold bg-white border border-violet-200 text-violet-700">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
             {documents.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {documents.map((doc: any) => (

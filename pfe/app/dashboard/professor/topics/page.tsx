@@ -88,9 +88,15 @@ export default function TopicsPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-3 mb-2">
                   <h3 className="text-xl font-bold text-gray-900">{topic.title}</h3>
-                  <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-gray-100 text-gray-900">
-                    {topic.status}
-                  </span>
+                  {Number(topic.assigned || 0) > 0 ? (
+                    <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-violet-50 text-violet-700 border-violet-200">
+                      Réservé
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-gray-100 text-gray-900">
+                      {topic.status}
+                    </span>
+                  )}
                 </div>
                 <p className="text-gray-700 leading-relaxed">{topic.description}</p>
               </div>

@@ -141,6 +141,24 @@ export async function POST(request: Request) {
       )
     }
 
+    const allowedTitles = new Set([
+      'Cahier des charges',
+      'CHP01',
+      'CHP02',
+      'CHP03',
+      'CHP04',
+      'Conclusion',
+      'Bibliographie',
+      'Annexes',
+      'Présentation',
+    ])
+    if (!allowedTitles.has(category)) {
+      return NextResponse.json(
+        { error: 'Titre du document invalide. Veuillez choisir un titre depuis la liste.' },
+        { status: 400 }
+      )
+    }
+
     const fileExt = file.name.split('.').pop() || ''
     const fileType = fileExt.toUpperCase() || 'UNKNOWN'
     const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`

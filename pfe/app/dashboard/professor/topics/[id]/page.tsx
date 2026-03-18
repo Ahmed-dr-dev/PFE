@@ -72,15 +72,21 @@ export default function TopicDetailPage() {
           <p className="text-gray-600 text-lg">Détails du sujet de PFE</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
-            topic.status === 'approved'
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : topic.status === 'pending'
-              ? 'bg-yellow-50 text-yellow-800 border-yellow-200'
-              : 'bg-gray-100 text-gray-700 border-gray-200'
-          }`}>
-            {topic.status === 'approved' ? 'Approuvé' : topic.status === 'pending' ? 'En attente' : 'Rejeté'}
-          </span>
+          {Array.isArray(topic.projects) && topic.projects.length > 0 ? (
+            <span className="px-4 py-2 rounded-xl text-sm font-semibold border bg-violet-50 text-violet-700 border-violet-200">
+              Réservé
+            </span>
+          ) : (
+            <span className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
+              topic.status === 'approved'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : topic.status === 'pending'
+                ? 'bg-yellow-50 text-yellow-800 border-yellow-200'
+                : 'bg-gray-100 text-gray-700 border-gray-200'
+            }`}>
+              {topic.status === 'approved' ? 'Approuvé' : topic.status === 'pending' ? 'En attente' : 'Rejeté'}
+            </span>
+          )}
           {topic.status === 'pending' && <TopicStatusActions topicId={topic.id} />}
         </div>
       </div>

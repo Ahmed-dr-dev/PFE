@@ -3,19 +3,23 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
-const PROGRESS_CATEGORIES = [
-  { value: 'Rapport d\'avancement', label: 'Rapport d\'avancement' },
-  { value: 'Livrable', label: 'Livrable' },
+const DOCUMENT_TITLES = [
+  { value: 'Cahier des charges', label: 'Cahier des charges' },
+  { value: 'CHP01', label: 'CHP01' },
+  { value: 'CHP02', label: 'CHP02' },
+  { value: 'CHP03', label: 'CHP03' },
+  { value: 'CHP04', label: 'CHP04' },
+  { value: 'Conclusion', label: 'Conclusion' },
+  { value: 'Bibliographie', label: 'Bibliographie' },
+  { value: 'Annexes', label: 'Annexes' },
   { value: 'Présentation', label: 'Présentation' },
-  { value: 'Document de travail', label: 'Document de travail' },
-  { value: 'Autre', label: 'Autre' },
 ]
 
 export function SuiviUploadButton() {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
-  const [category, setCategory] = useState('Rapport d\'avancement')
+  const [category, setCategory] = useState('Cahier des charges')
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -56,7 +60,7 @@ export function SuiviUploadButton() {
         onChange={(e) => setCategory(e.target.value)}
         className="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
       >
-        {PROGRESS_CATEGORIES.map((c) => (
+        {DOCUMENT_TITLES.map((c) => (
           <option key={c.value} value={c.value}>{c.label}</option>
         ))}
       </select>

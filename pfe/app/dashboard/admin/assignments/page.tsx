@@ -33,6 +33,7 @@ export default function AssignmentsPage() {
   const [forceForm, setForceForm] = useState({ studentId: '', supervisorId: '', topicId: '' })
   const [forceSubmitting, setForceSubmitting] = useState(false)
   const [forceError, setForceError] = useState('')
+  const [profSpecialityFilter, setProfSpecialityFilter] = useState<string>('all')
 
   useEffect(() => {
     async function load() {
@@ -138,6 +139,16 @@ export default function AssignmentsPage() {
   const existingFromStudents = allStudents.map((s: any) => s.department).filter(Boolean)
   const departments = Array.from(new Set([...existingFromAssignments, ...existingFromStudents, ...allDepartments]))
 
+  const availableProfessors = professors
+    .map((p: any) => {
+      const capacity = Number(p.supervisionCapacity ?? 8)
+      const count = Number(p.studentsCount ?? 0)
+      const available = Math.max(0, capacity - count)
+      return { ...p, capacity, count, available }
+    })
+    .filter((p: any) => p.available > 0)
+    .filter((p: any) => profSpecialityFilter === 'all' || p.department === profSpecialityFilter)
+
   // Filter assignments
   const filteredAssignments = assignments.filter((assignment: any) => {
     const matchesStatus = statusFilter === 'all' || assignment.status === statusFilter
@@ -207,6 +218,21 @@ export default function AssignmentsPage() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">Encadrant *</label>
+                <div className="flex gap-2 mb-2">
+                  <select
+                    value={profSpecialityFilter}
+                    onChange={(e) => {
+                      setProfSpecialityFilter(e.target.value)
+                      setForceForm((f) => ({ ...f, supervisorId: '' }))
+                    }}
+                    className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200"
+                  >
+                    <option value="all">Toutes spécialités</option>
+                    {allDepartments.map((d) => (
+                      <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
+                    ))}
+                  </select>
+                </div>
                 <select
                   value={forceForm.supervisorId}
                   onChange={e => setForceForm(f => ({ ...f, supervisorId: e.target.value }))}
@@ -214,10 +240,18 @@ export default function AssignmentsPage() {
                   className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200"
                 >
                   <option value="">Sélectionner un encadrant</option>
-                  {professors.map((p: any) => (
-                    <option key={p.id} value={p.id}>{p.full_name || p.name || p.email}</option>
+                  {availableProfessors.map((p: any) => (
+                    <option key={p.id} value={p.id}>
+                      {p.full_name || p.name || p.email} — {p.available} place(s) dispo
+                      {p.department ? ` (${p.department})` : ''}
+                    </option>
                   ))}
                 </select>
+                {availableProfessors.length === 0 && (
+                  <p className="text-amber-600 text-xs mt-1 font-medium">
+                    Aucun encadrant n&apos;a de places disponibles (ou filtre trop restrictif).
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">Sujet (optionnel)</label>

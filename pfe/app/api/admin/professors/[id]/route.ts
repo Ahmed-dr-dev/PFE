@@ -28,6 +28,7 @@ export async function GET(
         office_hours,
         bio,
         expertise,
+        supervision_capacity,
         topics:pfe_topics(
           id,
           title,
@@ -90,6 +91,7 @@ export async function GET(
         office_hours: professor.office_hours,
         bio: professor.bio,
         expertise: professor.expertise,
+        supervisionCapacity: professor.supervision_capacity ?? 8,
       },
       topics: topics,
       students: students,
@@ -101,5 +103,42 @@ export async function GET(
       { error: 'Erreur serveur' },
       { status: 500 }
     )
+  }
+}
+
+export async function PUT(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient()
+    const auth = await requireAuth('admin')
+    if (auth.error) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    const { id } = await params
+    const body = await request.json()
+    const capacityRaw = body?.supervision_capacity
+    const capacity = Number(capacityRaw)
+    if (!Number.isFinite(capacity) || capacity < 0 || capacity > 100) {
+      return NextResponse.json({ error: 'Capacité invalide' }, { status: 400 })
+    }
+
+    const { data: updated, error } = await supabase
+      .from('profiles')
+      .update({ supervision_capacity: Math.floor(capacity), updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .eq('role', 'professor')
+      .select('id, supervision_capacity')
+      .single()
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ professor: { id: updated.id, supervisionCapacity: updated.supervision_capacity ?? 8 } })
+  } catch (error) {
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
   }
 }
