@@ -18,9 +18,17 @@ CREATE TABLE IF NOT EXISTS public.documents (
   CONSTRAINT documents_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES public.profiles (id) ON DELETE SET NULL,
   CONSTRAINT documents_category_check CHECK (
     category = ANY (ARRAY[
+      'Cahier des charges'::text,
+      'CHP01'::text,
+      'CHP02'::text,
+      'CHP03'::text,
+      'CHP04'::text,
+      'Conclusion'::text,
+      'Bibliographie'::text,
+      'Annexes'::text,
+      'Présentation'::text,
       'Rapport d''avancement'::text,
       'Livrable'::text,
-      'Présentation'::text,
       'Document de travail'::text,
       'Autre'::text
     ])

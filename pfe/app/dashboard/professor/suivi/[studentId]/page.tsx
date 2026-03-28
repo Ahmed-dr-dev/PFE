@@ -272,6 +272,11 @@ export default function ProfessorSuiviStudentPage() {
     'Présentation',
   ]
 
+  const studentUploadedTitle = (title: string) =>
+    documents.some(
+      (d: any) => d.category === title && d.uploaded_by === student.id
+    )
+
   return (
     <div className="space-y-8">
       <Link href="/dashboard/professor/suivi" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium">
@@ -330,13 +335,24 @@ export default function ProfessorSuiviStudentPage() {
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-3">Documents et avancement</h2>
             <div className="mb-4 bg-violet-50 border border-violet-200 rounded-xl p-4">
-              <p className="text-sm font-semibold text-violet-800 mb-2">Structure des documents (titres à utiliser)</p>
+              <p className="text-sm font-semibold text-violet-800 mb-1">Structure des documents (titres à utiliser)</p>
+              <p className="text-xs text-violet-600 mb-2">Le libellé passe en vert lorsque l&apos;étudiant a déposé ce document.</p>
               <div className="flex flex-wrap gap-2">
-                {docStructure.map((t) => (
-                  <span key={t} className="px-2 py-1 rounded-lg text-xs font-semibold bg-white border border-violet-200 text-violet-700">
-                    {t}
-                  </span>
-                ))}
+                {docStructure.map((t) => {
+                  const done = studentUploadedTitle(t)
+                  return (
+                    <span
+                      key={t}
+                      className={
+                        done
+                          ? 'px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-100 border border-emerald-400 text-emerald-900 shadow-sm'
+                          : 'px-2 py-1 rounded-lg text-xs font-semibold bg-white border border-violet-200 text-violet-700'
+                      }
+                    >
+                      {t}
+                    </span>
+                  )
+                })}
               </div>
             </div>
             {documents.length > 0 ? (

@@ -18,7 +18,9 @@ export default function AnnoncesPage() {
   const [statsLoading, setStatsLoading] = useState(true)
 
   const [professors, setProfessors] = useState<any[]>([])
-  const [professorsLoading, setProfessorsLoading] = useState(true)
+  const [professorsLoading, setProfessorsLoading] = useState(false)
+  const [professorsLoaded, setProfessorsLoaded] = useState(false)
+  const [capacityModalOpen, setCapacityModalOpen] = useState(false)
   const [capacitySavingId, setCapacitySavingId] = useState<string | null>(null)
 
   const [announcements, setAnnouncements] = useState<any[]>([])
@@ -47,7 +49,9 @@ export default function AnnoncesPage() {
   }, [])
 
   useEffect(() => {
+    if (!capacityModalOpen || professorsLoaded) return
     async function fetchProfessors() {
+      setProfessorsLoading(true)
       try {
         const res = await fetch('/api/admin/professors')
         if (res.ok) {
@@ -58,10 +62,25 @@ export default function AnnoncesPage() {
         console.error(e)
       } finally {
         setProfessorsLoading(false)
+        setProfessorsLoaded(true)
       }
     }
     fetchProfessors()
-  }, [])
+  }, [capacityModalOpen, professorsLoaded])
+
+  useEffect(() => {
+    if (!capacityModalOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setCapacityModalOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prev
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [capacityModalOpen])
 
   useEffect(() => {
     async function fetchSettings() {
@@ -198,92 +217,30 @@ export default function AnnoncesPage() {
         )}
       </section>
 
-      {/* Capacité d'encadrement */}
-      <section>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Capacité d'encadrement</h2>
-        {professorsLoading ? (
-          <p className="text-gray-600">Chargement...</p>
-        ) : (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Enseignant</th>
-                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Encadrés</th>
-                    <th className="text-left px-6 py-3 font-semibold text-gray-700">Capacité</th>
-                    <th className="text-left px-6 py-3 font-semibold text-gray-700">État</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {professors.map((p) => {
-                    const capacity = Number(p.supervisionCapacity ?? 8)
-                    const count = Number(p.studentsCount ?? 0)
-                    const over = count > capacity
-                    return (
-                      <tr key={p.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div className="font-semibold text-gray-900">{p.name || p.email}</div>
-                          <div className="text-xs text-gray-500">{p.email}</div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="font-semibold text-gray-900">{count}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={capacity}
-                              onChange={(e) =>
-                                setProfessors((prev) =>
-                                  prev.map((x) =>
-                                    x.id === p.id ? { ...x, supervisionCapacity: Number(e.target.value) } : x
-                                  )
-                                )
-                              }
-                              className="w-24 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                            />
-                            <button
-                              type="button"
-                              disabled={capacitySavingId === p.id}
-                              onClick={() => saveCapacity(p.id, capacity)}
-                              className="px-3 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50"
-                            >
-                              {capacitySavingId === p.id ? '...' : 'Enregistrer'}
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-2 py-1 rounded-md text-xs font-semibold ${
-                              over ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
-                            }`}
-                          >
-                            {over ? 'Dépassement' : 'OK'}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                  {professors.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="px-6 py-10 text-center text-gray-600">
-                        Aucun enseignant
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </section>
-
       {/* Paramètres */}
       <section>
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Paramètres</h2>
+        <div className="flex flex-wrap items-center gap-3 mb-4">
+          <h2 className="text-2xl font-bold text-gray-900">Paramètres</h2>
+          <button
+            type="button"
+            aria-haspopup="dialog"
+            aria-expanded={capacityModalOpen}
+            aria-label="Ouvrir la capacité d’encadrement"
+            title="Capacité d’encadrement"
+            onClick={() => setCapacityModalOpen(true)}
+            className="inline-flex items-center justify-center p-2.5 rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        </div>
         {settingsLoading ? (
           <p className="text-gray-600">Chargement...</p>
         ) : (
@@ -301,6 +258,7 @@ export default function AnnoncesPage() {
                   />
                 </div>
               ))}
+
               <button
                 type="submit"
                 disabled={settingsSaving}
@@ -312,6 +270,132 @@ export default function AnnoncesPage() {
           </form>
         )}
       </section>
+
+      {capacityModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          role="presentation"
+          onClick={() => setCapacityModalOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="capacity-modal-title"
+            className="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-4xl max-h-[min(90vh,900px)] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-200 shrink-0">
+              <div>
+                <h3 id="capacity-modal-title" className="text-xl font-bold text-gray-900">
+                  Capacité d&apos;encadrement
+                </h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Nombre max. d&apos;étudiants par enseignant (défaut 8). Enregistrez chaque ligne avec le bouton sur la ligne.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCapacityModalOpen(false)}
+                className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                aria-label="Fermer"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="overflow-y-auto flex-1 px-6 py-4">
+              {professorsLoading ? (
+                <p className="text-gray-600 text-sm py-8 text-center">Chargement des enseignants...</p>
+              ) : (
+                <div className="rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="text-left px-4 py-3 font-semibold text-gray-700">Enseignant</th>
+                          <th className="text-left px-4 py-3 font-semibold text-gray-700">Encadrés</th>
+                          <th className="text-left px-4 py-3 font-semibold text-gray-700">Capacité</th>
+                          <th className="text-left px-4 py-3 font-semibold text-gray-700">État</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {professors.map((p) => {
+                          const capacity = Number(p.supervisionCapacity ?? 8)
+                          const count = Number(p.studentsCount ?? 0)
+                          const over = count > capacity
+                          return (
+                            <tr key={p.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3">
+                                <div className="font-semibold text-gray-900">{p.name || p.email}</div>
+                                <div className="text-xs text-gray-500">{p.email}</div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span className="font-semibold text-gray-900">{count}</span>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    value={capacity}
+                                    onChange={(e) =>
+                                      setProfessors((prev) =>
+                                        prev.map((x) =>
+                                          x.id === p.id ? { ...x, supervisionCapacity: Number(e.target.value) } : x
+                                        )
+                                      )
+                                    }
+                                    className="w-24 px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                  />
+                                  <button
+                                    type="button"
+                                    disabled={capacitySavingId === p.id}
+                                    onClick={() => saveCapacity(p.id, capacity)}
+                                    className="px-3 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 text-xs sm:text-sm"
+                                  >
+                                    {capacitySavingId === p.id ? '...' : 'Enregistrer'}
+                                  </button>
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <span
+                                  className={`px-2 py-1 rounded-md text-xs font-semibold ${
+                                    over ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'
+                                  }`}
+                                >
+                                  {over ? 'Dépassement' : 'OK'}
+                                </span>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                        {professors.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="px-4 py-8 text-center text-gray-600">
+                              Aucun enseignant
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+            <div className="px-6 py-4 border-t border-gray-200 shrink-0 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setCapacityModalOpen(false)}
+                className="px-4 py-2.5 rounded-lg font-semibold border border-gray-200 text-gray-800 hover:bg-gray-50"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Annonces */}
       <section>

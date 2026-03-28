@@ -84,9 +84,10 @@ export default function TopicDetailPage() {
     )
   }
 
-  const { topic, application, hasTopic, hasSupervisor } = data
+  const { topic, application, hasTopic, hasSupervisor, topicAssignedToOther } = data
   const professor = topic.professor
-  const canApply = hasSupervisor && !hasTopic && !application
+  const canApply =
+    hasSupervisor && !hasTopic && !application && !topicAssignedToOther
 
   return (
     <div className="space-y-8">
@@ -115,6 +116,11 @@ export default function TopicDetailPage() {
         )}
         {!hasSupervisor && !hasTopic && !application && (
           <p className="text-amber-700 text-sm">Obtenez un encadrant (page Encadrement) pour pouvoir postuler.</p>
+        )}
+        {topicAssignedToOther && !hasTopic && (
+          <span className="px-6 py-3 bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-sm font-semibold">
+            Sujet attribué à un autre étudiant — postulation fermée
+          </span>
         )}
         {application && (
           <span

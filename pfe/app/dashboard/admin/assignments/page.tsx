@@ -201,7 +201,7 @@ export default function AssignmentsPage() {
             <form onSubmit={submitForceAssignment} className="p-6 space-y-4">
               {forceError && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{forceError}</div>}
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">Étudiant *</label>
+                <label className="block text-sm font-semibold text-gray-600 mb-1">Étudiant</label>
                 <select
                   value={forceForm.studentId}
                   onChange={e => setForceForm(f => ({ ...f, studentId: e.target.value }))}
@@ -217,7 +217,7 @@ export default function AssignmentsPage() {
                 {students.length === 0 && <p className="text-amber-600 text-xs mt-1 font-medium">Tous les étudiants ont déjà un PFE assigné.</p>}
               </div>
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">Encadrant *</label>
+                <label className="block text-sm font-semibold text-gray-600 mb-1">Encadrant</label>
                 <div className="flex gap-2 mb-2">
                   <select
                     value={profSpecialityFilter}

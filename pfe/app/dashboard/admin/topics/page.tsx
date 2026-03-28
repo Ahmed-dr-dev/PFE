@@ -120,12 +120,13 @@ export default function TopicsPage() {
               {filteredTopics.length} résultat{filteredTopics.length !== 1 ? 's' : ''} trouvé{filteredTopics.length !== 1 ? 's' : ''}
             </span>
             <button
+              type="button"
               onClick={() => {
                 setSearchText('')
                 setStatusFilter('all')
                 setDepartmentFilter('all')
               }}
-              className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+              className="text-sm font-semibold text-emerald-700 hover:text-emerald-900 underline underline-offset-2"
             >
               Réinitialiser
             </button>
@@ -177,7 +178,7 @@ export default function TopicsPage() {
                 <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
                   <Link
                     href={`/dashboard/admin/topics/${topic.id}`}
-                    className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
+                    className="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 active:bg-emerald-800 transition-colors font-bold text-sm shadow-md shadow-emerald-900/20 ring-2 ring-emerald-500/30"
                   >
                     Voir détails
                   </Link>
@@ -225,7 +226,7 @@ export default function TopicsPage() {
                 <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
                   <Link
                     href={`/dashboard/admin/topics/${topic.id}`}
-                    className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
+                    className="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 active:bg-emerald-800 transition-colors font-bold text-sm shadow-md shadow-emerald-900/20 ring-2 ring-emerald-500/30"
                   >
                     Voir détails
                   </Link>
@@ -279,7 +280,7 @@ export default function TopicsPage() {
                 <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
                   <Link
                     href={`/dashboard/admin/topics/${topic.id}`}
-                    className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
+                    className="inline-flex items-center justify-center px-4 py-2.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 active:bg-emerald-800 transition-colors font-bold text-sm shadow-md shadow-emerald-900/20 ring-2 ring-emerald-500/30"
                   >
                     Voir détails
                   </Link>

@@ -29,49 +29,55 @@ export default async function Home() {
       </nav>
 
       <main>
-        {/* Hero Section */}
-        <section className="relative py-16 md:py-24 overflow-hidden">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-200/40 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-cyan-200/40 rounded-full blur-3xl" />
-          <div className="max-w-7xl mx-auto px-6 relative">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <div className="inline-block px-4 py-2 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-full text-sm font-semibold mb-6">
-                  Plateforme de gestion PFE
-                </div>
-                <h2 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                  Gérez vos projets de fin d'études avec{' '}
-                  <span className="bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">simplicité</span>
-                </h2>
-                <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                  Une solution moderne pour étudiants, enseignants et administration
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link
-                    href="/auth/signin"
-                    className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all font-semibold shadow-lg"
-                  >
-                    Commencer maintenant
-                  </Link>
-                  <Link
-                    href="/auth/signin"
-                    className="px-6 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-all font-semibold"
-                  >
-                    Se connecter
-                  </Link>
-                </div>
+        {/* Hero — photo de fond + overlay pour le contraste */}
+        <section className="relative min-h-[min(88vh,820px)] md:min-h-[min(90vh,900px)] flex items-center overflow-hidden">
+          <div className="absolute inset-0 z-0">
+            <Image
+              src="/download%20(9).jpg"
+              alt="Remise des diplômes — célébration des étudiants"
+              fill
+              priority
+              sizes="100vw"
+              className="object-cover object-center"
+            />
+            {/* Overlay : assombrit surtout à gauche (texte) tout en laissant respirer la photo */}
+            <div
+              className="absolute inset-0 bg-gradient-to-r from-slate-950/88 via-slate-900/65 to-slate-900/35"
+              aria-hidden
+            />
+            <div
+              className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-slate-900/25"
+              aria-hidden
+            />
+          </div>
+
+          <div className="relative z-10 max-w-7xl mx-auto px-6 py-20 md:py-28 w-full">
+            <div className="max-w-2xl">
+              <div className="inline-block px-4 py-2 bg-white/10 text-emerald-200 border border-white/20 backdrop-blur-sm rounded-full text-sm font-semibold mb-6">
+                Plateforme de gestion PFE
               </div>
-              <div className="relative flex items-center justify-center">
-                <div className="relative w-full max-w-lg">
-                  <Image
-                    src="/pngtree-books-and-graduat-hat-png-image_3442925-removebg-preview.png"
-                    alt="Books and graduation hat illustration"
-                    width={600}
-                    height={500}
-                    className="w-full h-auto drop-shadow-2xl"
-                    priority
-                  />
-                </div>
+              <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white mb-6 leading-tight drop-shadow-sm">
+                Gérez vos projets de fin d&apos;études avec{' '}
+                <span className="bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent">
+                  simplicité
+                </span>
+              </h2>
+              <p className="text-lg md:text-xl text-slate-200 mb-10 leading-relaxed max-w-xl">
+                Une solution moderne pour étudiants, enseignants et administration
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link
+                  href="/auth/signin"
+                  className="inline-flex justify-center px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-xl hover:from-emerald-400 hover:to-cyan-400 transition-all font-semibold shadow-lg shadow-emerald-950/30"
+                >
+                  Commencer maintenant
+                </Link>
+                <Link
+                  href="/auth/signin"
+                  className="inline-flex justify-center px-6 py-3.5 bg-white/10 text-white border-2 border-white/30 rounded-xl hover:bg-white/15 backdrop-blur-sm transition-all font-semibold"
+                >
+                  Se connecter
+                </Link>
               </div>
             </div>
           </div>

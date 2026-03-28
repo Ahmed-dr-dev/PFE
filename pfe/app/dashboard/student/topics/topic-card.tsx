@@ -9,6 +9,7 @@ interface Topic {
   teacher: { full_name: string; email: string } | null
   department: string | null
   applicationStatus?: string | null
+  topicAssignedToOther?: boolean
 }
 
 export function TopicCard({ topic, hasPfe }: { topic: Topic; hasPfe: boolean }) {
@@ -66,13 +67,18 @@ export function TopicCard({ topic, hasPfe }: { topic: Topic; hasPfe: boolean }) 
           )}
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Link
             href={`/dashboard/student/topics/${topic.id}`}
-            className="flex-1 bg-gray-100 text-gray-900 py-3 px-4 rounded-xl hover:bg-gray-200 font-semibold transition-all duration-200 text-sm text-center"
+            className="flex-1 min-w-[8rem] bg-gray-100 text-gray-900 py-3 px-4 rounded-xl hover:bg-gray-200 font-semibold transition-all duration-200 text-sm text-center"
           >
             Voir détails
           </Link>
+          {topic.topicAssignedToOther && (
+            <span className="px-3 py-3 rounded-xl text-xs font-semibold border bg-slate-100 text-slate-700 border-slate-200">
+              Attribué
+            </span>
+          )}
           {topic.applicationStatus && (
             <span
               className={`px-3 py-3 rounded-xl text-xs font-semibold border ${

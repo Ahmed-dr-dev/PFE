@@ -8,6 +8,7 @@ export default function SupervisionPage() {
   const [professors, setProfessors] = useState<any[]>([])
   const [requests, setRequests] = useState<any[]>([])
   const [requestLoading, setRequestLoading] = useState<string | null>(null)
+  const [cancelLoading, setCancelLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -78,7 +79,26 @@ export default function SupervisionPage() {
       setRequestLoading(null)
     }
   }
-  
+
+  async function cancelRequest(requestId: string) {
+    if (!confirm('Annuler cette demande d’encadrement ?')) return
+    setError('')
+    setCancelLoading(requestId)
+    try {
+      const res = await fetch(`/api/student/supervision-requests/${requestId}`, {
+        method: 'DELETE',
+      })
+      const j = await res.json()
+      if (!res.ok) {
+        setError(j.error || 'Erreur')
+        return
+      }
+      setRequests((prev) => prev.filter((r: any) => r.id !== requestId))
+    } finally {
+      setCancelLoading(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -110,18 +130,30 @@ export default function SupervisionPage() {
             <h2 className="text-xl font-bold text-gray-900 mb-4">Mes demandes</h2>
             <ul className="space-y-3">
               {requests.map((r: any) => (
-                <li key={r.id} className="flex items-center justify-between gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <div>
                     <p className="font-semibold text-gray-900">{r.professor?.full_name || 'Encadrant'}</p>
                     <p className="text-sm text-gray-600">{r.professor?.department}</p>
                   </div>
-                  <span className={`shrink-0 px-3 py-1 rounded-lg text-xs font-semibold ${
-                    r.status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
-                    r.status === 'rejected' ? 'bg-red-50 text-red-700 border border-red-200' :
-                    'bg-amber-50 text-amber-700 border border-amber-200'
-                  }`}>
-                    {r.status === 'pending' ? 'En attente' : r.status === 'accepted' ? 'Acceptée' : 'Refusée'}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                      r.status === 'accepted' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                      r.status === 'rejected' ? 'bg-red-50 text-red-700 border border-red-200' :
+                      'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                      {r.status === 'pending' ? 'En attente' : r.status === 'accepted' ? 'Acceptée' : 'Refusée'}
+                    </span>
+                    {r.status === 'pending' && (
+                      <button
+                        type="button"
+                        disabled={cancelLoading !== null}
+                        onClick={() => cancelRequest(r.id)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 bg-white text-gray-800 hover:bg-gray-100 disabled:opacity-50"
+                      >
+                        {cancelLoading === r.id ? 'Annulation...' : 'Annuler la demande'}
+                      </button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

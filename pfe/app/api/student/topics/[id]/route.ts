@@ -65,18 +65,13 @@ export async function GET(
     // Student can apply only if they have an encadrant
     const hasSupervisor = !!(pfe && pfe.supervisor_id)
 
-    // Check if topic is reserved by another student
-    const { data: reservedBy } = await supabase
+    const { data: topicAssignments } = await supabase
       .from('pfe_projects')
       .select('student_id')
       .eq('topic_id', id)
-      .not('student_id', 'eq', auth.user!.id)
-      .maybeSingle()
 
-    // If topic is reserved and student hasn't applied, deny access
-    if (reservedBy && !application) {
-      return NextResponse.json({ error: 'Ce sujet n\'est plus disponible' }, { status: 404 })
-    }
+    const topicAssignedToOther =
+      (topicAssignments || []).some((row) => row.student_id !== auth.user!.id) ?? false
 
     // Check if student has a topic assigned
     const { data: studentPfe } = await supabase
@@ -96,6 +91,7 @@ export async function GET(
       hasTopic: !!studentPfe?.topic_id,
       currentTopicId: studentPfe?.topic_id || null,
       hasSupervisor,
+      topicAssignedToOther,
     })
   } catch (error) {
     return NextResponse.json(

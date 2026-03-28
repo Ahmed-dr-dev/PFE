@@ -122,10 +122,11 @@ export async function PUT(
         })
         .eq('id', pfe.id)
 
-      // Remove other demands for this topic once reserved
+      // Reject every other application on this topic (other students)
+      const now = new Date().toISOString()
       await supabase
         .from('topic_applications')
-        .delete()
+        .update({ status: 'rejected', reviewed_at: now })
         .eq('topic_id', applicationData.topic_id)
         .neq('id', applicationId)
     }

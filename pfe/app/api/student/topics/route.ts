@@ -53,11 +53,10 @@ export async function GET() {
       .select('topic_id, student_id')
       .not('topic_id', 'is', null)
 
-    const reservedTopicIds = new Set(
+    const assignedToOtherStudent = new Set(
       assignedTopics
-        ?.filter((p: any) => p.student_id !== auth.user!.id) // Exclude current student
-        .map((p: any) => p.topic_id)
-        .filter((id: string) => id) || []
+        ?.filter((p: any) => p.student_id !== auth.user!.id && p.topic_id)
+        .map((p: any) => p.topic_id as string) || []
     )
 
     // Get student's applications
@@ -70,19 +69,11 @@ export async function GET() {
       applications?.map((app: any) => [app.topic_id, app.status]) || []
     )
 
-    // Filter topics: exclude reserved topics, but include topics the student applied to (even if rejected)
-    const filteredTopics = (topics || []).filter((topic: any) => {
-      const hasApplication = applicationMap.has(topic.id)
-      const isReserved = reservedTopicIds.has(topic.id)
-      
-      // Show topic if: student has applied to it OR it's not reserved
-      return hasApplication || !isReserved
-    })
-
-    // Add application status to each topic
-    const topicsWithApplications = filteredTopics.map((topic: any) => ({
+    // All students see every published topic; UI uses topicAssignedToOther for availability
+    const topicsWithApplications = (topics || []).map((topic: any) => ({
       ...topic,
       applicationStatus: applicationMap.get(topic.id) || null,
+      topicAssignedToOther: assignedToOtherStudent.has(topic.id),
     }))
 
     return NextResponse.json({ topics: topicsWithApplications, hasSupervisor })

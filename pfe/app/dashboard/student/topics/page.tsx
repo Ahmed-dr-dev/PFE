@@ -34,6 +34,7 @@ export default function TopicsPage() {
     teacher: topic.professor || { full_name: 'N/A', email: '' },
     department: topic.department || 'N/A',
     applicationStatus: topic.applicationStatus || null,
+    topicAssignedToOther: !!topic.topicAssignedToOther,
   }))
 
   return (

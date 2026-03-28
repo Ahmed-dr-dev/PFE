@@ -217,3 +217,27 @@ export async function PUT(
     )
   }
 }
+
+export async function DELETE(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient()
+    const auth = await requireAuth('admin')
+    if (auth.error) {
+      return NextResponse.json({ error: 'Non authentifié' }, { status: 401 })
+    }
+
+    const { id } = await params
+    const { error } = await supabase.from('pfe_projects').delete().eq('id', id)
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}

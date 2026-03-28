@@ -65,6 +65,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Sujet non trouvé ou non disponible' }, { status: 404 })
     }
 
+    const { data: topicTaken } = await supabase
+      .from('pfe_projects')
+      .select('id')
+      .eq('topic_id', topicId)
+      .maybeSingle()
+
+    if (topicTaken) {
+      return NextResponse.json(
+        { error: 'Ce sujet est déjà attribué à un étudiant' },
+        { status: 400 }
+      )
+    }
+
     // Check if already applied
     const { data: existingApplication } = await supabase
       .from('topic_applications')

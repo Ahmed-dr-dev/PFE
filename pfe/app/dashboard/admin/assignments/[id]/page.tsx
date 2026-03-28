@@ -86,30 +86,29 @@ export default function AssignmentDetailPage() {
     }
   }
 
-  const handleReject = async () => {
-    if (!confirm('Êtes-vous sûr de vouloir annuler cette affectation ?')) {
+  const handleRemoveAssignment = async () => {
+    if (
+      !confirm(
+        "Supprimer cette affectation ? L'étudiant n'aura plus de projet PFE ni d'encadrant associé (les documents liés peuvent être supprimés selon la base)."
+      )
+    ) {
       return
     }
 
     setSaving(true)
     try {
-      const res = await fetch(`/api/admin/assignments/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          status: 'rejected'
-        }),
-      })
+      const res = await fetch(`/api/admin/assignments/${id}`, { method: 'DELETE' })
 
       if (res.ok) {
         router.push('/dashboard/admin/assignments')
+        router.refresh()
       } else {
         const error = await res.json()
-        alert(error.error || 'Erreur lors de l\'annulation')
+        alert(error.error || 'Erreur lors de la suppression')
       }
     } catch (error) {
-      console.error('Error cancelling assignment:', error)
-      alert('Erreur lors de l\'annulation')
+      console.error('Error removing assignment:', error)
+      alert('Erreur lors de la suppression')
     } finally {
       setSaving(false)
     }
@@ -271,24 +270,35 @@ export default function AssignmentDetailPage() {
                   <button
                     onClick={handleAssign}
                     disabled={saving || !selectedSupervisor}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3.5 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 active:bg-emerald-800 transition-colors font-bold text-sm shadow-md shadow-emerald-900/20 ring-2 ring-emerald-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:ring-0"
                   >
                     {saving ? 'Enregistrement...' : 'Confirmer l\'affectation'}
                   </button>
                   <button
-                    onClick={handleReject}
+                    type="button"
+                    onClick={handleRemoveAssignment}
                     disabled={saving}
-                    className="w-full px-4 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-lg hover:from-red-700 hover:to-red-800 transition-all duration-200 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full px-4 py-3.5 bg-red-600 text-white rounded-xl hover:bg-red-700 active:bg-red-800 transition-colors font-bold text-sm shadow-md shadow-red-900/20 ring-2 ring-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:ring-0"
                   >
-                    {saving ? 'Enregistrement...' : 'Annuler l\'affectation'}
+                    {saving ? 'Suppression...' : 'Annuler l\'affectation'}
                   </button>
                 </>
               )}
+              {assignment.status !== 'pending' && (
+                <button
+                  type="button"
+                  onClick={handleRemoveAssignment}
+                  disabled={saving}
+                  className="w-full px-4 py-3.5 bg-white text-gray-900 border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 active:bg-gray-100 transition-colors font-bold text-sm text-center shadow-sm disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+              )}
               <Link
                 href="/dashboard/admin/assignments"
-                className="block w-full px-4 py-3 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm text-center"
+                className="block w-full px-4 py-3 text-center text-sm font-semibold text-gray-600 hover:text-gray-900"
               >
-                Annuler
+                Retour à la liste sans supprimer
               </Link>
             </div>
           </div>
