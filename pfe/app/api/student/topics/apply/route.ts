@@ -16,22 +16,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'ID du sujet requis' }, { status: 400 })
     }
 
-    // Get student's PFE project - must be approved by admin
     const { data: pfe } = await supabase
       .from('pfe_projects')
       .select('id, topic_id, supervisor_id, status')
       .eq('student_id', auth.user!.id)
-      .eq('status', 'approved') // Only approved PFE projects can apply
       .maybeSingle()
 
-    if (!pfe || !pfe.supervisor_id) {
-      return NextResponse.json({ error: 'Aucun encadrant assigné ou affectation non approuvée' }, { status: 400 })
-    }
-
-    const supervisorId = pfe.supervisor_id
-
-    // Check if student already has a topic assigned
-    if (pfe && pfe.topic_id) {
+    if (pfe?.topic_id) {
       return NextResponse.json(
         { error: 'Vous avez déjà un sujet de PFE assigné' },
         { status: 400 }

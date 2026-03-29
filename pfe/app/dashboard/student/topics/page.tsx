@@ -45,7 +45,7 @@ export default function TopicsPage() {
             Sujets de PFE <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">disponibles</span>
           </h1>
           <p className="text-gray-600 text-lg">
-            Consultez tous les sujets publiés. Vous ne pouvez postuler qu&apos;après avoir un encadrant ; la demande sera soumise à votre encadrant.
+            Consultez les sujets publiés. Vous pouvez postuler à plusieurs sujets ; chaque candidature est traitée par votre encadrant une fois l&apos;encadrement accepté.
           </p>
         </div>
         {hasSupervisor && (
@@ -61,7 +61,7 @@ export default function TopicsPage() {
       {!hasSupervisor && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-lg">
           <p className="font-medium">
-            Vous n&apos;avez pas encore d&apos;encadrant. Demandez un encadrement (page Encadrement) pour pouvoir postuler aux sujets. Vous pouvez consulter tous les sujets ci-dessous.
+            Pas encore d&apos;encadrant : vous pouvez quand même postuler aux sujets. Pensez à demander un encadrement (page Encadrement) : la validation des candidatures se fera par votre futur encadrant.
           </p>
         </div>
       )}

@@ -15,12 +15,10 @@ export async function GET(
     const { id } = await params
     const supabase = await createClient()
 
-    // Get student's PFE project - must be approved by admin
     const { data: pfe } = await supabase
       .from('pfe_projects')
       .select('supervisor_id, status')
       .eq('student_id', auth.user!.id)
-      .eq('status', 'approved') // Only approved PFE projects can see topics
       .maybeSingle()
 
     // Check if student already applied (to allow viewing rejected topics)
@@ -62,8 +60,7 @@ export async function GET(
       return NextResponse.json({ error: 'Sujet non trouvé' }, { status: 404 })
     }
 
-    // Student can apply only if they have an encadrant
-    const hasSupervisor = !!(pfe && pfe.supervisor_id)
+    const hasSupervisor = !!pfe?.supervisor_id
 
     const { data: topicAssignments } = await supabase
       .from('pfe_projects')

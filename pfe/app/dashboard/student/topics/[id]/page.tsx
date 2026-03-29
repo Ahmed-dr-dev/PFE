@@ -86,8 +86,7 @@ export default function TopicDetailPage() {
 
   const { topic, application, hasTopic, hasSupervisor, topicAssignedToOther } = data
   const professor = topic.professor
-  const canApply =
-    hasSupervisor && !hasTopic && !application && !topicAssignedToOther
+  const canApply = !hasTopic && !application && !topicAssignedToOther
 
   return (
     <div className="space-y-8">
@@ -111,11 +110,17 @@ export default function TopicDetailPage() {
             disabled={applying}
             className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {applying ? 'Envoi...' : 'Postuler (demande à votre encadrant)'}
+            {applying
+              ? 'Envoi...'
+              : hasSupervisor
+                ? 'Postuler (demande à votre encadrant)'
+                : 'Postuler'}
           </button>
         )}
-        {!hasSupervisor && !hasTopic && !application && (
-          <p className="text-amber-700 text-sm">Obtenez un encadrant (page Encadrement) pour pouvoir postuler.</p>
+        {!hasSupervisor && canApply && (
+          <p className="text-amber-700 text-sm max-w-xl">
+            Vous pouvez postuler sans encadrant. Une fois un encadrant accepté, seul celui-ci pourra valider ou rejeter vos candidatures en attente.
+          </p>
         )}
         {topicAssignedToOther && !hasTopic && (
           <span className="px-6 py-3 bg-slate-100 text-slate-800 border border-slate-200 rounded-lg text-sm font-semibold">

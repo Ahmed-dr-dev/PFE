@@ -118,7 +118,6 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname()
   const [profile, setProfile] = useState<any>(null)
-  const [capacity, setCapacity] = useState<{ current: number; capacity: number } | null>(null)
 
   useEffect(() => {
     async function fetchProfile() {
@@ -133,19 +132,6 @@ export function Sidebar() {
       }
     }
     fetchProfile()
-  }, [])
-
-  useEffect(() => {
-    async function fetchCapacity() {
-      try {
-        const res = await fetch('/api/professor/supervision-capacity')
-        if (res.ok) {
-          const data = await res.json()
-          setCapacity({ current: data.current || 0, capacity: data.capacity || 8 })
-        }
-      } catch {}
-    }
-    fetchCapacity()
   }, [])
 
   const getInitials = (name: string) => {
@@ -191,13 +177,6 @@ export function Sidebar() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 truncate">{profile?.full_name || 'Professeur'}</p>
               <p className="text-xs text-gray-500 truncate">{profile?.department || 'Encadrant'}</p>
-              {capacity && (
-                <p className="mt-1">
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200">
-                    Encadrement {capacity.current}/{capacity.capacity}
-                  </span>
-                </p>
-              )}
             </div>
           </div>
         </div>

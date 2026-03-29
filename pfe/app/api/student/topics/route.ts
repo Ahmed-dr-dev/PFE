@@ -11,17 +11,15 @@ export async function GET() {
       return NextResponse.json({ error: auth.error }, { status: auth.status })
     }
 
-    // Get student's PFE project (approved) to know if they have an encadrant and can apply
     const { data: pfe } = await supabase
       .from('pfe_projects')
       .select('supervisor_id, status')
       .eq('student_id', auth.user!.id)
-      .eq('status', 'approved')
       .maybeSingle()
 
-    const hasSupervisor = !!(pfe && pfe.supervisor_id)
+    const hasSupervisor = !!pfe?.supervisor_id
 
-    // Get ALL published topics from all professors (student sees all, submits only to their encadrant)
+    // Get ALL published topics from all professors
     const { data: topics, error } = await supabase
       .from('pfe_topics')
       .select(`

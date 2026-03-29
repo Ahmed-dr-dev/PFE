@@ -61,7 +61,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Vous avez déjà un encadrant assigné' }, { status: 400 })
     }
 
-    // Already requested this professor?
+    // Same professor: no duplicate pending; rejected row is reopened as pending (UNIQUE pair)
     const { data: existingReq } = await supabase
       .from('supervision_requests')
       .select('id, status')
@@ -70,10 +70,27 @@ export async function POST(request: Request) {
       .maybeSingle()
     if (existingReq) {
       if (existingReq.status === 'pending') {
-        return NextResponse.json({ error: 'Vous avez déjà envoyé une demande à cet encadrant' }, { status: 400 })
+        return NextResponse.json({ error: 'Vous avez déjà une demande en attente auprès de cet encadrant' }, { status: 400 })
       }
       if (existingReq.status === 'accepted') {
         return NextResponse.json({ error: 'Cet encadrant vous a déjà accepté' }, { status: 400 })
+      }
+      if (existingReq.status === 'rejected') {
+        const now = new Date().toISOString()
+        const { data: reopened, error: reopenErr } = await supabase
+          .from('supervision_requests')
+          .update({
+            status: 'pending',
+            message: message || null,
+            updated_at: now,
+          })
+          .eq('id', existingReq.id)
+          .select()
+          .single()
+        if (reopenErr) {
+          return NextResponse.json({ error: reopenErr.message }, { status: 500 })
+        }
+        return NextResponse.json({ request: reopened })
       }
     }
 

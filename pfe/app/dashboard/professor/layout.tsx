@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { requireAuth } from '@/lib/auth'
 import { SignOutButton } from './signout-button'
 import { MobileMenu } from './mobile-menu'
+import { ProfessorNavbarCapacity } from './professor-navbar-capacity'
 import { Sidebar } from './sidebar'
 
 export default async function DashboardLayout({
@@ -24,15 +25,8 @@ export default async function DashboardLayout({
                 ISAEG PFE
               </Link>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="hidden lg:hidden xl:flex items-center gap-3 px-4 py-2 bg-gray-100 rounded-lg border border-gray-200">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-gray-900 font-semibold text-sm">
-                  PR
-                </div>
-                <span className="text-sm text-gray-700 font-medium">
-                  Professeur
-                </span>
-              </div>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <ProfessorNavbarCapacity />
               <SignOutButton />
               <MobileMenu />
             </div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
@@ -118,29 +118,10 @@ const navigation = [
 export function MobileMenu() {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
-  const [capacity, setCapacity] = useState<{ current: number; capacity: number } | null>(null)
-
-  useEffect(() => {
-    async function fetchCapacity() {
-      try {
-        const res = await fetch('/api/professor/supervision-capacity')
-        if (res.ok) {
-          const data = await res.json()
-          setCapacity({ current: data.current || 0, capacity: data.capacity || 8 })
-        }
-      } catch {}
-    }
-    fetchCapacity()
-  }, [])
 
   return (
     <>
-      <div className="lg:hidden flex items-center gap-2">
-        {capacity && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-violet-50 text-violet-700 border border-violet-200">
-            Encadrement {capacity.current}/{capacity.capacity}
-          </span>
-        )}
+      <div className="lg:hidden flex items-center">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="text-gray-600 hover:text-gray-900 transition-colors p-2 rounded-lg hover:bg-gray-100"

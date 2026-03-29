@@ -56,8 +56,9 @@ export default function SupervisionPage() {
   const pfeStatus = data.pfeStatus
   const defense = data.defense
 
-  const requestedProfessorIds = new Set(requests.map((r: any) => r.professor_id))
-  const pendingRequest = requests.find((r: any) => r.status === 'pending')
+  function requestForProfessor(professorId: string) {
+    return requests.find((r: any) => r.professor_id === professorId)
+  }
 
   async function sendRequest(professorId: string) {
     setError('')
@@ -74,7 +75,10 @@ export default function SupervisionPage() {
         return
       }
       const prof = professors.find((p: any) => p.id === professorId)
-      setRequests(prev => [{ ...j.request, professor: prof || {} }, ...prev])
+      setRequests((prev) => {
+        const rest = prev.filter((x: any) => x.professor_id !== professorId)
+        return [{ ...j.request, professor: prof || {} }, ...rest]
+      })
     } finally {
       setRequestLoading(null)
     }
@@ -116,7 +120,9 @@ export default function SupervisionPage() {
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             Mon <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Encadrement</span>
           </h1>
-          <p className="text-gray-600 text-lg">Demandez à un encadrant de vous superviser. Il pourra accepter ou refuser votre demande.</p>
+          <p className="text-gray-600 text-lg">
+            Vous pouvez envoyer des demandes à plusieurs encadrants. Dès qu&apos;un accepte, les autres demandes sont annulées automatiquement.
+          </p>
         </div>
 
         {error && (
@@ -157,43 +163,55 @@ export default function SupervisionPage() {
                 </li>
               ))}
             </ul>
-            {pendingRequest && (
-              <p className="mt-3 text-sm text-gray-600">Une fois votre demande acceptée, actualisez la page pour voir votre encadrant.</p>
+            {requests.some((r: any) => r.status === 'pending') && (
+              <p className="mt-3 text-sm text-gray-600">
+                Dès qu&apos;un encadrant accepte, actualisez la page pour voir votre affectation. Les autres demandes seront supprimées.
+              </p>
             )}
           </div>
         )}
 
         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-2">Demander un encadrement</h2>
-          <p className="text-gray-600 text-sm mb-4">Choisissez un encadrant et envoyez-lui une demande. Il pourra accepter ou refuser.</p>
-          {pendingRequest ? (
-            <p className="text-amber-700 text-sm">Vous avez déjà une demande en attente. Vous pourrez en envoyer une autre si elle est refusée.</p>
-          ) : (
-            <ul className="space-y-3">
-              {professors.map((p: any) => {
-                const alreadyRequested = requestedProfessorIds.has(p.id)
-                const accepted = requests.some((r: any) => r.professor_id === p.id && r.status === 'accepted')
-                return (
-                  <li key={p.id} className="flex items-center justify-between gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                    <div>
-                      <p className="font-semibold text-gray-900">{p.full_name}</p>
-                      <p className="text-sm text-gray-600">{p.department} · {p.email}</p>
-                      {p.bio && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.bio}</p>}
-                    </div>
-                    <button
-                      type="button"
-                      disabled={alreadyRequested || accepted || requestLoading !== null}
-                      onClick={() => sendRequest(p.id)}
-                      className="shrink-0 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {requestLoading === p.id ? 'Envoi...' : alreadyRequested ? 'Demandé' : accepted ? 'Accepté' : 'Demander'}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-          {professors.length === 0 && !pendingRequest && (
+          <p className="text-gray-600 text-sm mb-4">
+            Envoyez une demande à chaque encadrant souhaité. Vous pouvez cumuler plusieurs demandes en attente auprès de personnes différentes.
+          </p>
+          <ul className="space-y-3">
+            {professors.map((p: any) => {
+              const r = requestForProfessor(p.id)
+              const pending = r?.status === 'pending'
+              const accepted = r?.status === 'accepted'
+              const rejected = r?.status === 'rejected'
+              const label =
+                requestLoading === p.id
+                  ? 'Envoi...'
+                  : pending
+                    ? 'En attente'
+                    : accepted
+                      ? 'Accepté'
+                      : rejected
+                        ? 'Redemander'
+                        : 'Demander'
+              return (
+                <li key={p.id} className="flex items-center justify-between gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  <div>
+                    <p className="font-semibold text-gray-900">{p.full_name}</p>
+                    <p className="text-sm text-gray-600">{p.department} · {p.email}</p>
+                    {p.bio && <p className="text-xs text-gray-500 mt-1 line-clamp-2">{p.bio}</p>}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={pending || accepted || requestLoading !== null}
+                    onClick={() => sendRequest(p.id)}
+                    className="shrink-0 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {label}
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+          {professors.length === 0 && (
             <p className="text-gray-500 text-sm">Aucun encadrant disponible pour le moment.</p>
           )}
         </div>

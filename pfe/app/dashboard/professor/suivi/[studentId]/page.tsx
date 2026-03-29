@@ -188,6 +188,7 @@ export default function ProfessorSuiviStudentPage() {
   const [notes, setNotes] = useState('')
   const [notesSaving, setNotesSaving] = useState(false)
   const [notesEditing, setNotesEditing] = useState(false)
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
 
   useEffect(() => {
     if (!studentId) return
@@ -277,6 +278,11 @@ export default function ProfessorSuiviStudentPage() {
       (d: any) => d.category === title && d.uploaded_by === student.id
     )
 
+  const displayedDocuments =
+    categoryFilter === null
+      ? documents
+      : documents.filter((d: any) => d.category === categoryFilter)
+
   return (
     <div className="space-y-8">
       <Link href="/dashboard/professor/suivi" className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 text-sm font-medium">
@@ -336,36 +342,65 @@ export default function ProfessorSuiviStudentPage() {
             <h2 className="text-lg font-bold text-gray-900 mb-3">Documents et avancement</h2>
             <div className="mb-4 bg-violet-50 border border-violet-200 rounded-xl p-4">
               <p className="text-sm font-semibold text-violet-800 mb-1">Structure des documents (titres à utiliser)</p>
-              <p className="text-xs text-violet-600 mb-2">Le libellé passe en vert lorsque l&apos;étudiant a déposé ce document.</p>
+              <p className="text-xs text-violet-600 mb-2">
+                Le vert indique un dépôt par l&apos;étudiant. Cliquez sur un libellé pour filtrer la liste des documents (cliquez à nouveau pour tout afficher).
+              </p>
               <div className="flex flex-wrap gap-2">
                 {docStructure.map((t) => {
                   const done = studentUploadedTitle(t)
+                  const selected = categoryFilter === t
                   return (
-                    <span
+                    <button
                       key={t}
-                      className={
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setCategoryFilter((prev) => (prev === t ? null : t))}
+                      className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all shadow-sm text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${
+                        selected
+                          ? 'ring-2 ring-emerald-600 ring-offset-2 ring-offset-violet-50'
+                          : ''
+                      } ${
                         done
-                          ? 'px-2 py-1 rounded-lg text-xs font-semibold bg-emerald-100 border border-emerald-400 text-emerald-900 shadow-sm'
-                          : 'px-2 py-1 rounded-lg text-xs font-semibold bg-white border border-violet-200 text-violet-700'
-                      }
+                          ? 'bg-emerald-100 border-emerald-400 text-emerald-900 hover:bg-emerald-200/90'
+                          : 'bg-white border-violet-200 text-violet-700 hover:bg-violet-100/80 hover:border-violet-300'
+                      }`}
                     >
                       {t}
-                    </span>
+                    </button>
                   )
                 })}
               </div>
+              {categoryFilter !== null && (
+                <p className="mt-3 text-xs text-violet-700">
+                  Filtre actif : <strong className="text-violet-900">{categoryFilter}</strong>
+                  {' · '}
+                  <button
+                    type="button"
+                    onClick={() => setCategoryFilter(null)}
+                    className="font-semibold text-emerald-700 hover:text-emerald-800 underline underline-offset-2"
+                  >
+                    Afficher tous les documents
+                  </button>
+                </p>
+              )}
             </div>
             {documents.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {documents.map((doc: any) => (
-                  <DocCard
-                    key={doc.id}
-                    doc={doc}
-                    onStatusChange={handleDocStatusChange}
-                    onReviewChange={handleDocReviewChange}
-                  />
-                ))}
-              </div>
+              displayedDocuments.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {displayedDocuments.map((doc: any) => (
+                    <DocCard
+                      key={doc.id}
+                      doc={doc}
+                      onStatusChange={handleDocStatusChange}
+                      onReviewChange={handleDocReviewChange}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600 text-sm rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-6 text-center">
+                  Aucun document enregistré sous le titre « {categoryFilter} ». Choisissez un autre libellé ou affichez tous les documents.
+                </p>
+              )
             ) : (
               <p className="text-gray-500 text-sm">Aucun document partagé par cet étudiant pour le moment.</p>
             )}

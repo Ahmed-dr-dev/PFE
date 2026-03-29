@@ -5,27 +5,47 @@ import { useEffect, useState } from 'react'
 export default function StudentsPage() {
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [supervisionCap, setSupervisionCap] = useState<{
+    current: number
+    capacity: number
+    available: number
+  } | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [availableStudents, setAvailableStudents] = useState<any[]>([])
   const [selectedStudent, setSelectedStudent] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
 
-  useEffect(() => {
-    async function fetchStudents() {
-      try {
-        const res = await fetch('/api/professor/students', {
-          cache: 'no-store',
-        })
-        if (!res.ok) return
-        const data = await res.json()
+  const refreshLists = async () => {
+    try {
+      const [sRes, cRes] = await Promise.all([
+        fetch('/api/professor/students', { cache: 'no-store' }),
+        fetch('/api/professor/supervision-capacity', { cache: 'no-store' }),
+      ])
+      if (sRes.ok) {
+        const data = await sRes.json()
         setStudents(data.students || [])
-      } catch (error) {
-        // Handle error
-      } finally {
-        setLoading(false)
       }
+      if (cRes.ok) {
+        const data = await cRes.json()
+        setSupervisionCap({
+          current: data.current ?? 0,
+          capacity: data.capacity ?? 8,
+          available: data.available ?? 0,
+        })
+      }
+      window.dispatchEvent(new Event('professor-supervision-refresh'))
+    } catch {
+      /* ignore */
     }
-    fetchStudents()
+  }
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      await refreshLists()
+      setLoading(false)
+    }
+    load()
   }, [])
 
   useEffect(() => {
@@ -66,12 +86,7 @@ export default function StudentsPage() {
         alert('Étudiant ajouté à votre supervision avec succès')
         setShowModal(false)
         setSelectedStudent('')
-        // Refresh students list
-        const studentsRes = await fetch('/api/professor/students', { cache: 'no-store' })
-        if (studentsRes.ok) {
-          const data = await studentsRes.json()
-          setStudents(data.students || [])
-        }
+        await refreshLists()
       } else {
         const error = await res.json()
         alert(error.error || 'Erreur lors de l\'ajout de l\'étudiant')
@@ -98,6 +113,8 @@ export default function StudentsPage() {
     approved: 'Approuvé',
   }
 
+  const atCapacity = supervisionCap !== null && supervisionCap.available <= 0
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -106,10 +123,37 @@ export default function StudentsPage() {
             Mes <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">étudiants</span>
           </h1>
           <p className="text-gray-600 text-lg">Gérez et encadrez vos étudiants affectés</p>
+          {supervisionCap && (
+            <p className="mt-3 text-sm font-semibold text-gray-800">
+              Encadrement sur cette page :{' '}
+              <span
+                className={
+                  supervisionCap.current > supervisionCap.capacity
+                    ? 'text-amber-700'
+                    : 'text-emerald-700'
+                }
+              >
+                {supervisionCap.current} / {supervisionCap.capacity}
+              </span>
+              {supervisionCap.available > 0 ? (
+                <span className="text-gray-600 font-normal">
+                  {' '}
+                  (
+                  {supervisionCap.available} place{supervisionCap.available !== 1 ? 's' : ''}{' '}
+                  disponible{supervisionCap.available !== 1 ? 's' : ''})
+                </span>
+              ) : (
+                <span className="text-amber-700 font-normal"> — capacité maximale atteinte</span>
+              )}
+            </p>
+          )}
         </div>
         <button
+          type="button"
           onClick={() => setShowModal(true)}
-          className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold"
+          disabled={atCapacity}
+          title={atCapacity ? 'Capacité d’encadrement atteinte' : undefined}
+          className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:from-emerald-600 disabled:hover:to-cyan-600"
         >
           Ajouter un étudiant
         </button>
@@ -136,7 +180,6 @@ export default function StudentsPage() {
                     <h3 className="text-xl font-bold text-gray-900">{student.full_name || student.name || 'N/A'}</h3>
                  
                     {student.status && (
-                      console.log(student.status),
                       <span
                         className={`px-3 py-1 rounded-lg text-xs font-semibold border backdrop-blur-sm ${
                           statusColors[student.status] || statusColors.pending
@@ -166,7 +209,7 @@ export default function StudentsPage() {
               <div className="ml-auto flex items-center gap-2">
                 <Link
                   href={`/dashboard/professor/students/${student.id}`}
-                  className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
+                  className="px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-bold text-sm shadow-md shadow-emerald-900/25 ring-2 ring-emerald-500/40"
                 >
                   Voir profil
                 </Link>
@@ -242,7 +285,7 @@ export default function StudentsPage() {
                     setShowModal(false)
                     setSelectedStudent('')
                   }}
-                  className="px-6 py-3 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold"
+                  className="px-6 py-3 bg-white border-2 border-gray-300 text-gray-800 rounded-lg hover:bg-gray-50 transition-all duration-200 font-semibold"
                 >
                   Annuler
                 </button>
