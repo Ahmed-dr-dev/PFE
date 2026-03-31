@@ -17,7 +17,8 @@ export async function GET() {
       .eq('student_id', auth.user!.id)
       .maybeSingle()
 
-    if (!pfe || !pfe.supervisor_id) {
+    // If assignment is cancelled/rejected/pending, treat as no supervisor on student side
+    if (!pfe || !pfe.supervisor_id || pfe.status !== 'approved') {
       return NextResponse.json({ supervisor: null, pfeStatus: null, meetings: [], documents: [], defense: null })
     }
 

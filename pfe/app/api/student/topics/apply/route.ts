@@ -72,16 +72,28 @@ export async function POST(request: Request) {
     // Check if already applied
     const { data: existingApplication } = await supabase
       .from('topic_applications')
-      .select('id')
+      .select('id, status')
       .eq('student_id', auth.user!.id)
       .eq('topic_id', topicId)
       .maybeSingle()
 
     if (existingApplication) {
-      return NextResponse.json(
-        { error: 'Vous avez déjà postulé pour ce sujet' },
-        { status: 400 }
-      )
+      if (existingApplication.status === 'rejected') {
+        const { error: deleteError } = await supabase
+          .from('topic_applications')
+          .delete()
+          .eq('id', existingApplication.id)
+          .eq('student_id', auth.user!.id)
+
+        if (deleteError) {
+          return NextResponse.json({ error: deleteError.message }, { status: 500 })
+        }
+      } else {
+        return NextResponse.json(
+          { error: 'Vous avez déjà postulé pour ce sujet' },
+          { status: 400 }
+        )
+      }
     }
 
     // Create application
@@ -96,7 +108,16 @@ export async function POST(request: Request) {
       .single()
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      if ((error.message || '').toLowerCase().includes('duplicate key')) {
+        return NextResponse.json(
+          { error: 'Vous avez déjà une candidature active. Annulez ou attendez sa décision avant de repostuler.' },
+          { status: 400 }
+        )
+      }
+      return NextResponse.json(
+        { error: error.message },
+        { status: 500 }
+      )
     }
 
     return NextResponse.json({ application })

@@ -39,16 +39,54 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    // Format meetings
-    const formattedMeetings = (meetings || []).map((meeting: any) => {
+    // Format + collapse group meetings (stored one row per student)
+    const groupMap = new Map<string, any>()
+    const formattedMeetings: any[] = []
+
+    for (const meeting of meetings || []) {
       const student = Array.isArray(meeting.student) ? meeting.student[0] : meeting.student
-      return {
+      const formatted = {
         ...meeting,
         student: student || null,
       }
+
+      if (formatted.audience_type !== 'group') {
+        formattedMeetings.push(formatted)
+        continue
+      }
+
+      const key = [
+        formatted.supervisor_id,
+        formatted.date,
+        formatted.time,
+        formatted.duration,
+        formatted.type || '',
+        formatted.location || '',
+        formatted.notes || '',
+        formatted.status || '',
+        formatted.audience_type || 'group',
+      ].join('|')
+
+      const existing = groupMap.get(key)
+      if (!existing) {
+        groupMap.set(key, {
+          ...formatted,
+          group_size: 1,
+        })
+      } else {
+        existing.group_size += 1
+      }
+    }
+
+    const collapsedGroupMeetings = Array.from(groupMap.values())
+    const allMeetings = [...formattedMeetings, ...collapsedGroupMeetings]
+    allMeetings.sort((a: any, b: any) => {
+      const aTs = new Date(`${a.date}T${a.time || '00:00:00'}`).getTime()
+      const bTs = new Date(`${b.date}T${b.time || '00:00:00'}`).getTime()
+      return bTs - aTs
     })
 
-    return NextResponse.json({ meetings: formattedMeetings })
+    return NextResponse.json({ meetings: allMeetings })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },
@@ -73,43 +111,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Date et heure requises' }, { status: 400 })
     }
 
-    const audienceType = audience === 'group' ? 'group' : 'individual'
-
-    if (audienceType === 'individual') {
-      if (!student_id) {
-        return NextResponse.json({ error: 'Sélectionnez un étudiant' }, { status: 400 })
-      }
-      const { data: project } = await supabase
-        .from('pfe_projects')
-        .select('id')
-        .eq('student_id', student_id)
-        .eq('supervisor_id', userId)
-        .maybeSingle()
-      if (!project) {
-        return NextResponse.json({ error: 'Étudiant non trouvé' }, { status: 404 })
-      }
-      const { data: meeting, error } = await supabase
-        .from('meetings')
-        .insert({
-          pfe_project_id: project.id,
-          student_id,
-          supervisor_id: userId,
-          date,
-          time,
-          duration: duration || 60,
-          type: type || 'Suivi',
-          notes: notes || null,
-          location: location || null,
-          status: 'planned',
-          audience_type: 'individual',
-        })
-        .select()
-        .single()
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-      return NextResponse.json({ meeting })
+    const audienceType = 'group'
+    if (audience === 'individual' || student_id) {
+      return NextResponse.json(
+        { error: "La planification individuelle n'est pas autorisée. Cette page crée une réunion pour tous les étudiants." },
+        { status: 400 }
+      )
     }
 
-    // group: create one meeting per supervised student
+    // Create one meeting per supervised student (group audience)
     const { data: projects } = await supabase
       .from('pfe_projects')
       .select('id, student_id')

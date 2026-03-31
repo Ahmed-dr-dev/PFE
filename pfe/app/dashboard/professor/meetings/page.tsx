@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react'
 
 export default function MyMeetingsPage() {
   const [meetings, setMeetings] = useState<any[]>([])
-  const [students, setStudents] = useState<{ id: string; full_name?: string; email?: string }[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState({
     date: '',
@@ -20,8 +19,6 @@ export default function MyMeetingsPage() {
     type: 'Suivi',
     location: '',
     notes: '',
-    audience: 'individual' as 'individual' | 'group',
-    student_id: '',
   })
 
   useEffect(() => {
@@ -39,21 +36,6 @@ export default function MyMeetingsPage() {
       }
     }
     fetchMeetings()
-  }, [])
-
-  useEffect(() => {
-    async function fetchStudents() {
-      try {
-        const res = await fetch('/api/professor/students')
-        if (res.ok) {
-          const data = await res.json()
-          setStudents(data.students || [])
-        }
-      } catch (e) {
-        console.error(e)
-      }
-    }
-    fetchStudents()
   }, [])
 
   const filteredMeetings = meetings.filter((meeting: any) => {
@@ -84,10 +66,6 @@ export default function MyMeetingsPage() {
       alert('Date et heure requises')
       return
     }
-    if (formData.audience === 'individual' && !formData.student_id) {
-      alert('Sélectionnez un étudiant')
-      return
-    }
     setSaving(true)
     try {
       const res = await fetch('/api/professor/meetings', {
@@ -100,14 +78,13 @@ export default function MyMeetingsPage() {
           type: formData.type,
           location: formData.location || null,
           notes: formData.notes || null,
-          audience: formData.audience,
-          student_id: formData.audience === 'individual' ? formData.student_id : undefined,
+          audience: 'group',
         }),
       })
       const data = await res.json()
       if (res.ok) {
         setShowForm(false)
-        setFormData({ date: '', time: '', duration: 60, type: 'Suivi', location: '', notes: '', audience: 'individual', student_id: '' })
+        setFormData({ date: '', time: '', duration: 60, type: 'Suivi', location: '', notes: '' })
         const listRes = await fetch('/api/professor/meetings')
         if (listRes.ok) {
           const listData = await listRes.json()
@@ -155,48 +132,8 @@ export default function MyMeetingsPage() {
         </div>
         {showForm && (
           <form onSubmit={handleCreateMeeting} className="border-t border-gray-200 pt-6 mt-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-1">Pour</label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="audience"
-                      checked={formData.audience === 'individual'}
-                      onChange={() => setFormData({ ...formData, audience: 'individual' })}
-                      className="rounded"
-                    />
-                    <span>Un étudiant</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="audience"
-                      checked={formData.audience === 'group'}
-                      onChange={() => setFormData({ ...formData, audience: 'group' })}
-                      className="rounded"
-                    />
-                    <span>Tous mes étudiants</span>
-                  </label>
-                </div>
-              </div>
-              {formData.audience === 'individual' && (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-600 mb-1">Étudiant</label>
-                  <select
-                    value={formData.student_id}
-                    onChange={(e) => setFormData({ ...formData, student_id: e.target.value })}
-                    className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200"
-                    required={formData.audience === 'individual'}
-                  >
-                    <option value="">Sélectionner...</option>
-                    {students.map((s) => (
-                      <option key={s.id} value={s.id}>{s.full_name || s.email}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+            <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
+              Cette réunion sera créée pour tous vos étudiants encadrés.
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>

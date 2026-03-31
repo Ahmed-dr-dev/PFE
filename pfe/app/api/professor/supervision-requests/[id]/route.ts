@@ -36,6 +36,26 @@ export async function PATCH(
     }
 
     if (status === 'accepted') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('supervision_capacity')
+        .eq('id', professorId)
+        .single()
+
+      const capacity = profile?.supervision_capacity ?? 8
+
+      const { count: currentCount } = await supabase
+        .from('pfe_projects')
+        .select('id', { count: 'exact', head: true })
+        .eq('supervisor_id', professorId)
+
+      if ((currentCount || 0) >= capacity) {
+        return NextResponse.json(
+          { error: `Capacité d'encadrement atteinte (${currentCount || 0}/${capacity})` },
+          { status: 400 }
+        )
+      }
+
       // Check student doesn't already have a PFE
       const { data: existingPfe } = await supabase
         .from('pfe_projects')

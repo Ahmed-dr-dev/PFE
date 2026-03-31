@@ -230,10 +230,24 @@ export async function DELETE(
     }
 
     const { id } = await params
+    const { data: project } = await supabase
+      .from('pfe_projects')
+      .select('student_id, supervisor_id')
+      .eq('id', id)
+      .maybeSingle()
+
     const { error } = await supabase.from('pfe_projects').delete().eq('id', id)
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    if (project?.student_id && project?.supervisor_id) {
+      await supabase
+        .from('supervision_requests')
+        .delete()
+        .eq('student_id', project.student_id)
+        .eq('professor_id', project.supervisor_id)
     }
 
     return NextResponse.json({ success: true })

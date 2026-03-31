@@ -86,7 +86,7 @@ export default function TopicDetailPage() {
 
   const { topic, application, hasTopic, hasSupervisor, topicAssignedToOther } = data
   const professor = topic.professor
-  const canApply = !hasTopic && !application && !topicAssignedToOther
+  const canApply = !hasTopic && !topicAssignedToOther && (!application || application.status === 'rejected')
 
   return (
     <div className="space-y-8">
