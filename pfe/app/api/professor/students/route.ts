@@ -65,27 +65,32 @@ export async function GET() {
       })
     }
 
-    // Format students data
-    const students = projects?.map(project => {
-      const lastMeeting = lastMeetings[project.id]
-      const student = Array.isArray(project.student) ? project.student[0] : project.student
-      const topic = Array.isArray(project.topic) ? project.topic[0] : project.topic
-      return {
-        id: student?.id,
-        full_name: student?.full_name,
-        email: student?.email,
-        phone: student?.phone,
-        department: student?.department,
-        year: student?.year,
-        topic: topic ? { id: topic.id, title: topic.title, description: topic.description } : null,
-        status: project.status,
-        progress: project.progress || 0,
-        startDate: project.start_date,
-        lastMeeting: lastMeeting ? `${lastMeeting.date}T${lastMeeting.time}` : null,
-      }
-    }) || []
+    // Format students data — skip orphaned rows (no matching student profile)
+    const students = (projects || [])
+      .filter(project => {
+        const student = Array.isArray(project.student) ? project.student[0] : project.student
+        return !!student?.id
+      })
+      .map(project => {
+        const lastMeeting = lastMeetings[project.id]
+        const student = Array.isArray(project.student) ? project.student[0] : project.student
+        const topic = Array.isArray(project.topic) ? project.topic[0] : project.topic
+        return {
+          id: student?.id,
+          full_name: student?.full_name,
+          email: student?.email,
+          phone: student?.phone,
+          department: student?.department,
+          year: student?.year,
+          topic: topic ? { id: topic.id, title: topic.title, description: topic.description } : null,
+          status: project.status,
+          progress: project.progress || 0,
+          startDate: project.start_date,
+          lastMeeting: lastMeeting ? `${lastMeeting.date}T${lastMeeting.time}` : null,
+        }
+      })
 
-    return NextResponse.json({ students })
+    return NextResponse.json({ students, count: students.length })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },

@@ -44,14 +44,19 @@ export async function PATCH(
 
       const capacity = profile?.supervision_capacity ?? 8
 
-      const { count: currentCount } = await supabase
+      const { data: existingProjects } = await supabase
         .from('pfe_projects')
-        .select('id', { count: 'exact', head: true })
+        .select('id, student:profiles!pfe_projects_student_id_fkey(id)')
         .eq('supervisor_id', professorId)
 
-      if ((currentCount || 0) >= capacity) {
+      const currentCount = (existingProjects || []).filter((p: any) => {
+        const s = Array.isArray(p.student) ? p.student[0] : p.student
+        return !!s?.id
+      }).length
+
+      if (currentCount >= capacity) {
         return NextResponse.json(
-          { error: `Capacité d'encadrement atteinte (${currentCount || 0}/${capacity})` },
+          { error: `Capacité d'encadrement atteinte (${currentCount}/${capacity})` },
           { status: 400 }
         )
       }

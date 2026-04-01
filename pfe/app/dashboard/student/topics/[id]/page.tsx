@@ -86,7 +86,11 @@ export default function TopicDetailPage() {
 
   const { topic, application, hasTopic, hasSupervisor, topicAssignedToOther } = data
   const professor = topic.professor
-  const canApply = !hasTopic && !topicAssignedToOther && (!application || application.status === 'rejected')
+  const canApply =
+    !hasSupervisor &&
+    !hasTopic &&
+    !topicAssignedToOther &&
+    (!application || application.status === 'rejected')
 
   return (
     <div className="space-y-8">
@@ -110,16 +114,17 @@ export default function TopicDetailPage() {
             disabled={applying}
             className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {applying
-              ? 'Envoi...'
-              : hasSupervisor
-                ? 'Postuler (demande à votre encadrant)'
-                : 'Postuler'}
+            {applying ? 'Envoi...' : 'Postuler'}
           </button>
         )}
+        {hasSupervisor && !hasTopic && !topicAssignedToOther && (
+          <p className="text-amber-800 text-sm max-w-xl border border-amber-200 bg-amber-50 rounded-lg px-4 py-3">
+            Vous avez déjà un encadrant : vous ne pouvez pas postuler aux sujets publiés ici. Traitez le choix du sujet avec votre encadrant.
+          </p>
+        )}
         {!hasSupervisor && canApply && (
-          <p className="text-amber-700 text-sm max-w-xl">
-            Vous pouvez postuler sans encadrant. Une fois un encadrant accepté, seul celui-ci pourra valider ou rejeter vos candidatures en attente.
+          <p className="text-gray-600 text-sm max-w-xl">
+            Sans encadrant, vous pouvez postuler à plusieurs sujets. Après acceptation d’un encadrant, les candidatures en attente seront traitées par lui.
           </p>
         )}
         {topicAssignedToOther && !hasTopic && (

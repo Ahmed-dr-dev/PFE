@@ -22,6 +22,13 @@ export async function POST(request: Request) {
       .eq('student_id', auth.user!.id)
       .maybeSingle()
 
+    if (pfe?.supervisor_id) {
+      return NextResponse.json(
+        { error: 'Vous avez déjà un encadrant : la postulation aux sujets publiés n’est pas disponible' },
+        { status: 400 }
+      )
+    }
+
     if (pfe?.topic_id) {
       return NextResponse.json(
         { error: 'Vous avez déjà un sujet de PFE assigné' },

@@ -20,12 +20,19 @@ export async function GET() {
 
     const capacity = profile?.supervision_capacity ?? 8
 
-    const { count } = await supabase
+    const { data: projects } = await supabase
       .from('pfe_projects')
-      .select('*', { count: 'exact', head: true })
+      .select(`
+        id,
+        student:profiles!pfe_projects_student_id_fkey(id)
+      `)
       .eq('supervisor_id', userId)
 
-    const current = count || 0
+    const current = (projects || []).filter((p: any) => {
+      const student = Array.isArray(p.student) ? p.student[0] : p.student
+      return !!student?.id
+    }).length
+
     return NextResponse.json({ current, capacity, available: Math.max(0, capacity - current) })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
