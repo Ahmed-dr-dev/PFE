@@ -15,7 +15,9 @@ const DOCUMENT_TITLES = [
   { value: 'Présentation', label: 'Présentation' },
 ]
 
-export function SuiviUploadButton() {
+type UploadProps = { onUploadSuccess?: () => void }
+
+export function SuiviUploadButton({ onUploadSuccess }: UploadProps = {}) {
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -38,6 +40,7 @@ export function SuiviUploadButton() {
 
       if (res.ok) {
         router.refresh()
+        await onUploadSuccess?.()
       } else {
         const error = await res.json()
         alert(error.error || 'Erreur lors du téléversement')

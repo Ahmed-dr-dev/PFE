@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+import { createNotification } from '@/lib/notifications'
 import { unlink } from 'fs/promises'
 import { join } from 'path'
 
@@ -43,7 +44,8 @@ export async function PATCH(
         pfe_project_id,
         uploaded_by,
         pfe_projects(
-          supervisor_id
+          supervisor_id,
+          student_id
         )
       `)
       .eq('id', id)
@@ -85,6 +87,21 @@ export async function PATCH(
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    if (isStudentDoc && project?.student_id) {
+      const parts: string[] = []
+      if (updates.status !== undefined) parts.push(`Statut : ${updates.status}`)
+      if (updates.professor_review !== undefined) parts.push('Commentaire de l’encadrant mis à jour')
+      if (parts.length > 0) {
+        await createNotification(supabase, {
+          recipientId: project.student_id as string,
+          type: 'document_review',
+          title: 'Mise à jour sur votre document',
+          body: parts.join(' · '),
+          link: '/dashboard/student/suivi-mon-pfe',
+        })
+      }
     }
 
     return NextResponse.json({ document: updatedDoc })

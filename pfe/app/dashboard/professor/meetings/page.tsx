@@ -1,10 +1,25 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+
+function formatTimeDb(t: string | null | undefined) {
+  if (!t) return ''
+  return t.length >= 5 ? t.slice(0, 5) : t
+}
 
 export default function MyMeetingsPage() {
   const [meetings, setMeetings] = useState<any[]>([])
+  const [proposals, setProposals] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [propCounterId, setPropCounterId] = useState<string | null>(null)
+  const [propCounter, setPropCounter] = useState({
+    date: '',
+    time: '',
+    duration: 60,
+    meeting_type: 'Suivi',
+    professor_notes: '',
+  })
+  const [propBusy, setPropBusy] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState({
     date: '',
     time: '',
@@ -21,22 +36,50 @@ export default function MyMeetingsPage() {
     notes: '',
   })
 
-  useEffect(() => {
-    async function fetchMeetings() {
-      try {
-        const res = await fetch('/api/professor/meetings')
-        if (res.ok) {
-          const data = await res.json()
-          setMeetings(data.meetings || [])
-        }
-      } catch (error) {
-        console.error('Error fetching meetings:', error)
-      } finally {
-        setLoading(false)
+  const loadAll = useCallback(async () => {
+    try {
+      const [mRes, pRes] = await Promise.all([
+        fetch('/api/professor/meetings'),
+        fetch('/api/professor/meeting-proposals'),
+      ])
+      if (mRes.ok) {
+        const data = await mRes.json()
+        setMeetings(data.meetings || [])
       }
+      if (pRes.ok) {
+        const data = await pRes.json()
+        setProposals(data.proposals || [])
+      }
+    } catch (error) {
+      console.error('Error fetching meetings:', error)
+    } finally {
+      setLoading(false)
     }
-    fetchMeetings()
   }, [])
+
+  useEffect(() => {
+    loadAll()
+  }, [loadAll])
+
+  const patchProposal = async (id: string, body: Record<string, unknown>) => {
+    setPropBusy(id)
+    try {
+      const res = await fetch(`/api/professor/meeting-proposals/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data.error || 'Erreur')
+        return
+      }
+      setPropCounterId(null)
+      await loadAll()
+    } finally {
+      setPropBusy(null)
+    }
+  }
 
   const filteredMeetings = meetings.filter((meeting: any) => {
     if (searchQuery.date) {
@@ -85,11 +128,7 @@ export default function MyMeetingsPage() {
       if (res.ok) {
         setShowForm(false)
         setFormData({ date: '', time: '', duration: 60, type: 'Suivi', location: '', notes: '' })
-        const listRes = await fetch('/api/professor/meetings')
-        if (listRes.ok) {
-          const listData = await listRes.json()
-          setMeetings(listData.meetings || [])
-        }
+        await loadAll()
       } else {
         alert(data.error || 'Erreur lors de la création')
       }
@@ -117,6 +156,182 @@ export default function MyMeetingsPage() {
           Mes <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">réunions</span>
         </h1>
         <p className="text-gray-600 text-lg">Gérez toutes vos réunions avec vos étudiants</p>
+      </div>
+
+      <div className="relative bg-white rounded-2xl border border-amber-200/80 p-6 shadow-2xl space-y-4">
+        <h2 className="text-xl font-bold text-gray-900">Propositions de réunion (étudiants)</h2>
+        <p className="text-sm text-gray-600">
+          Acceptez le créneau, proposez une autre date via le calendrier, ou refusez. L’étudiant peut contre-proposer jusqu’à accord.
+        </p>
+        {proposals.filter((p) => p.status === 'negotiating').length === 0 &&
+        proposals.filter((p) => p.status !== 'negotiating').length === 0 ? (
+          <p className="text-gray-500 text-sm">Aucune proposition pour le moment.</p>
+        ) : (
+          <div className="space-y-4">
+            {proposals.map((p) => {
+              const st = p.student
+              const open = p.status === 'negotiating'
+              const needProf = open && p.waiting_on === 'professor'
+              if (!open) {
+                return (
+                  <div
+                    key={p.id}
+                    className="border border-gray-100 rounded-xl p-4 bg-gray-50/80 text-sm text-gray-600"
+                  >
+                    <span className="font-medium text-gray-800">{st?.full_name || 'Étudiant'}</span>
+                    {' — '}
+                    {p.status === 'agreed' ? 'Accord (réunion créée)' : 'Refusée'}
+                    {' — '}
+                    {p.proposed_date} {formatTimeDb(p.proposed_time)}
+                  </div>
+                )
+              }
+              return (
+                <div key={p.id} className="border border-amber-100 rounded-xl p-4 space-y-3 bg-amber-50/30">
+                  <div className="flex flex-wrap justify-between gap-2">
+                    <span className="font-semibold text-gray-900">{st?.full_name || st?.email || 'Étudiant'}</span>
+                    <span
+                      className={`text-xs font-semibold px-2 py-0.5 rounded-md ${
+                        needProf ? 'bg-amber-200 text-amber-950' : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {needProf ? 'À traiter' : 'En attente de l’étudiant'}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-700">
+                    Créneau : <strong>{p.proposed_date}</strong> à <strong>{formatTimeDb(p.proposed_time)}</strong> —{' '}
+                    {p.duration_minutes} min — {p.meeting_type}
+                  </p>
+                  {p.student_notes && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Étudiant : </span>
+                      {p.student_notes}
+                    </p>
+                  )}
+                  {p.professor_notes && (
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Votre dernier message : </span>
+                      {p.professor_notes}
+                    </p>
+                  )}
+                  {needProf && (
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <button
+                        type="button"
+                        disabled={propBusy === p.id}
+                        onClick={() => patchProposal(p.id, { action: 'accept' })}
+                        className="px-4 py-2 bg-emerald-600 text-white text-sm rounded-lg hover:bg-emerald-700 disabled:opacity-50"
+                      >
+                        Accepter ce créneau
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPropCounterId(propCounterId === p.id ? null : p.id)
+                          setPropCounter({
+                            date: p.proposed_date,
+                            time: formatTimeDb(p.proposed_time),
+                            duration: p.duration_minutes || 60,
+                            meeting_type: p.meeting_type || 'Suivi',
+                            professor_notes: p.professor_notes || '',
+                          })
+                        }}
+                        className="px-4 py-2 border border-gray-300 text-gray-800 text-sm rounded-lg hover:bg-white"
+                      >
+                        {propCounterId === p.id ? 'Fermer' : 'Autre date / heure'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={propBusy === p.id}
+                        onClick={() => {
+                          if (!confirm('Refuser définitivement cette demande ?')) return
+                          patchProposal(p.id, { action: 'reject' })
+                        }}
+                        className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50"
+                      >
+                        Refuser
+                      </button>
+                    </div>
+                  )}
+                  {propCounterId === p.id && needProf && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-amber-200/60">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Date</label>
+                        <input
+                          type="date"
+                          value={propCounter.date}
+                          onChange={(e) => setPropCounter({ ...propCounter, date: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Heure</label>
+                        <input
+                          type="time"
+                          value={propCounter.time}
+                          onChange={(e) => setPropCounter({ ...propCounter, time: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Durée (min)</label>
+                        <input
+                          type="number"
+                          min={15}
+                          step={15}
+                          value={propCounter.duration}
+                          onChange={(e) =>
+                            setPropCounter({ ...propCounter, duration: Number(e.target.value) || 60 })
+                          }
+                          className="w-full px-3 py-2 bg-white border rounded-lg text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Type</label>
+                        <input
+                          type="text"
+                          value={propCounter.meeting_type}
+                          onChange={(e) => setPropCounter({ ...propCounter, meeting_type: e.target.value })}
+                          className="w-full px-3 py-2 bg-white border rounded-lg text-sm"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-semibold text-gray-600 mb-1">Message (optionnel)</label>
+                        <textarea
+                          rows={2}
+                          value={propCounter.professor_notes}
+                          onChange={(e) =>
+                            setPropCounter({ ...propCounter, professor_notes: e.target.value })
+                          }
+                          className="w-full px-3 py-2 bg-white border rounded-lg text-sm"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <button
+                          type="button"
+                          disabled={propBusy === p.id}
+                          onClick={() =>
+                            patchProposal(p.id, {
+                              action: 'counter',
+                              date: propCounter.date,
+                              time: propCounter.time,
+                              duration_minutes: propCounter.duration,
+                              meeting_type: propCounter.meeting_type,
+                              professor_notes: propCounter.professor_notes || null,
+                            })
+                          }
+                          className="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 disabled:opacity-50"
+                        >
+                          Envoyer la contre-proposition
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-2xl">

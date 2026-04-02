@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { requireAuth } from '@/lib/auth'
+import { createNotification } from '@/lib/notifications'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -52,6 +53,14 @@ export async function POST(request: Request) {
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    await createNotification(supabase, {
+      recipientId: pfe.supervisor_id,
+      type: 'topic_proposed',
+      title: 'Proposition de sujet par un étudiant',
+      body: title,
+      link: '/dashboard/professor/topics',
+    })
 
     return NextResponse.json({ topic })
   } catch (e) {

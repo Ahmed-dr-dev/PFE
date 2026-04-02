@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+import { createNotification } from '@/lib/notifications'
 
 export async function PUT(
   request: Request,   
@@ -109,6 +110,17 @@ export async function PUT(
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    await createNotification(supabase, {
+      recipientId: applicationData.student_id,
+      type: 'topic_application_decision',
+      title: status === 'approved' ? 'Candidature acceptée' : 'Candidature refusée',
+      body:
+        status === 'approved'
+          ? 'Votre encadrant a accepté votre candidature au sujet.'
+          : 'Votre candidature au sujet a été refusée.',
+      link: '/dashboard/student/topics',
+    })
 
     // If approved, set topic on student's existing PFE (supervisor stays the same)
     if (status === 'approved' && pfe?.id) {

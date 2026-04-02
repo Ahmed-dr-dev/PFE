@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+import { createNotification } from '@/lib/notifications'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 
@@ -130,7 +131,7 @@ export async function POST(request: Request) {
     // Get student's PFE project
     const { data: pfe } = await supabase
       .from('pfe_projects')
-      .select('id')
+      .select('id, supervisor_id')
       .eq('student_id', userId)
       .maybeSingle()
 
@@ -211,6 +212,16 @@ export async function POST(request: Request) {
         code: docError.code,
         details: docError.details 
       }, { status: 500 })
+    }
+
+    if (pfe.supervisor_id) {
+      await createNotification(supabase, {
+        recipientId: pfe.supervisor_id,
+        type: 'document_uploaded',
+        title: 'Nouveau document étudiant',
+        body: `${category} — ${file.name}`,
+        link: '/dashboard/professor/suivi',
+      })
     }
 
     return NextResponse.json({ document })

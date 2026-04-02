@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export function DocumentActions({ documentId }: { documentId: string }) {
+export function DocumentActions({ documentId, onDeleted }: { documentId: string; onDeleted?: () => void | Promise<void> }) {
   const router = useRouter()
   const [deleting, setDeleting] = useState(false)
 
@@ -20,6 +20,7 @@ export function DocumentActions({ documentId }: { documentId: string }) {
 
       if (res.ok) {
         router.refresh()
+        await onDeleted?.()
       } else {
         const error = await res.json()
         alert(error.error || 'Erreur lors de la suppression')

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+import { createNotification } from '@/lib/notifications'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 
@@ -117,10 +118,30 @@ export async function POST(request: Request) {
 
     const formData = await request.formData()
     const file = formData.get('file') as File
-    const category = formData.get('category') as string || 'Autre'
+    const category = (formData.get('category') as string) || 'Autre'
+    const projectIdRaw = (formData.get('projectId') as string | null)?.trim() || ''
 
     if (!file) {
       return NextResponse.json({ error: 'Fichier requis' }, { status: 400 })
+    }
+
+    let pfeProjectId: string | null = null
+    let notifyStudentId: string | null = null
+    if (projectIdRaw) {
+      const { data: proj, error: projErr } = await supabase
+        .from('pfe_projects')
+        .select('id, student_id')
+        .eq('id', projectIdRaw)
+        .eq('supervisor_id', userId)
+        .maybeSingle()
+      if (projErr || !proj) {
+        return NextResponse.json(
+          { error: 'Projet introuvable ou vous n’êtes pas l’encadrant de cet étudiant' },
+          { status: 403 }
+        )
+      }
+      pfeProjectId = proj.id
+      notifyStudentId = proj.student_id
     }
 
     const fileExt = file.name.split('.').pop() || ''
@@ -140,11 +161,11 @@ export async function POST(request: Request) {
     // Store relative path in database
     const relativePath = `pfe/Pfe-doc/${fileName}`
 
-    // Create document record (always public - NULL pfe_project_id)
+    // Public (no project) or attached to a supervised student’s PFE
     const { data: document, error: docError } = await supabase
       .from('documents')
       .insert({
-        pfe_project_id: null, // Always public for all students
+        pfe_project_id: pfeProjectId,
         name: file.name,
         file_path: relativePath,
         file_type: fileType,
@@ -164,6 +185,16 @@ export async function POST(request: Request) {
 
     if (docError) {
       return NextResponse.json({ error: docError.message }, { status: 500 })
+    }
+
+    if (notifyStudentId) {
+      await createNotification(supabase, {
+        recipientId: notifyStudentId,
+        type: 'document_shared',
+        title: 'Nouveau document de votre encadrant',
+        body: `${category} — ${file.name}`,
+        link: '/dashboard/student/suivi-mon-pfe',
+      })
     }
 
     return NextResponse.json({ document })

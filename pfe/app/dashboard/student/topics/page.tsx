@@ -48,20 +48,26 @@ export default function TopicsPage() {
             Consultez les sujets publiés. La postulation est réservée aux étudiants sans encadrant ; avec un encadrant, le sujet se gère avec lui.
           </p>
         </div>
-        {hasSupervisor && (
+        <div className="flex flex-col sm:flex-row gap-2 shrink-0">
           <Link
-            href="/dashboard/student/topics/propose"
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 text-sm shrink-0"
+            href="/dashboard/student/supervision"
+            className="px-4 py-2 border border-gray-300 bg-white text-gray-800 rounded-lg font-semibold hover:bg-gray-50 text-sm text-center"
           >
-            Proposer un sujet
+            Demande d&apos;encadrement
           </Link>
-        )}
+         
+        </div>
       </div>
 
       {hasSupervisor && (
         <div className="bg-amber-50 border border-amber-200 text-amber-900 px-6 py-4 rounded-lg">
           <p className="font-medium">
-            Vous avez un encadrant : vous ne pouvez pas postuler aux sujets depuis cette liste. Vous pouvez toujours proposer un sujet ou en discuter avec votre encadrant.
+            Vous avez un encadrant : vous ne pouvez pas postuler aux sujets depuis cette liste. Vous pouvez{' '}
+            <Link href="/dashboard/student/supervision" className="text-amber-950 font-semibold underline underline-offset-2">
+              gérer votre encadrement
+            </Link>
+         
+            à votre encadrant.
           </p>
         </div>
       )}
@@ -69,7 +75,11 @@ export default function TopicsPage() {
       {!hasSupervisor && (
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-6 py-4 rounded-lg">
           <p className="font-medium">
-            Sans encadrant, vous pouvez postuler à plusieurs sujets. Demandez un encadrement (page Encadrement) : la validation se fera par votre futur encadrant.
+            Sans encadrant, vous pouvez postuler à plusieurs sujets. Passez d&apos;abord par une{' '}
+            <Link href="/dashboard/student/supervision" className="text-yellow-950 font-semibold underline underline-offset-2">
+              demande d&apos;encadrement
+            </Link>
+            ; la validation se fera par votre futur encadrant. Ensuite vous pourrez proposer un sujet depuis cette page.
           </p>
         </div>
       )}

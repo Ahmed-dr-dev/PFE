@@ -3,11 +3,24 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { UploadButton } from '../documents/upload-button'
+import { DocumentActions } from '../documents/document-actions'
 
 export default function ProfessorSuiviListPage() {
   const [students, setStudents] = useState<any[]>([])
   const [publicDocuments, setPublicDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  async function refreshDocuments() {
+    try {
+      const docsRes = await fetch('/api/professor/documents', { cache: 'no-store' })
+      if (docsRes.ok) {
+        const data = await docsRes.json()
+        setPublicDocuments(data.publicDocuments || [])
+      }
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     async function fetchData() {
@@ -94,32 +107,46 @@ export default function ProfessorSuiviListPage() {
         </div>
       )}
 
-      {students.length > 0 && (
-        <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <section className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
             <h2 className="text-xl font-bold text-gray-900">Documents partagés avec tous les étudiants</h2>
-            <UploadButton />
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              {publicDocuments.length} document{publicDocuments.length !== 1 ? 's' : ''}
+            </span>
           </div>
-          <div className="p-6">
-            {publicDocuments.length > 0 ? (
-              <ul className="space-y-2">
-                {publicDocuments.map((doc: any) => (
-                  <li key={doc.id} className="flex items-center justify-between gap-4 py-2 border-b border-gray-100 last:border-0">
-                    <span className="text-gray-900 font-medium truncate">{doc.name}</span>
+          <UploadButton onUploadSuccess={refreshDocuments} />
+        </div>
+        <div className="p-6">
+          {publicDocuments.length > 0 ? (
+            <ul className="space-y-2">
+              {publicDocuments.map((doc: any) => (
+                <li
+                  key={doc.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3 border-b border-gray-100 last:border-0"
+                >
+                  <span className="text-gray-900 font-medium truncate min-w-0 flex-1">{doc.name}</span>
+                  <div className="flex items-center gap-2 shrink-0">
                     {doc.file_path && (
-                      <a href={doc.file_path} target="_blank" rel="noopener noreferrer" className="text-sm text-emerald-600 hover:text-emerald-700 font-medium shrink-0">
+                      <a
+                        href={doc.file_path}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 text-sm text-emerald-700 font-semibold border border-emerald-200 rounded-lg hover:bg-emerald-50"
+                      >
                         Télécharger
                       </a>
                     )}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-gray-500 text-sm">Aucun document partagé. Utilisez le bouton ci-dessus pour en ajouter.</p>
-            )}
-          </div>
-        </section>
-      )}
+                    <DocumentActions documentId={doc.id} onDeleted={refreshDocuments} label="Supprimer" />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500 text-sm">Aucun document partagé. Utilisez le bouton ci-dessus pour en ajouter.</p>
+          )}
+        </div>
+      </section>
     </div>
   )
 }

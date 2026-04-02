@@ -2,6 +2,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { LandingFeatures } from './landing-features'
+import { LandingSupportForm } from './landing-support-form'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -83,33 +85,7 @@ export default async function Home() {
           </div>
         </section>
 
-        {/* Features - Compact Grid */}
-        <section className="py-16 bg-white border-y border-gray-200">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="text-center mb-12">
-              <h3 className="text-3xl font-bold text-gray-900 mb-3">Fonctionnalités</h3>
-              <p className="text-gray-600">Tout ce dont vous avez besoin</p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[
-                { icon: '📋', title: 'Sujets', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-                { icon: '👥', title: 'Encadrement', color: 'bg-blue-100 text-blue-700 border-blue-200' },
-                { icon: '📊', title: 'Suivi', color: 'bg-purple-100 text-purple-700 border-purple-200' },
-                { icon: '📅', title: 'Calendrier', color: 'bg-orange-100 text-orange-700 border-orange-200' },
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className="p-6 bg-gray-50 border border-gray-200 rounded-xl hover:border-emerald-300 transition-all text-center"
-                >
-                  <div className={`w-16 h-16 ${item.color} rounded-xl flex items-center justify-center mx-auto mb-3 text-2xl border`}>
-                    {item.icon}
-                  </div>
-                  <h4 className="font-semibold text-gray-900">{item.title}</h4>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <LandingFeatures />
 
         {/* Process - Minimal */}
         <section className="py-16 bg-slate-50">
@@ -163,6 +139,8 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        <LandingSupportForm />
       </main>
     </div>
   )

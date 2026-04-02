@@ -1,4 +1,5 @@
 import { requireAuth } from '@/lib/auth'
+import { createNotification } from '@/lib/notifications'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -134,6 +135,13 @@ export async function POST(request: Request) {
         if (reopenErr) {
           return NextResponse.json({ error: reopenErr.message }, { status: 500 })
         }
+        await createNotification(supabase, {
+          recipientId: professorId,
+          type: 'supervision_request',
+          title: 'Demande d’encadrement (relancée)',
+          body: message?.trim() || 'Un étudiant a relancé une demande d’encadrement.',
+          link: '/dashboard/professor/supervision-requests',
+        })
         return NextResponse.json({ request: reopened })
       }
     }
@@ -155,6 +163,13 @@ export async function POST(request: Request) {
       }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+    await createNotification(supabase, {
+      recipientId: professorId,
+      type: 'supervision_request',
+      title: 'Nouvelle demande d’encadrement',
+      body: message?.trim() || 'Un étudiant souhaite être encadré par vous.',
+      link: '/dashboard/professor/supervision-requests',
+    })
     return NextResponse.json({ request: req })
   } catch (error) {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

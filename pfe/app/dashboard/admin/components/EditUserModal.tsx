@@ -31,6 +31,7 @@ const DEPARTMENTS = [
 const YEARS = [
   { value: '', label: 'Sélectionnez' },
   { value: '3ème année', label: '3ème année' },
+  { value: '3ème année Master', label: '3ème année Master' },
   { value: '4ème année', label: '4ème année' },
   { value: '5ème année', label: '5ème année' },
 ]

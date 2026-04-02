@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { DocumentActions } from '../../documents/document-actions'
+import { UploadButton } from '../../documents/upload-button'
 
 function formatFileSize(bytes: number): string {
   if (bytes === 0) return '0 Bytes'
@@ -22,10 +23,12 @@ function DocCard({
   doc,
   onStatusChange,
   onReviewChange,
+  onDeleted,
 }: {
   doc: any
   onStatusChange?: (id: string, status: string) => void
   onReviewChange?: (id: string, professor_review: string | null) => void
+  onDeleted?: () => void | Promise<void>
 }) {
   const [updating, setUpdating] = useState(false)
   const [reviewText, setReviewText] = useState(doc.professor_review || '')
@@ -173,7 +176,7 @@ function DocCard({
             </button>
           </>
         ) : (
-          <DocumentActions documentId={doc.id} />
+          <DocumentActions documentId={doc.id} onDeleted={onDeleted} />
         )}
       </div>
     </div>
@@ -189,6 +192,19 @@ export default function ProfessorSuiviStudentPage() {
   const [notesSaving, setNotesSaving] = useState(false)
   const [notesEditing, setNotesEditing] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
+
+  async function refetchSuivi() {
+    try {
+      const res = await fetch(`/api/professor/suivi/${studentId}`, { cache: 'no-store' })
+      if (res.ok) {
+        const d = await res.json()
+        setData(d)
+        setNotes(d.project?.supervisor_notes || '')
+      }
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     if (!studentId) return
@@ -300,7 +316,17 @@ export default function ProfessorSuiviStudentPage() {
 
         <div className="p-6 space-y-6">
           <section>
-            <h2 className="text-lg font-bold text-gray-900 mb-3">Note / Remarques pour l&apos;étudiant</h2>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
+              <h2 className="text-lg font-bold text-gray-900">Note / Remarques pour l&apos;étudiant</h2>
+              {project?.id && (
+                <UploadButton
+                  projectId={project.id}
+                  onUploadSuccess={refetchSuivi}
+                  buttonLabel="Envoyer un document à cet étudiant"
+                  compact
+                />
+              )}
+            </div>
             {notesEditing ? (
               <div className="space-y-2">
                 <textarea
@@ -393,6 +419,7 @@ export default function ProfessorSuiviStudentPage() {
                       doc={doc}
                       onStatusChange={handleDocStatusChange}
                       onReviewChange={handleDocReviewChange}
+                      onDeleted={refetchSuivi}
                     />
                   ))}
                 </div>

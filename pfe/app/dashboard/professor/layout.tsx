@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { requireAuth } from '@/lib/auth'
 import { SignOutButton } from './signout-button'
 import { MobileMenu } from './mobile-menu'
+import { NotificationBell } from '@/components/notification-bell'
 import { ProfessorNavbarCapacity } from './professor-navbar-capacity'
 import { Sidebar } from './sidebar'
 
@@ -26,6 +27,7 @@ export default async function DashboardLayout({
               </Link>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
+              <NotificationBell />
               <ProfessorNavbarCapacity />
               <SignOutButton />
               <MobileMenu />

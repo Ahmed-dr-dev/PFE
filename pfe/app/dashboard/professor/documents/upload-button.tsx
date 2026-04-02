@@ -3,7 +3,25 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 
-export function UploadButton() {
+type Props = {
+  /** Called after a successful upload so client pages can refetch (router.refresh() does not re-run useEffect). */
+  onUploadSuccess?: () => void | Promise<void>
+  category?: string
+  /** When set, document is attached to this PFE project (student-specific) instead of public. */
+  projectId?: string
+  buttonLabel?: string
+  compact?: boolean
+}
+
+export function UploadButton({
+  onUploadSuccess,
+  category,
+  projectId,
+  buttonLabel,
+  compact,
+}: Props) {
+  const resolvedCategory =
+    category ?? (projectId ? 'Document de travail' : 'Autre')
   const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
@@ -13,33 +31,12 @@ export function UploadButton() {
     if (!file) return
 
     setUploading(true)
-    
+
     try {
-      // Get first project ID from supervised students
-      const projectsRes = await fetch('/api/professor/students')
-      const projectsData = await projectsRes.json()
-      const firstStudent = projectsData.students?.[0]
-      
-      if (!firstStudent?.id) {
-        alert('Aucun étudiant assigné. Veuillez d\'abord assigner un étudiant.')
-        setUploading(false)
-        return
-      }
-      
-      // Get project ID from student detail
-      const studentRes = await fetch(`/api/professor/students/${firstStudent.id}`)
-      const studentData = await studentRes.json()
-      
-      if (!studentData.project?.id) {
-        alert('Aucun projet trouvé pour cet étudiant.')
-        setUploading(false)
-        return
-      }
-      
       const formData = new FormData()
       formData.append('file', file)
-      formData.append('category', 'Autre')
-      formData.append('projectId', studentData.project.id)
+      formData.append('category', resolvedCategory)
+      if (projectId) formData.append('projectId', projectId)
 
       const res = await fetch('/api/professor/documents', {
         method: 'POST',
@@ -47,6 +44,7 @@ export function UploadButton() {
       })
 
       if (res.ok) {
+        await onUploadSuccess?.()
         router.refresh()
       } else {
         const error = await res.json()
@@ -73,11 +71,16 @@ export function UploadButton() {
         disabled={uploading}
       />
       <button
+        type="button"
         onClick={() => fileInputRef.current?.click()}
         disabled={uploading}
-        className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-xl hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+        className={
+          compact
+            ? 'px-4 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all font-semibold text-sm shadow disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap'
+            : 'px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-xl hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed'
+        }
       >
-        {uploading ? 'Téléversement...' : 'Téléverser un document'}
+        {uploading ? 'Téléversement...' : buttonLabel || 'Téléverser un document'}
       </button>
     </>
   )

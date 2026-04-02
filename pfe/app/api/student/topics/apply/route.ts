@@ -1,4 +1,5 @@
 import { requireAuth } from '@/lib/auth'
+import { createNotification } from '@/lib/notifications'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -125,6 +126,16 @@ export async function POST(request: Request) {
         { error: error.message },
         { status: 500 }
       )
+    }
+
+    if (topic?.professor_id) {
+      await createNotification(supabase, {
+        recipientId: topic.professor_id,
+        type: 'topic_application',
+        title: 'Nouvelle candidature à un sujet',
+        body: 'Un étudiant a postulé à l’un de vos sujets publiés.',
+        link: '/dashboard/professor/topic-applications',
+      })
     }
 
     return NextResponse.json({ application })

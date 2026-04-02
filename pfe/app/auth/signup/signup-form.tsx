@@ -168,6 +168,7 @@ export function SignUpForm() {
           >
             <option value="" className="bg-slate-900">Sélectionnez</option>
             <option value="3ème année" className="bg-slate-900">3ème année</option>
+            <option value="3ème année Master" className="bg-slate-900">3ème année Master</option>
             <option value="4ème année" className="bg-slate-900">4ème année</option>
             <option value="5ème année" className="bg-slate-900">5ème année</option>
           </select>

@@ -2,27 +2,67 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
+const SETTING_LABELS: Record<string, string> = {
+  academic_year: 'Année académique',
+  topic_submission_deadline: 'Date limite — soumission des sujets',
+  internship_request_deadline: 'Date limite — demandes de stage',
+  defense_registration_deadline: 'Date limite — inscription aux soutenances',
+}
+
+const DEADLINE_KEYS = [
+  'topic_submission_deadline',
+  'internship_request_deadline',
+  'defense_registration_deadline',
+] as const
+
+function formatSettingDisplay(key: string, value: string): string {
+  const v = value?.trim()
+  if (!v) return '—'
+  if (key.includes('deadline') || key === 'academic_year') {
+    const d = new Date(v)
+    if (!Number.isNaN(d.getTime()) && /^\d{4}-\d{2}-\d{2}/.test(v)) {
+      return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+    }
+  }
+  return v
+}
+
 export default function DashboardPage() {
   const [myPfe, setMyPfe] = useState<any>(null)
+  const [settings, setSettings] = useState<Record<string, string>>({})
+  const [supervisorFallback, setSupervisorFallback] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchMyPfe() {
+    async function load() {
       try {
-        const res = await fetch('/api/student/my-pfe', {
-          cache: 'no-store',
-        })
-        if (!res.ok) return
-        const data = await res.json()
-        setMyPfe(data.pfe)
-      } catch (error) {
-        // Handle error
+        const [pfeRes, settingsRes, supervisionRes] = await Promise.all([
+          fetch('/api/student/my-pfe', { cache: 'no-store' }),
+          fetch('/api/student/settings', { cache: 'no-store' }),
+          fetch('/api/student/supervision', { cache: 'no-store' }),
+        ])
+        if (pfeRes.ok) {
+          const data = await pfeRes.json()
+          setMyPfe(data.pfe)
+        }
+        if (settingsRes.ok) {
+          const data = await settingsRes.json()
+          setSettings(data.settings || {})
+        }
+        if (supervisionRes.ok) {
+          const data = await supervisionRes.json()
+          setSupervisorFallback(data.supervisor || null)
+        }
+      } catch {
+        /* ignore */
       } finally {
         setLoading(false)
       }
     }
-    fetchMyPfe()
+    load()
   }, [])
+
+  const encadrant = myPfe?.supervisor || supervisorFallback
 
   const statusColors: Record<string, string> = {
     pending: 'bg-yellow-50 text-yellow-800 border-yellow-200',
@@ -50,44 +90,119 @@ export default function DashboardPage() {
     )
   }
 
+  const deadlinesBlock = (
+    <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
+      <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 flex items-center justify-center border border-amber-500/30">
+          <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        Dates limites (administration)
+      </h3>
+      <p className="text-xs text-gray-500 mb-4">
+        Définies par l&apos;administration — voir aussi{' '}
+        <Link href="/dashboard/student/annonces" className="text-emerald-600 font-semibold hover:underline">
+          Annonces
+        </Link>
+        .
+      </p>
+      <ul className="space-y-3 text-sm">
+        {settings.academic_year ? (
+          <li className="flex flex-col gap-0.5">
+            <span className="text-gray-500 font-medium">{SETTING_LABELS.academic_year}</span>
+            <span className="text-gray-900 font-semibold">{formatSettingDisplay('academic_year', settings.academic_year)}</span>
+          </li>
+        ) : null}
+        {DEADLINE_KEYS.map((key) => (
+          <li key={key} className="flex flex-col gap-0.5">
+            <span className="text-gray-500 font-medium">{SETTING_LABELS[key] || key}</span>
+            <span className="text-gray-900 font-semibold">{formatSettingDisplay(key, settings[key] || '')}</span>
+          </li>
+        ))}
+      </ul>
+      {!settings.academic_year && DEADLINE_KEYS.every((k) => !settings[k]?.trim()) && (
+        <p className="text-gray-500 text-sm mt-2">Aucune date publiée pour le moment.</p>
+      )}
+    </div>
+  )
+
+  const encadrantBlock = encadrant ? (
+    <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
+      <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center border border-blue-500/30">
+          <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+        </div>
+        Encadrant
+      </h3>
+      <div className="space-y-3">
+        <p className="text-gray-900 font-semibold">{encadrant.full_name}</p>
+        {encadrant.email && (
+          <a href={`mailto:${encadrant.email}`} className="text-emerald-600 hover:text-emerald-700 text-sm font-medium transition-colors block">
+            {encadrant.email}
+          </a>
+        )}
+        {encadrant.office && <p className="text-gray-600 text-sm">Bureau : {encadrant.office}</p>}
+      </div>
+      <Link href="/dashboard/student/supervision" className="inline-block mt-4 text-sm font-semibold text-emerald-600 hover:underline">
+        Mon encadrement →
+      </Link>
+    </div>
+  ) : null
+
   if (!myPfe) {
     return (
-      <div className="h-[calc(100vh-8rem)] flex flex-col">
+      <div className="min-h-[calc(100vh-8rem)] flex flex-col pb-8">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
               Bienvenue, <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Étudiant</span>
             </h1>
-            <p className="text-gray-600 text-lg">Gérez votre Projet de Fin d'Études</p>
+            <p className="text-gray-600 text-lg">Gérez votre Projet de Fin d&apos;Études</p>
           </div>
         </div>
 
-        <div className="flex-1 flex items-center justify-center">
-          <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xl overflow-hidden max-w-2xl w-full">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5" />
-            <div className="relative">
-              <div className="w-24 h-24 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/30">
-                <svg
-                  className="w-12 h-12 text-emerald-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 flex items-center">
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-12 text-center shadow-2xl overflow-hidden w-full">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5" />
+              <div className="relative">
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-emerald-500/30">
+                  <svg className="w-12 h-12 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">Aucun sujet PFE assigné</h3>
+                <p className="text-gray-600 mb-4 text-lg max-w-xl mx-auto">
+                  L&apos;administrateur doit approuver votre affectation et un sujet doit vous être assigné pour afficher le détail du PFE ici. Les dates limites fixées par l&apos;administration sont indiquées à droite.
+                </p>
+                <p className="text-gray-500 text-sm">
+                  {encadrant ? 'Votre encadrant est indiqué ci-contre — contactez-le si besoin.' : 'Un encadrant doit vous ajouter à sa supervision pour commencer.'}
+                </p>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-3">Aucun PFE assigné</h3>
-              <p className="text-gray-600 mb-4 text-lg">
-                Un encadrant doit vous ajouter à sa supervision et l'administrateur doit approuver l'affectation avant que vous puissiez consulter les sujets disponibles.
-              </p>
-              <p className="text-gray-500 mb-8 text-sm">
-                Contactez votre encadrant pour commencer.
-              </p>
+            </div>
+          </div>
+          <div className="space-y-6">
+            {deadlinesBlock}
+            {encadrantBlock}
+            <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
+              <h3 className="text-lg font-bold text-gray-900 mb-4">Actions rapides</h3>
+              <div className="space-y-2">
+                <Link href="/dashboard/student/topics" className="block px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-all">
+                  Sujets disponibles
+                </Link>
+                <Link href="/dashboard/student/supervision" className="block px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-all">
+                  Mon encadrement
+                </Link>
+                <Link href="/dashboard/student/suivi-mon-pfe" className="block px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-all">
+                  Suivi — Mon PFE
+                </Link>
+                <Link href="/dashboard/student/annonces" className="block px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-all">
+                  Annonces & paramètres
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -152,10 +267,10 @@ export default function DashboardPage() {
 
                 <div className="mt-auto pt-6">
                   <Link
-                    href="/dashboard/student/my-pfe"
+                    href="/dashboard/student/suivi-mon-pfe"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-xl hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl hover:shadow-emerald-500/25 hover:-translate-y-0.5"
                   >
-                    Voir les détails
+                    Suivi &amp; documents
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
@@ -167,29 +282,8 @@ export default function DashboardPage() {
         </div>
 
         <div className="space-y-6">
-          {myPfe.supervisor && (
-            <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
-              <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex items-center justify-center border border-blue-500/30">
-                  <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                Encadrant
-              </h3>
-              <div className="space-y-3">
-                <p className="text-gray-900 font-semibold">{myPfe.supervisor.full_name}</p>
-                {myPfe.supervisor.email && (
-                  <a
-                    href={`mailto:${myPfe.supervisor.email}`}
-                    className="text-emerald-400 hover:text-emerald-300 text-sm font-medium transition-colors block"
-                  >
-                    {myPfe.supervisor.email}
-                  </a>
-                )}
-              </div>
-            </div>
-          )}
+          {deadlinesBlock}
+          {encadrantBlock}
 
           <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
@@ -214,10 +308,16 @@ export default function DashboardPage() {
                 Mon encadrement
               </Link>
               <Link
-                href="/dashboard/student/suivi"
+                href="/dashboard/student/suivi-mon-pfe"
                 className="block px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-all"
               >
-                Suivi
+                Suivi — Mon PFE
+              </Link>
+              <Link
+                href="/dashboard/student/annonces"
+                className="block px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-lg text-sm font-medium text-gray-900 transition-all"
+              >
+                Annonces & paramètres
               </Link>
             </div>
           </div>

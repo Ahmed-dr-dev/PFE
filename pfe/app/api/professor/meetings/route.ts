@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
+import { createNotification } from '@/lib/notifications'
 
 export async function GET() {
   try {
@@ -143,6 +144,19 @@ export async function POST(request: Request) {
     }))
     const { data: inserted, error } = await supabase.from('meetings').insert(rows).select()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    const seen = new Set<string>()
+    for (const p of projects) {
+      const sid = p.student_id as string
+      if (!sid || seen.has(sid)) continue
+      seen.add(sid)
+      await createNotification(supabase, {
+        recipientId: sid,
+        type: 'meeting_planned',
+        title: 'Nouvelle réunion planifiée',
+        body: `${date} à ${time}${type ? ` — ${type}` : ''}`,
+        link: '/dashboard/student/meetings',
+      })
+    }
     return NextResponse.json({ meeting: inserted?.[0], created: inserted?.length })
   } catch (error) {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

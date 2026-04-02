@@ -1,4 +1,5 @@
 import { requireAuth } from '@/lib/auth'
+import { createNotification } from '@/lib/notifications'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -100,6 +101,17 @@ export async function PATCH(
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
     }
+
+    await createNotification(supabase, {
+      recipientId: req.student_id,
+      type: 'supervision_decision',
+      title: status === 'accepted' ? 'Demande d’encadrement acceptée' : 'Demande d’encadrement refusée',
+      body:
+        status === 'accepted'
+          ? 'Votre encadrant a accepté votre demande.'
+          : 'Votre demande d’encadrement a été refusée.',
+      link: '/dashboard/student/supervision',
+    })
 
     return NextResponse.json({ request: updated })
   } catch (error) {

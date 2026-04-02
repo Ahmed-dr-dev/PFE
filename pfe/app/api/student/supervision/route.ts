@@ -17,9 +17,13 @@ export async function GET() {
       .eq('student_id', auth.user!.id)
       .maybeSingle()
 
-    // If assignment is cancelled/rejected/pending, treat as no supervisor on student side
-    if (!pfe || !pfe.supervisor_id || pfe.status !== 'approved') {
-      return NextResponse.json({ supervisor: null, pfeStatus: null, meetings: [], documents: [], defense: null })
+    const supervisorVisible =
+      pfe &&
+      pfe.supervisor_id &&
+      ['approved', 'in_progress', 'completed'].includes(pfe.status as string)
+
+    if (!supervisorVisible) {
+      return NextResponse.json({ supervisor: null, pfeStatus: pfe?.status ?? null, meetings: [], documents: [], defense: null })
     }
 
     // Get supervisor details
