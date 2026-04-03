@@ -54,7 +54,9 @@ export default function ProfessorDefensesPage() {
                     <p className="text-gray-900 font-semibold">{student.full_name || student.name || 'N/A'}</p>
                     <p className="text-gray-600 text-sm">{topic.title || 'Sans sujet'}</p>
                     <p className="text-gray-500 text-sm mt-1">
-                      {d.scheduled_date} {d.scheduled_time && `à ${d.scheduled_time}`} {d.room && `– ${d.room}`}
+                      {d.scheduled_date} {d.scheduled_time && `à ${String(d.scheduled_time).slice(0, 5)}`}
+                      {d.duration_minutes != null && ` · ${d.duration_minutes} min`}
+                      {d.room && ` — ${d.room}`}
                     </p>
                     {d.jury_members?.length > 0 && <p className="text-gray-500 text-xs mt-1">Jury: {d.jury_members.join(', ')}</p>}
                   </div>

@@ -2,14 +2,23 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 
+type TopicMode = 'none' | 'existing' | 'suggest'
+
 export default function SupervisionPage() {
   const [data, setData] = useState<any>({ supervisor: null, meetings: [], documents: [] })
   const [loading, setLoading] = useState(true)
   const [professors, setProfessors] = useState<any[]>([])
+  const [approvedTopics, setApprovedTopics] = useState<any[]>([])
   const [requests, setRequests] = useState<any[]>([])
-  const [requestLoading, setRequestLoading] = useState<string | null>(null)
+  const [demandSubmitting, setDemandSubmitting] = useState(false)
   const [cancelLoading, setCancelLoading] = useState<string | null>(null)
   const [error, setError] = useState('')
+
+  const [demandProfessorId, setDemandProfessorId] = useState<string | null>(null)
+  const [topicMode, setTopicMode] = useState<TopicMode>('none')
+  const [selectedTopicId, setSelectedTopicId] = useState('')
+  const [suggestedTitle, setSuggestedTitle] = useState('')
+  const [requestMessage, setRequestMessage] = useState('')
 
   useEffect(() => {
     async function fetchSupervision() {
@@ -31,9 +40,10 @@ export default function SupervisionPage() {
     if (data.supervisor) return
     async function fetchProfessorsAndRequests() {
       try {
-        const [profRes, reqRes] = await Promise.all([
+        const [profRes, reqRes, topicsRes] = await Promise.all([
           fetch('/api/student/professors'),
           fetch('/api/student/supervision-requests'),
+          fetch('/api/student/topics', { cache: 'no-store' }),
         ])
         if (profRes.ok) {
           const j = await profRes.json()
@@ -42,6 +52,10 @@ export default function SupervisionPage() {
         if (reqRes.ok) {
           const j = await reqRes.json()
           setRequests(j.requests || [])
+        }
+        if (topicsRes.ok) {
+          const j = await topicsRes.json()
+          setApprovedTopics(j.topics || [])
         }
       } catch (e) {
         console.error(e)
@@ -60,29 +74,67 @@ export default function SupervisionPage() {
     return requests.find((r: any) => r.professor_id === professorId)
   }
 
-  async function sendRequest(professorId: string) {
-    setError('')
-    setRequestLoading(professorId)
+  async function refreshRequests() {
     try {
+      const reqRes = await fetch('/api/student/supervision-requests', { cache: 'no-store' })
+      if (reqRes.ok) {
+        const j = await reqRes.json()
+        setRequests(j.requests || [])
+      }
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  function openDemandModal(professorId: string) {
+    setError('')
+    setDemandProfessorId(professorId)
+    setTopicMode('none')
+    setSelectedTopicId('')
+    setSuggestedTitle('')
+    setRequestMessage('')
+  }
+
+  function closeDemandModal() {
+    if (demandSubmitting) return
+    setDemandProfessorId(null)
+  }
+
+  async function submitDemandRequest() {
+    if (!demandProfessorId) return
+    setError('')
+    setDemandSubmitting(true)
+    try {
+      const body: Record<string, unknown> = {
+        professorId: demandProfessorId,
+        message: requestMessage.trim() || null,
+      }
+      if (topicMode === 'existing' && selectedTopicId) {
+        body.preferredTopicId = selectedTopicId
+      }
+      if (topicMode === 'suggest' && suggestedTitle.trim()) {
+        body.suggestedTopicTitle = suggestedTitle.trim()
+      }
       const res = await fetch('/api/student/supervision-requests', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ professorId }),
+        body: JSON.stringify(body),
       })
       const j = await res.json()
       if (!res.ok) {
         setError(j.error || 'Erreur')
         return
       }
-      const prof = professors.find((p: any) => p.id === professorId)
-      setRequests((prev) => {
-        const rest = prev.filter((x: any) => x.professor_id !== professorId)
-        return [{ ...j.request, professor: prof || {} }, ...rest]
-      })
+      await refreshRequests()
+      setDemandProfessorId(null)
     } finally {
-      setRequestLoading(null)
+      setDemandSubmitting(false)
     }
   }
+
+  const demandProfessor = demandProfessorId
+    ? professors.find((p: any) => p.id === demandProfessorId)
+    : null
 
   async function cancelRequest(requestId: string) {
     if (!confirm('Annuler cette demande d’encadrement ?')) return
@@ -137,9 +189,20 @@ export default function SupervisionPage() {
             <ul className="space-y-3">
               {requests.map((r: any) => (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  <div>
+                  <div className="min-w-0">
                     <p className="font-semibold text-gray-900">{r.professor?.full_name || 'Encadrant'}</p>
                     <p className="text-sm text-gray-600">{r.professor?.department}</p>
+                    {r.topic?.title && (
+                      <p className="text-xs text-emerald-800 font-medium mt-1 truncate">Sujet : {r.topic.title}</p>
+                    )}
+                    {r.suggested_topic_title && (
+                      <p className="text-xs text-cyan-800 font-medium mt-1 truncate">
+                        Proposition : {r.suggested_topic_title}
+                      </p>
+                    )}
+                    {r.message && (
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">&quot;{r.message}&quot;</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
@@ -182,16 +245,7 @@ export default function SupervisionPage() {
               const pending = r?.status === 'pending'
               const accepted = r?.status === 'accepted'
               const rejected = r?.status === 'rejected'
-              const label =
-                requestLoading === p.id
-                  ? 'Envoi...'
-                  : pending
-                    ? 'En attente'
-                    : accepted
-                      ? 'Accepté'
-                      : rejected
-                        ? 'Redemander'
-                        : 'Demander'
+              const label = pending ? 'En attente' : accepted ? 'Accepté' : rejected ? 'Redemander' : 'Demander'
               return (
                 <li key={p.id} className="flex items-center justify-between gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <div>
@@ -201,8 +255,8 @@ export default function SupervisionPage() {
                   </div>
                   <button
                     type="button"
-                    disabled={pending || accepted || requestLoading !== null}
-                    onClick={() => sendRequest(p.id)}
+                    disabled={pending || accepted || demandSubmitting}
+                    onClick={() => openDemandModal(p.id)}
                     className="shrink-0 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {label}
@@ -215,6 +269,129 @@ export default function SupervisionPage() {
             <p className="text-gray-500 text-sm">Aucun encadrant disponible pour le moment.</p>
           )}
         </div>
+
+        {demandProfessor && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+            <button
+              type="button"
+              aria-label="Fermer"
+              className="absolute inset-0 bg-black/50"
+              onClick={closeDemandModal}
+            />
+            <div className="relative w-full sm:max-w-lg max-h-[90vh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-2xl border border-gray-200 shadow-2xl p-6 sm:p-8">
+              <h3 className="text-xl font-bold text-gray-900 pr-8">Demande d&apos;encadrement</h3>
+              <p className="text-sm text-gray-600 mt-1 mb-6">
+                {demandProfessor.full_name} — {demandProfessor.department}
+              </p>
+
+              <p className="text-sm font-semibold text-gray-800 mb-3">Sujet de PFE (facultatif)</p>
+              <div className="space-y-2 mb-4">
+                <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gray-200 p-3 has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-50/50">
+                  <input
+                    type="radio"
+                    name="topicMode"
+                    className="mt-1"
+                    checked={topicMode === 'none'}
+                    onChange={() => {
+                      setTopicMode('none')
+                      setSelectedTopicId('')
+                      setSuggestedTitle('')
+                    }}
+                  />
+                  <span className="text-sm text-gray-800">
+                    <span className="font-medium">Sans préciser</span>
+                    <span className="block text-gray-500 text-xs mt-0.5">Vous pourrez définir le sujet plus tard avec l&apos;encadrant.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gray-200 p-3 has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-50/50">
+                  <input
+                    type="radio"
+                    name="topicMode"
+                    className="mt-1"
+                    checked={topicMode === 'existing'}
+                    onChange={() => {
+                      setTopicMode('existing')
+                      setSuggestedTitle('')
+                    }}
+                  />
+                  <span className="text-sm text-gray-800 flex-1 min-w-0">
+                    <span className="font-medium">Choisir un sujet du catalogue</span>
+                    {topicMode === 'existing' && (
+                      <select
+                        value={selectedTopicId}
+                        onChange={(e) => setSelectedTopicId(e.target.value)}
+                        className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500"
+                      >
+                        <option value="">— Sélectionner un sujet approuvé —</option>
+                        {approvedTopics.map((t: any) => {
+                          const prof = Array.isArray(t.professor) ? t.professor[0] : t.professor
+                          const suffix = prof?.full_name ? ` — ${prof.full_name}` : ''
+                          return (
+                            <option key={t.id} value={t.id}>
+                              {t.title}{suffix}
+                            </option>
+                          )
+                        })}
+                      </select>
+                    )}
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gray-200 p-3 has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-50/50">
+                  <input
+                    type="radio"
+                    name="topicMode"
+                    className="mt-1"
+                    checked={topicMode === 'suggest'}
+                    onChange={() => {
+                      setTopicMode('suggest')
+                      setSelectedTopicId('')
+                    }}
+                  />
+                  <span className="text-sm text-gray-800 flex-1 min-w-0">
+                    <span className="font-medium">Proposer mon propre sujet</span>
+                    {topicMode === 'suggest' && (
+                      <input
+                        type="text"
+                        value={suggestedTitle}
+                        onChange={(e) => setSuggestedTitle(e.target.value.slice(0, 500))}
+                        placeholder="Titre ou idée de sujet"
+                        className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-emerald-500"
+                      />
+                    )}
+                  </span>
+                </label>
+              </div>
+
+              <label className="block text-sm font-semibold text-gray-800 mb-1">Message pour l&apos;encadrant (facultatif)</label>
+              <textarea
+                value={requestMessage}
+                onChange={(e) => setRequestMessage(e.target.value.slice(0, 4000))}
+                rows={3}
+                placeholder="Présentez-vous ou précisez votre demande…"
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-emerald-500 mb-6"
+              />
+
+              <div className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+                <button
+                  type="button"
+                  disabled={demandSubmitting}
+                  onClick={closeDemandModal}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold border border-gray-200 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="button"
+                  disabled={demandSubmitting}
+                  onClick={() => void submitDemandRequest()}
+                  className="px-4 py-2.5 rounded-xl text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
+                >
+                  {demandSubmitting ? 'Envoi…' : 'Envoyer la demande'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -332,6 +509,9 @@ export default function SupervisionPage() {
               <div className="space-y-2 text-gray-700">
                 <p><span className="text-gray-600">Date :</span> {new Date(defense.scheduled_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 {defense.scheduled_time && <p><span className="text-gray-600">Heure :</span> {String(defense.scheduled_time).slice(0, 5)}</p>}
+                {defense.duration_minutes != null && (
+                  <p><span className="text-gray-600">Durée prévue :</span> {defense.duration_minutes} minutes</p>
+                )}
                 {defense.room && <p><span className="text-gray-600">Salle :</span> {defense.room}</p>}
                 {defense.jury_members?.length > 0 && <p><span className="text-gray-600">Jury :</span> {defense.jury_members.join(', ')}</p>}
               </div>

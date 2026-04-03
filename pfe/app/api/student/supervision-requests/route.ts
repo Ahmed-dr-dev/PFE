@@ -25,10 +25,13 @@ export async function GET() {
         id,
         professor_id,
         message,
+        preferred_topic_id,
+        suggested_topic_title,
         status,
         created_at,
         updated_at,
-        professor:profiles!supervision_requests_professor_id_fkey(id, full_name, email, department)
+        professor:profiles!supervision_requests_professor_id_fkey(id, full_name, email, department),
+        topic:pfe_topics!supervision_requests_preferred_topic_id_fkey(id, title)
       `)
       .eq('student_id', studentId)
       .order('created_at', { ascending: false })
@@ -69,9 +72,11 @@ export async function GET() {
       .filter((r: any) => !staleAcceptedSet.has(r.id))
       .map((r: any) => {
       const professor = Array.isArray(r.professor) ? r.professor[0] : r.professor
+      const topic = Array.isArray(r.topic) ? r.topic[0] : r.topic
       return {
         ...r,
         professor,
+        topic: topic || null,
       }
     })
     return NextResponse.json({ requests: formatted })
@@ -89,9 +94,35 @@ export async function POST(request: Request) {
     const supabase = await createClient()
     const body = await request.json()
     const { professorId, message } = body
+    const preferredTopicIdRaw =
+      typeof body.preferredTopicId === 'string' && body.preferredTopicId.trim() ? body.preferredTopicId.trim() : null
+    const suggestedRaw = typeof body.suggestedTopicTitle === 'string' ? body.suggestedTopicTitle.trim().slice(0, 500) : ''
+    const suggestedTopicTitle = suggestedRaw || null
+
     if (!professorId) {
       return NextResponse.json({ error: 'Encadrant requis' }, { status: 400 })
     }
+    if (preferredTopicIdRaw && suggestedTopicTitle) {
+      return NextResponse.json(
+        { error: 'Choisissez soit un sujet existant, soit une proposition de sujet, pas les deux' },
+        { status: 400 }
+      )
+    }
+
+    let preferredTopicId: string | null = preferredTopicIdRaw
+    if (preferredTopicId) {
+      const { data: topicRow } = await supabase
+        .from('pfe_topics')
+        .select('id, status')
+        .eq('id', preferredTopicId)
+        .maybeSingle()
+      if (!topicRow || topicRow.status !== 'approved') {
+        return NextResponse.json({ error: 'Sujet introuvable ou non validé' }, { status: 400 })
+      }
+    }
+
+    const messageTrimmed = typeof message === 'string' ? message.trim().slice(0, 4000) : ''
+    const messageFinal = messageTrimmed || null
 
     const studentId = auth.user!.id
 
@@ -126,7 +157,9 @@ export async function POST(request: Request) {
           .from('supervision_requests')
           .update({
             status: 'pending',
-            message: message || null,
+            message: messageFinal,
+            preferred_topic_id: preferredTopicId,
+            suggested_topic_title: suggestedTopicTitle,
             updated_at: now,
           })
           .eq('id', existingReq.id)
@@ -135,11 +168,18 @@ export async function POST(request: Request) {
         if (reopenErr) {
           return NextResponse.json({ error: reopenErr.message }, { status: 500 })
         }
+        const notifParts: string[] = []
+        if (preferredTopicId) notifParts.push('sujet existant indiqué')
+        if (suggestedTopicTitle) notifParts.push('proposition de sujet')
+        if (messageFinal) notifParts.push('message joint')
         await createNotification(supabase, {
           recipientId: professorId,
           type: 'supervision_request',
           title: 'Demande d’encadrement (relancée)',
-          body: message?.trim() || 'Un étudiant a relancé une demande d’encadrement.',
+          body:
+            notifParts.length > 0
+              ? `Un étudiant a relancé une demande (${notifParts.join(', ')}).`
+              : 'Un étudiant a relancé une demande d’encadrement.',
           link: '/dashboard/professor/supervision-requests',
         })
         return NextResponse.json({ request: reopened })
@@ -151,7 +191,9 @@ export async function POST(request: Request) {
       .insert({
         student_id: studentId,
         professor_id: professorId,
-        message: message || null,
+        message: messageFinal,
+        preferred_topic_id: preferredTopicId,
+        suggested_topic_title: suggestedTopicTitle,
         status: 'pending',
       })
       .select()
@@ -161,13 +203,29 @@ export async function POST(request: Request) {
       if (error.code === '23505') {
         return NextResponse.json({ error: 'Demande déjà envoyée à cet encadrant' }, { status: 400 })
       }
+      if (error.message?.includes('preferred_topic_id') || error.code === '42703') {
+        return NextResponse.json(
+          {
+            error:
+              'Colonnes sujet manquantes. Exécutez la migration SQL supervision-requests-topic-choice.sql dans Supabase.',
+          },
+          { status: 503 }
+        )
+      }
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+    const notifParts: string[] = []
+    if (preferredTopicId) notifParts.push('sujet existant choisi')
+    if (suggestedTopicTitle) notifParts.push('proposition de sujet')
+    if (messageFinal) notifParts.push('message')
     await createNotification(supabase, {
       recipientId: professorId,
       type: 'supervision_request',
       title: 'Nouvelle demande d’encadrement',
-      body: message?.trim() || 'Un étudiant souhaite être encadré par vous.',
+      body:
+        notifParts.length > 0
+          ? `Un étudiant souhaite être encadré par vous (${notifParts.join(', ')}).`
+          : 'Un étudiant souhaite être encadré par vous.',
       link: '/dashboard/professor/supervision-requests',
     })
     return NextResponse.json({ request: req })

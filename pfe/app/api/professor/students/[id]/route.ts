@@ -104,3 +104,62 @@ export async function GET(
     )
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await requireAuth('professor')
+    if (auth.error) {
+      return NextResponse.json({ error: auth.error }, { status: auth.status })
+    }
+
+    const { id: studentId } = await params
+    const userId = auth.user!.id
+    const body = await request.json()
+    const { supervisorDefenseReady } = body
+
+    if (typeof supervisorDefenseReady !== 'boolean') {
+      return NextResponse.json({ error: 'supervisorDefenseReady (booléen) requis' }, { status: 400 })
+    }
+
+    const supabase = await createClient()
+
+    const { data: project, error: findErr } = await supabase
+      .from('pfe_projects')
+      .select('id')
+      .eq('student_id', studentId)
+      .eq('supervisor_id', userId)
+      .maybeSingle()
+
+    if (findErr) {
+      return NextResponse.json({ error: findErr.message }, { status: 500 })
+    }
+    if (!project) {
+      return NextResponse.json({ error: 'Étudiant non trouvé ou non supervisé par vous' }, { status: 404 })
+    }
+
+    const { error: updErr } = await supabase
+      .from('pfe_projects')
+      .update({ supervisor_defense_ready: supervisorDefenseReady })
+      .eq('id', project.id)
+
+    if (updErr) {
+      if (updErr.message?.includes('supervisor_defense_ready') || updErr.code === '42703') {
+        return NextResponse.json(
+          {
+            error:
+              'Colonne supervisor_defense_ready manquante. Exécutez la migration defenses-scheduling-supervisor-ready.sql.',
+          },
+          { status: 503 }
+        )
+      }
+      return NextResponse.json({ error: updErr.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ ok: true, supervisorDefenseReady })
+  } catch {
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })
+  }
+}

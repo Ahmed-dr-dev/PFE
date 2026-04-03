@@ -12,7 +12,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const supabase = await createClient()
 
     const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() }
-    const allowed = ['scheduled_date', 'scheduled_time', 'room', 'jury_members', 'status', 'notes']
+    const allowed = ['scheduled_date', 'scheduled_time', 'room', 'jury_members', 'jury_professor_ids', 'duration_minutes', 'status', 'notes']
     allowed.forEach((k) => { if (body[k] !== undefined) updateData[k] = body[k] })
 
     const { data, error } = await supabase

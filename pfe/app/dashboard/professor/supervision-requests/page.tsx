@@ -196,8 +196,21 @@ export default function ProfessorSupervisionRequestsPage() {
                       <p className="text-gray-900 font-semibold">{s.full_name || 'Étudiant'}</p>
                       <p className="text-gray-500 text-xs">{s.email}</p>
                       {s.department && <p className="text-gray-400 text-xs capitalize">{s.department}</p>}
+                      {r.topic?.title && (
+                        <p className="text-emerald-800 text-xs mt-2 font-medium">
+                          Sujet (catalogue) : {r.topic.title}
+                        </p>
+                      )}
+                      {r.suggested_topic_title && (
+                        <p className="text-cyan-800 text-xs mt-1 font-medium">
+                          Proposition de sujet : {r.suggested_topic_title}
+                        </p>
+                      )}
+                      {!r.topic?.title && !r.suggested_topic_title && (
+                        <p className="text-gray-500 text-xs mt-2 italic">Aucun sujet précisé</p>
+                      )}
                       {r.message && (
-                        <p className="text-gray-600 text-xs mt-1 italic">&quot;{r.message}&quot;</p>
+                        <p className="text-gray-600 text-xs mt-1 whitespace-pre-wrap">&quot;{r.message}&quot;</p>
                       )}
                     </div>
                   </div>

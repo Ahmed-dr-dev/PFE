@@ -7,6 +7,8 @@ const SETTING_KEYS = [
   { key: 'topic_submission_deadline', label: 'Date limite soumission sujets', type: 'date' },
   { key: 'internship_request_deadline', label: 'Date limite demandes de stage', type: 'date' },
   { key: 'defense_registration_deadline', label: 'Date limite inscription soutenances', type: 'date' },
+  { key: 'defense_period_start', label: 'Période soutenances — date de début', type: 'date' },
+  { key: 'defense_period_end', label: 'Période soutenances — date de fin', type: 'date' },
 ]
 
 export default function AnnoncesPage() {

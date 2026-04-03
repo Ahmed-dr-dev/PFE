@@ -14,6 +14,7 @@ export default function StudentsPage() {
   const [availableStudents, setAvailableStudents] = useState<any[]>([])
   const [selectedStudent, setSelectedStudent] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
+  const [defenseReadySavingId, setDefenseReadySavingId] = useState<string | null>(null)
 
   const refreshLists = async () => {
     try {
@@ -96,6 +97,27 @@ export default function StudentsPage() {
       alert('Erreur lors de l\'ajout de l\'étudiant')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  async function toggleDefenseReady(studentId: string, next: boolean) {
+    setDefenseReadySavingId(studentId)
+    try {
+      const res = await fetch(`/api/professor/students/${studentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ supervisorDefenseReady: next }),
+      })
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        alert(j.error || 'Erreur')
+        return
+      }
+      setStudents((prev) =>
+        prev.map((s: any) => (s.id === studentId ? { ...s, supervisorDefenseReady: next } : s))
+      )
+    } finally {
+      setDefenseReadySavingId(null)
     }
   }
 
@@ -188,6 +210,15 @@ export default function StudentsPage() {
                         {statusLabels[student.status]}
                       </span>
                     )}
+                    {student.supervisorDefenseReady ? (
+                      <span className="px-3 py-1 rounded-lg text-xs font-semibold border border-emerald-200 bg-emerald-50 text-emerald-800">
+                        Validé pour soutenance
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded-lg text-xs font-semibold border border-gray-200 bg-gray-50 text-gray-600">
+                        Pas encore validé pour soutenance
+                      </span>
+                    )}
                   </div>
                   <p className="text-gray-600 text-sm mb-2">{student.email || 'N/A'}</p>
                   <p className="text-gray-700 font-medium">{student.topic?.title || 'N/A'}</p>
@@ -198,14 +229,30 @@ export default function StudentsPage() {
           
 
             <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-gray-200">
-              {student.last_meeting && (
+              {student.lastMeeting && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
-                  <span>Dernière rencontre: {new Date(student.last_meeting).toLocaleDateString('fr-FR')}</span>
+                  <span>Dernière rencontre: {new Date(student.lastMeeting).toLocaleDateString('fr-FR')}</span>
                 </div>
               )}
+              <button
+                type="button"
+                disabled={defenseReadySavingId === student.id}
+                onClick={() => void toggleDefenseReady(student.id, !student.supervisorDefenseReady)}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                  student.supervisorDefenseReady
+                    ? 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                    : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                } disabled:opacity-50`}
+              >
+                {defenseReadySavingId === student.id
+                  ? '…'
+                  : student.supervisorDefenseReady
+                    ? 'Retirer la validation soutenance'
+                    : 'Valider pour la soutenance (admin)'}
+              </button>
               <div className="ml-auto flex items-center gap-2">
                 <Link
                   href={`/dashboard/professor/students/${student.id}`}

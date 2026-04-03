@@ -21,6 +21,7 @@ export async function GET() {
         progress,
         start_date,
         created_at,
+        supervisor_defense_ready,
         student:profiles!pfe_projects_student_id_fkey(
           id,
           full_name,
@@ -87,6 +88,7 @@ export async function GET() {
           progress: project.progress || 0,
           startDate: project.start_date,
           lastMeeting: lastMeeting ? `${lastMeeting.date}T${lastMeeting.time}` : null,
+          supervisorDefenseReady: !!(project as { supervisor_defense_ready?: boolean }).supervisor_defense_ready,
         }
       })
 
