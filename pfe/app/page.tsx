@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { LandingFeatures } from './landing-features'
+import { LandingFooter } from './landing-footer'
 import { LandingSupportForm } from './landing-support-form'
 
 export default async function Home() {
@@ -141,6 +142,8 @@ export default async function Home() {
         </section>
 
         <LandingSupportForm />
+
+        <LandingFooter />
       </main>
     </div>
   )
