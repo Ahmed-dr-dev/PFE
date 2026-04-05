@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { resolveDefensePeriod } from '@/lib/defense-period'
+import { getSupabaseForAdminData } from '@/lib/supabase/admin-server'
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 
@@ -10,7 +11,7 @@ export async function GET() {
     }
 
     const userId = auth.user!.id
-    const supabase = await createClient()
+    const supabase = await getSupabaseForAdminData()
 
     // Get all students supervised by this professor
     const { data: projects, error } = await supabase
@@ -92,7 +93,23 @@ export async function GET() {
         }
       })
 
-    return NextResponse.json({ students, count: students.length })
+    const { data: periodRows } = await supabase
+      .from('platform_settings')
+      .select('key, value')
+      .in('key', ['defense_period_start', 'defense_period_end'])
+
+    const pmap = Object.fromEntries((periodRows || []).map((r) => [r.key, r.value || '']))
+    const period = resolveDefensePeriod(pmap.defense_period_start, pmap.defense_period_end)
+
+    return NextResponse.json({
+      students,
+      count: students.length,
+      defensePeriod: {
+        complete: period.complete,
+        start: period.start,
+        end: period.end,
+      },
+    })
   } catch (error) {
     return NextResponse.json(
       { error: 'Erreur serveur' },

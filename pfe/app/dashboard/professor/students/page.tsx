@@ -15,6 +15,11 @@ export default function StudentsPage() {
   const [selectedStudent, setSelectedStudent] = useState<string>('')
   const [submitting, setSubmitting] = useState(false)
   const [defenseReadySavingId, setDefenseReadySavingId] = useState<string | null>(null)
+  const [defensePeriod, setDefensePeriod] = useState<{
+    complete: boolean
+    start: string | null
+    end: string | null
+  } | null>(null)
 
   const refreshLists = async () => {
     try {
@@ -25,6 +30,7 @@ export default function StudentsPage() {
       if (sRes.ok) {
         const data = await sRes.json()
         setStudents(data.students || [])
+        setDefensePeriod(data.defensePeriod ?? null)
       }
       if (cRes.ok) {
         const data = await cRes.json()
@@ -136,9 +142,21 @@ export default function StudentsPage() {
   }
 
   const atCapacity = supervisionCap !== null && supervisionCap.available <= 0
+  const periodBlocksValidation = defensePeriod && !defensePeriod.complete
 
   return (
     <div className="space-y-8">
+      {periodBlocksValidation && (
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <p className="font-semibold">Soutenances — étape administration</p>
+          <p className="mt-1">
+            L’administration doit d’abord définir et enregistrer la <strong>période des soutenances</strong> (date début et fin)
+            dans <strong>Annonces &amp; paramètres</strong>. Ensuite vous pourrez marquer vos étudiants comme prêts pour la
+            soutenance.
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
@@ -239,13 +257,21 @@ export default function StudentsPage() {
               )}
               <button
                 type="button"
-                disabled={defenseReadySavingId === student.id}
+                disabled={
+                  defenseReadySavingId === student.id ||
+                  (!student.supervisorDefenseReady && !!periodBlocksValidation)
+                }
+                title={
+                  !student.supervisorDefenseReady && periodBlocksValidation
+                    ? 'La période des soutenances doit être définie par l’administration'
+                    : undefined
+                }
                 onClick={() => void toggleDefenseReady(student.id, !student.supervisorDefenseReady)}
                 className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
                   student.supervisorDefenseReady
                     ? 'border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100'
                     : 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                } disabled:opacity-50`}
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {defenseReadySavingId === student.id
                   ? '…'

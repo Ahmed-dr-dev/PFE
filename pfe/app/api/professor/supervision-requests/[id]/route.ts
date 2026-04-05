@@ -24,7 +24,7 @@ export async function PATCH(
 
     const { data: req, error: fetchError } = await supabase
       .from('supervision_requests')
-      .select('id, student_id, status')
+      .select('id, student_id, status, preferred_topic_id, suggested_topic_title')
       .eq('id', id)
       .eq('professor_id', professorId)
       .single()
@@ -76,13 +76,63 @@ export async function PATCH(
         return NextResponse.json({ error: "L'étudiant a déjà un encadrant" }, { status: 400 })
       }
 
+      let resolvedTopicId: string | null = null
+      const preferredId = req.preferred_topic_id as string | null | undefined
+      const suggestedTitle = (req.suggested_topic_title as string | null | undefined)?.trim() || ''
+
+      if (preferredId) {
+        const { data: topicRow } = await supabase
+          .from('pfe_topics')
+          .select('id, status, professor_id')
+          .eq('id', preferredId)
+          .maybeSingle()
+        if (!topicRow || topicRow.status !== 'approved' || topicRow.professor_id !== professorId) {
+          return NextResponse.json(
+            { error: 'Le sujet demandé est invalide ou ne vous appartient pas.' },
+            { status: 400 }
+          )
+        }
+        const { data: topicTaken } = await supabase
+          .from('pfe_projects')
+          .select('id')
+          .eq('topic_id', preferredId)
+          .neq('student_id', req.student_id)
+          .limit(1)
+          .maybeSingle()
+        if (topicTaken) {
+          return NextResponse.json(
+            { error: 'Ce sujet du catalogue est déjà attribué à un autre étudiant.' },
+            { status: 400 }
+          )
+        }
+        resolvedTopicId = preferredId
+      } else if (suggestedTitle) {
+        const { data: newTopic, error: topicErr } = await supabase
+          .from('pfe_topics')
+          .insert({
+            title: suggestedTitle.slice(0, 500),
+            description:
+              "Sujet proposé par l'étudiant dans sa demande d'encadrement. À détailler avec l'encadrant.",
+            requirements: null,
+            department: null,
+            professor_id: professorId,
+            status: 'approved',
+          })
+          .select('id')
+          .single()
+        if (topicErr) {
+          return NextResponse.json({ error: topicErr.message }, { status: 500 })
+        }
+        resolvedTopicId = newTopic.id
+      }
+
       const startDate = new Date().toISOString().split('T')[0]
       const { error: insertError } = await supabase
         .from('pfe_projects')
         .insert({
           student_id: req.student_id,
           supervisor_id: professorId,
-          topic_id: null,
+          topic_id: resolvedTopicId,
           status: 'approved',
           start_date: startDate,
         })
@@ -108,7 +158,7 @@ export async function PATCH(
       title: status === 'accepted' ? 'Demande d’encadrement acceptée' : 'Demande d’encadrement refusée',
       body:
         status === 'accepted'
-          ? 'Votre encadrant a accepté votre demande.'
+          ? 'Votre encadrant a accepté votre demande. Votre sujet PFE est enregistré sur votre fiche de projet.'
           : 'Votre demande d’encadrement a été refusée.',
       link: '/dashboard/student/supervision',
     })

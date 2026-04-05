@@ -1,7 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { parseRecoveryEmailBody } from '@/lib/auth/recovery-email'
 import { requireAuth } from '@/lib/auth'
-import { NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { randomUUID } from 'crypto'
+import { NextResponse } from 'next/server'
 
 async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder()
@@ -20,7 +21,8 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { email, password, fullName, role, department, phone, year, office, officeHours, bio, expertise } = body
+    const { email, password, fullName, role, department, phone, year, office, officeHours, bio, expertise, recoveryEmail } =
+      body
 
     if (!email || !password || !fullName || !role) {
       return NextResponse.json(
@@ -75,6 +77,14 @@ export async function POST(request: Request) {
       if (expertise && Array.isArray(expertise)) {
         profileData.expertise = expertise
       }
+    }
+
+    if (recoveryEmail !== undefined && recoveryEmail !== null && String(recoveryEmail).trim() !== '') {
+      const p = parseRecoveryEmailBody(recoveryEmail)
+      if (p.kind === 'invalid') {
+        return NextResponse.json({ error: p.message }, { status: 400 })
+      }
+      if (p.kind === 'set') profileData.recovery_email = p.email
     }
 
     const { data: newProfile, error: profileError } = await supabase

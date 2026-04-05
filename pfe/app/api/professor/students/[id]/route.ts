@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server'
+import { resolveDefensePeriod } from '@/lib/defense-period'
+import { getSupabaseForAdminData } from '@/lib/supabase/admin-server'
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 
@@ -14,7 +15,7 @@ export async function GET(
 
     const { id } = await params
     const userId = auth.user!.id
-    const supabase = await createClient()
+    const supabase = await getSupabaseForAdminData()
 
     // Get student's PFE project supervised by this professor
     const { data: project, error } = await supabase
@@ -124,7 +125,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'supervisorDefenseReady (booléen) requis' }, { status: 400 })
     }
 
-    const supabase = await createClient()
+    const supabase = await getSupabaseForAdminData()
 
     const { data: project, error: findErr } = await supabase
       .from('pfe_projects')
@@ -140,10 +141,32 @@ export async function PATCH(
       return NextResponse.json({ error: 'Étudiant non trouvé ou non supervisé par vous' }, { status: 404 })
     }
 
-    const { error: updErr } = await supabase
+    if (supervisorDefenseReady === true) {
+      const { data: periodRows } = await supabase
+        .from('platform_settings')
+        .select('key, value')
+        .in('key', ['defense_period_start', 'defense_period_end'])
+
+      const pmap = Object.fromEntries((periodRows || []).map((r) => [r.key, r.value || '']))
+      const period = resolveDefensePeriod(pmap.defense_period_start, pmap.defense_period_end)
+      if (!period.complete) {
+        return NextResponse.json(
+          {
+            error:
+              'L’administration doit d’abord définir la période des soutenances (date début et fin) dans Annonces & paramètres. Ensuite vous pourrez marquer l’étudiant comme prêt.',
+          },
+          { status: 400 }
+        )
+      }
+    }
+
+    const { data: updated, error: updErr } = await supabase
       .from('pfe_projects')
       .update({ supervisor_defense_ready: supervisorDefenseReady })
       .eq('id', project.id)
+      .eq('supervisor_id', userId)
+      .select('id, supervisor_defense_ready')
+      .single()
 
     if (updErr) {
       if (updErr.message?.includes('supervisor_defense_ready') || updErr.code === '42703') {
@@ -156,6 +179,13 @@ export async function PATCH(
         )
       }
       return NextResponse.json({ error: updErr.message }, { status: 500 })
+    }
+
+    if (!updated || updated.supervisor_defense_ready !== supervisorDefenseReady) {
+      return NextResponse.json(
+        { error: 'Mise à jour impossible (vérifiez les droits RLS ou ajoutez SUPABASE_SERVICE_ROLE_KEY au serveur).' },
+        { status: 503 }
+      )
     }
 
     return NextResponse.json({ ok: true, supervisorDefenseReady })

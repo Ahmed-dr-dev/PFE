@@ -1,5 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { parseRecoveryEmailBody } from '@/lib/auth/recovery-email'
 import { requireAuth } from '@/lib/auth'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 async function hashPassword(password: string): Promise<string> {
@@ -22,7 +23,7 @@ export async function PATCH(
     }
     const { id } = await params
     const body = await request.json()
-    const { email, password, fullName, department, phone, year, office, officeHours, bio, expertise } = body
+    const { email, password, fullName, department, phone, year, office, officeHours, bio, expertise, recoveryEmail } = body
 
     const supabase = await createClient()
 
@@ -62,6 +63,15 @@ export async function PATCH(
       if (officeHours != null) updates.office_hours = officeHours || null
       if (bio != null) updates.bio = bio || null
       if (expertise !== undefined) updates.expertise = Array.isArray(expertise) ? expertise : []
+    }
+
+    if ('recoveryEmail' in body) {
+      const p = parseRecoveryEmailBody(recoveryEmail)
+      if (p.kind === 'invalid') {
+        return NextResponse.json({ error: p.message }, { status: 400 })
+      }
+      if (p.kind === 'clear') updates.recovery_email = null
+      if (p.kind === 'set') updates.recovery_email = p.email
     }
 
     const { data: updated, error } = await supabase

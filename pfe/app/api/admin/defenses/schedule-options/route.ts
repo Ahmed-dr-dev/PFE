@@ -1,15 +1,25 @@
 import { requireAuth } from '@/lib/auth'
-import { createClient } from '@/lib/supabase/server'
+import { resolveDefensePeriod } from '@/lib/defense-period'
+import { getSupabaseForAdminData } from '@/lib/supabase/admin-server'
 import { NextResponse } from 'next/server'
 
 const PERIOD_KEYS = ['defense_period_start', 'defense_period_end'] as const
+
+function isSupervisorDefenseReady(value: unknown): boolean {
+  if (value === true || value === 1) return true
+  if (typeof value === 'string') {
+    const s = value.toLowerCase()
+    return s === 'true' || s === 't' || s === '1'
+  }
+  return false
+}
 
 export async function GET() {
   try {
     const auth = await requireAuth('admin')
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
-    const supabase = await createClient()
+    const supabase = await getSupabaseForAdminData()
 
     const { data: settingsRows } = await supabase
       .from('platform_settings')
@@ -17,6 +27,7 @@ export async function GET() {
       .in('key', [...PERIOD_KEYS])
 
     const settingsMap = Object.fromEntries((settingsRows || []).map((r) => [r.key, r.value || '']))
+    const period = resolveDefensePeriod(settingsMap.defense_period_start, settingsMap.defense_period_end)
 
     const { data: blockedDefs } = await supabase
       .from('defenses')
@@ -36,8 +47,6 @@ export async function GET() {
         topic:pfe_topics(id, title),
         supervisor:profiles!pfe_projects_supervisor_id_fkey(id, full_name, email, department)
       `)
-      .eq('supervisor_defense_ready', true)
-      .in('status', ['approved', 'in_progress'])
       .not('supervisor_id', 'is', null)
 
     if (projErr) {
@@ -53,7 +62,14 @@ export async function GET() {
       return NextResponse.json({ error: projErr.message }, { status: 500 })
     }
 
-    const eligible = (projects || [])
+    const baseList = (projects || [])
+      .filter((p: { status?: string }) => {
+        const st = (p.status || '').toLowerCase()
+        if (st === 'rejected') return false
+        if (st === 'completed') return false
+        return true
+      })
+      .filter((p: { id: string; supervisor_defense_ready?: unknown }) => isSupervisorDefenseReady(p.supervisor_defense_ready))
       .filter((p: { id: string }) => !blocked.has(p.id))
       .map((p: any) => {
         const student = Array.isArray(p.student) ? p.student[0] : p.student
@@ -68,6 +84,8 @@ export async function GET() {
         }
       })
 
+    const eligibleProjects = period.complete ? baseList : []
+
     const { data: profs, error: profErr } = await supabase
       .from('profiles')
       .select('id, full_name, email, department')
@@ -77,10 +95,13 @@ export async function GET() {
     if (profErr) return NextResponse.json({ error: profErr.message }, { status: 500 })
 
     return NextResponse.json({
-      defensePeriodStart: settingsMap.defense_period_start || null,
-      defensePeriodEnd: settingsMap.defense_period_end || null,
-      eligibleProjects: eligible,
+      defensePeriodStart: period.start,
+      defensePeriodEnd: period.end,
+      defensePeriodComplete: period.complete,
+      validatedWaitingForPeriodCount: period.complete ? 0 : baseList.length,
+      eligibleProjects,
       professors: profs || [],
+      usingServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
     })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

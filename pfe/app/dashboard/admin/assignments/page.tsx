@@ -341,187 +341,239 @@ export default function AssignmentsPage() {
           {studentListFilter === 'affected' && <span className="text-lg font-normal text-gray-500"> — Avec affectation</span>}
           {studentListFilter === 'unaffected' && <span className="text-lg font-normal text-gray-500"> — Sans affectation</span>}
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredStudentList.map((s: any) => {
-            const assignment = assignmentByStudentId[s.id]
-            const isAffected = !!assignment || s.hasPfe
-            return (
-              <div
-                key={s.id}
-                className={`rounded-2xl border p-5 shadow-sm ${
-                  isAffected ? 'bg-white border-emerald-200' : 'bg-white border-gray-200'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-gray-900 font-semibold text-sm shrink-0">
-                    {(s.full_name || s.name || 'N/A').split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-gray-900 font-semibold truncate">{s.full_name || s.name || 'N/A'}</p>
-                    <p className="text-gray-600 text-sm truncate">{s.email || '—'}</p>
-                    {s.department && <p className="text-gray-500 text-xs mt-0.5">{s.department}</p>}
-                    {isAffected && assignment ? (
-                      <div className="mt-2 pt-2 border-t border-gray-100">
-                        <p className="text-emerald-700 text-xs font-medium">Encadrant: {assignment.supervisor?.full_name || assignment.supervisor?.name || '—'}</p>
-                        <p className="text-gray-600 text-xs">Sujet: {assignment.topic?.title || '—'}</p>
-                        <span className={`inline-block mt-1 px-2 py-0.5 rounded text-xs font-medium ${
-                          assignment.status === 'approved' ? 'bg-emerald-50 text-emerald-700' :
-                          assignment.status === 'pending' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'
-                        }`}>
-                          {assignment.status === 'approved' ? 'Confirmé' : assignment.status === 'pending' ? 'En attente' : 'Rejeté'}
-                        </span>
-                      </div>
-                    ) : (
-                      <p className="mt-2 text-amber-600 text-xs font-medium">Sans affectation</p>
-                    )}
-                  </div>
-                </div>
-                {isAffected && assignment && (
-                  <Link
-                    href={`/dashboard/admin/assignments/${assignment.id}`}
-                    className="mt-3 block text-center py-2 text-sm font-medium text-emerald-600 hover:text-emerald-700"
-                  >
-                    Voir / Modifier
-                  </Link>
-                )}
-              </div>
-            )
-          })}
-        </div>
-        {filteredStudentList.length === 0 && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+        {filteredStudentList.length > 0 ? (
+          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+            <table className="min-w-[720px] w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-4 py-3">Étudiant</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Département</th>
+                  <th className="px-4 py-3">Encadrant</th>
+                  <th className="px-4 py-3 min-w-[140px]">Sujet</th>
+                  <th className="px-4 py-3">Statut</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {filteredStudentList.map((s: any) => {
+                  const assignment = assignmentByStudentId[s.id]
+                  const isAffected = !!assignment || s.hasPfe
+                  return (
+                    <tr
+                      key={s.id}
+                      className={isAffected && assignment ? 'bg-emerald-50/40' : 'bg-white hover:bg-gray-50/80'}
+                    >
+                      <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">
+                        {s.full_name || s.name || 'N/A'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={s.email || ''}>
+                        {s.email || '—'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 capitalize">{s.department || '—'}</td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {isAffected && assignment
+                          ? assignment.supervisor?.full_name || assignment.supervisor?.name || '—'
+                          : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-gray-600 max-w-[220px] truncate" title={assignment?.topic?.title || ''}>
+                        {isAffected && assignment ? assignment.topic?.title || '—' : '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {isAffected && assignment ? (
+                          <span
+                            className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                              assignment.status === 'approved'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : assignment.status === 'pending'
+                                  ? 'bg-amber-100 text-amber-800'
+                                  : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {assignment.status === 'approved'
+                              ? 'Confirmé'
+                              : assignment.status === 'pending'
+                                ? 'En attente'
+                                : 'Rejeté'}
+                          </span>
+                        ) : (
+                          <span className="text-amber-700 text-xs font-medium">Sans affectation</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right whitespace-nowrap">
+                        {isAffected && assignment ? (
+                          <Link
+                            href={`/dashboard/admin/assignments/${assignment.id}`}
+                            className="text-emerald-600 hover:text-emerald-800 font-medium"
+                          >
+                            Voir
+                          </Link>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-gray-200 p-8 text-center">
             <p className="text-gray-600">Aucun étudiant ne correspond aux filtres.</p>
           </div>
         )}
       </div>
 
       {pendingAssignments.length > 0 && (
-        <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-gray-900">En attente d'affectation ({pendingAssignments.length})</h2>
-          <div className="grid grid-cols-1 gap-6">
-            {pendingAssignments.map((assignment) => (
-              <div
-                key={assignment.id}
-                className="relative bg-white rounded-2xl border border-orange-500/30 p-6 shadow-xl"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Étudiant</h3>
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-gray-900 font-semibold text-sm">
-                        {(assignment.student?.full_name || assignment.student?.name || 'N/A').split(' ').map((n: string) => n[0]).join('')}
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-gray-900">En attente d&apos;affectation ({pendingAssignments.length})</h2>
+          <div className="overflow-x-auto rounded-xl border border-amber-200/60 bg-white shadow-sm">
+            <table className="min-w-[800px] w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-gray-200 bg-amber-50/50 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-4 py-3">Étudiant</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Département</th>
+                  <th className="px-4 py-3 min-w-[160px]">Sujet</th>
+                  <th className="px-4 py-3">Encadrant</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {pendingAssignments.map((assignment) => (
+                  <tr key={assignment.id} className="hover:bg-amber-50/30">
+                    <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">
+                      {assignment.student?.full_name || assignment.student?.name || 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 max-w-[180px] truncate" title={assignment.student?.email || ''}>
+                      {assignment.student?.email || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 capitalize">{assignment.student?.department || '—'}</td>
+                    <td className="px-4 py-3 text-gray-800 max-w-[220px] truncate" title={assignment.topic?.title || ''}>
+                      {assignment.topic?.title || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {assignment.topic?.professor?.full_name || assignment.supervisor?.full_name || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <div className="flex flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleAssign(assignment.id)}
+                          className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold text-xs"
+                        >
+                          Confirmer
+                        </button>
+                        <Link
+                          href={`/dashboard/admin/assignments/${assignment.id}`}
+                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-gray-800 rounded-lg hover:bg-gray-50 font-semibold text-xs"
+                        >
+                          Modifier
+                        </Link>
                       </div>
-                      <div>
-                        <p className="text-gray-900 font-semibold">{assignment.student?.full_name || assignment.student?.name || 'N/A'}</p>
-                        <p className="text-gray-600 text-sm">{assignment.student?.email || 'N/A'}</p>
-                        <p className="text-gray-500 text-xs mt-1">{assignment.student?.department || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Sujet & Encadrant</h3>
-                    <div>
-                      <p className="text-gray-900 font-semibold mb-1">{assignment.topic?.title || 'N/A'}</p>
-                      <p className="text-gray-600 text-sm">{assignment.topic?.professor?.full_name || assignment.supervisor?.full_name || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
-                  <button
-                    onClick={() => handleAssign(assignment.id)}
-                    className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold text-sm shadow-lg hover:shadow-xl hover:shadow-emerald-500/25"
-                  >
-                    Confirmer l'affectation
-                  </button>
-                  <Link
-                    href={`/dashboard/admin/assignments/${assignment.id}`}
-                    className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
-                  >
-                    Modifier
-                  </Link>
-                </div>
-              </div>
-            ))}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
       {assigned.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <h2 className="text-2xl font-bold text-gray-900">Affectations confirmées ({assigned.length})</h2>
-          <div className="grid grid-cols-1 gap-6">
-            {assigned.map((assignment) => (
-              <div
-                key={assignment.id}
-                className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Étudiant</h3>
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-gray-900 font-semibold text-sm">
-                        {(assignment.student?.full_name || assignment.student?.name || 'N/A').split(' ').map((n: string) => n[0]).join('')}
-                      </div>
-                      <div>
-                        <p className="text-gray-900 font-semibold">{assignment.student?.full_name || assignment.student?.name || 'N/A'}</p>
-                        <p className="text-gray-600 text-sm">{assignment.student?.email || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Sujet & Encadrant</h3>
-                    <div>
-                      <p className="text-gray-900 font-semibold mb-1">{assignment.topic?.title || 'N/A'}</p>
-                      <p className="text-gray-600 text-sm">{assignment.topic?.professor?.full_name || assignment.supervisor?.full_name || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-xl border border-gray-200 bg-white shadow-sm">
+            <table className="min-w-[720px] w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-gray-200 bg-gray-50 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-4 py-3">Étudiant</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3 min-w-[160px]">Sujet</th>
+                  <th className="px-4 py-3">Encadrant</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {assigned.map((assignment) => (
+                  <tr key={assignment.id} className="hover:bg-gray-50/80">
+                    <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">
+                      {assignment.student?.full_name || assignment.student?.name || 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={assignment.student?.email || ''}>
+                      {assignment.student?.email || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-800 max-w-[220px] truncate" title={assignment.topic?.title || ''}>
+                      {assignment.topic?.title || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {assignment.topic?.professor?.full_name || assignment.supervisor?.full_name || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/dashboard/admin/assignments/${assignment.id}`}
+                        className="text-emerald-600 hover:text-emerald-800 font-medium"
+                      >
+                        Voir
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
       {rejected.length > 0 && (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <h2 className="text-2xl font-bold text-gray-900">Affectations rejetées ({rejected.length})</h2>
-          <div className="grid grid-cols-1 gap-6">
-            {rejected.map((assignment) => (
-              <div
-                key={assignment.id}
-                className="relative bg-white rounded-2xl border border-red-500/30 p-6 shadow-xl"
-              >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Étudiant</h3>
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-gray-900 font-semibold text-sm">
-                        {(assignment.student?.full_name || assignment.student?.name || 'N/A').split(' ').map((n: string) => n[0]).join('')}
-                      </div>
-                      <div>
-                        <p className="text-gray-900 font-semibold">{assignment.student?.full_name || assignment.student?.name || 'N/A'}</p>
-                        <p className="text-gray-600 text-sm">{assignment.student?.email || 'N/A'}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider mb-3">Sujet & Encadrant</h3>
-                    <div>
-                      <p className="text-gray-900 font-semibold mb-1">{assignment.topic?.title || 'N/A'}</p>
-                      <p className="text-gray-600 text-sm">{assignment.topic?.professor?.full_name || assignment.supervisor?.full_name || 'N/A'}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="overflow-x-auto rounded-xl border border-red-200/60 bg-white shadow-sm">
+            <table className="min-w-[720px] w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-gray-200 bg-red-50/40 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  <th className="px-4 py-3">Étudiant</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3 min-w-[160px]">Sujet</th>
+                  <th className="px-4 py-3">Encadrant</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {rejected.map((assignment) => (
+                  <tr key={assignment.id} className="hover:bg-red-50/20">
+                    <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">
+                      {assignment.student?.full_name || assignment.student?.name || 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-600 max-w-[200px] truncate" title={assignment.student?.email || ''}>
+                      {assignment.student?.email || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-800 max-w-[220px] truncate" title={assignment.topic?.title || ''}>
+                      {assignment.topic?.title || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {assignment.topic?.professor?.full_name || assignment.supervisor?.full_name || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/dashboard/admin/assignments/${assignment.id}`}
+                        className="text-emerald-600 hover:text-emerald-800 font-medium"
+                      >
+                        Voir
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
       {pendingAssignments.length === 0 && assigned.length === 0 && rejected.length === 0 && (
-        <div className="relative bg-white rounded-2xl border border-gray-200 p-12 shadow-xl text-center">
-          <p className="text-gray-600 text-lg">Aucune affectation trouvée</p>
+        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center">
+          <p className="text-gray-600">Aucune affectation ne correspond aux filtres de statut / département.</p>
         </div>
       )}
     </div>

@@ -14,6 +14,10 @@ export default function ProfilePage() {
     bio: '',
     expertise: '',
   })
+  const [recoveryEmail, setRecoveryEmail] = useState('')
+  const [recoverySaving, setRecoverySaving] = useState(false)
+  const [recoveryMsg, setRecoveryMsg] = useState('')
+
   useEffect(() => {
     async function fetchProfile() {
       try {
@@ -21,6 +25,7 @@ export default function ProfilePage() {
         if (res.ok) {
           const data = await res.json()
           setProfile(data.profile)
+          setRecoveryEmail(data.profile?.recovery_email || '')
           setFormData({
             full_name: data.profile?.full_name || '',
             phone: data.profile?.phone || '',
@@ -42,6 +47,31 @@ export default function ProfilePage() {
     fetchProfile()
   }, [])
 
+  async function saveRecoveryEmail(e: React.FormEvent) {
+    e.preventDefault()
+    setRecoveryMsg('')
+    setRecoverySaving(true)
+    try {
+      const res = await fetch('/api/professor/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recovery_email: recoveryEmail.trim() || null }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setRecoveryMsg(data.error || 'Erreur')
+        return
+      }
+      setProfile(data.profile)
+      setRecoveryEmail(data.profile?.recovery_email || '')
+      setRecoveryMsg('E-mail de récupération enregistré.')
+    } catch {
+      setRecoveryMsg('Erreur réseau')
+    } finally {
+      setRecoverySaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -60,10 +90,37 @@ export default function ProfilePage() {
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
           <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Profil</span>
         </h1>
-        <p className="text-gray-600 text-lg">Consultation de vos informations (modification désactivée)</p>
+        <p className="text-gray-600 text-lg">Consultation de vos informations — vous pouvez mettre à jour l’e-mail de récupération</p>
       </div>
 
-      <div className="max-w-2xl">
+      <div className="max-w-2xl space-y-6">
+        <form onSubmit={saveRecoveryEmail} className="relative bg-white rounded-2xl border border-emerald-200 p-8 shadow-xl">
+          <h2 className="text-xl font-bold text-gray-900 mb-2">E-mail de récupération (Brevo)</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            Utilisé pour le lien « mot de passe oublié ». Prioritaire sur l’identifiant de connexion s’il est renseigné. Laissez
+            vide pour effacer.
+          </p>
+          {recoveryMsg && (
+            <p className={`text-sm mb-3 ${recoveryMsg.includes('Erreur') ? 'text-red-600' : 'text-emerald-700'}`}>{recoveryMsg}</p>
+          )}
+          <label className="block text-sm font-semibold text-gray-600 mb-2">Adresse e-mail</label>
+          <input
+            type="email"
+            value={recoveryEmail}
+            onChange={(e) => setRecoveryEmail(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-300 mb-4"
+            placeholder="ex. prenom.nom@universite.ma"
+            autoComplete="email"
+          />
+          <button
+            type="submit"
+            disabled={recoverySaving}
+            className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {recoverySaving ? 'Enregistrement…' : 'Enregistrer'}
+          </button>
+        </form>
+
         <form
           onSubmit={(e) => e.preventDefault()}
           className="space-y-6"
@@ -88,15 +145,15 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
-                  Email
+                  Identifiant de connexion (CIN / e-mail)
                 </label>
                 <input
-                  type="email"
+                  type="text"
                   value={profile?.email || ''}
                   disabled
                   className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                 />
-                <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
+                <p className="text-xs text-gray-500 mt-1">Non modifiable ici — e-mail de récupération : encadré vert ci-dessus.</p>
               </div>
 
               <div>

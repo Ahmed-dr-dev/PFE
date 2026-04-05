@@ -1,19 +1,15 @@
+import { defenseDateInPeriod, parseDefenseDateOnly, resolveDefensePeriod } from '@/lib/defense-period'
 import { requireAuth } from '@/lib/auth'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabaseForAdminData } from '@/lib/supabase/admin-server'
 import { NextResponse } from 'next/server'
 
-function parseISODateOnly(s: string): string | null {
-  const t = s.trim()
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(t)) return null
-  const d = new Date(`${t}T12:00:00`)
-  return Number.isNaN(d.getTime()) ? null : t
-}
-
-function dateInRangeInclusive(dateStr: string, start: string | null, end: string | null): boolean {
-  if (!start && !end) return true
-  if (start && dateStr < start) return false
-  if (end && dateStr > end) return false
-  return true
+function isSupervisorDefenseReady(value: unknown): boolean {
+  if (value === true || value === 1) return true
+  if (typeof value === 'string') {
+    const s = value.toLowerCase()
+    return s === 'true' || s === 't' || s === '1'
+  }
+  return false
 }
 
 export async function GET() {
@@ -21,7 +17,7 @@ export async function GET() {
     const auth = await requireAuth('admin')
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
-    const supabase = await createClient()
+    const supabase = await getSupabaseForAdminData()
     const { data, error } = await supabase
       .from('defenses')
       .select(`
@@ -63,7 +59,7 @@ export async function POST(request: Request) {
     const { pfe_project_id, scheduled_date, scheduled_time, room, notes, duration_minutes: durationRaw, jury_professor_ids: juryIdsRaw } =
       body
 
-    const dateOnly = typeof scheduled_date === 'string' ? parseISODateOnly(scheduled_date) : null
+    const dateOnly = typeof scheduled_date === 'string' ? parseDefenseDateOnly(scheduled_date) : null
     if (!pfe_project_id || !dateOnly) {
       return NextResponse.json({ error: 'Projet PFE et date valides (AAAA-MM-JJ) requis' }, { status: 400 })
     }
@@ -73,7 +69,7 @@ export async function POST(request: Request) {
         ? Math.min(240, Math.max(15, Math.floor(durationRaw)))
         : 30
 
-    const supabase = await createClient()
+    const supabase = await getSupabaseForAdminData()
 
     const { data: periodRows } = await supabase
       .from('platform_settings')
@@ -81,18 +77,25 @@ export async function POST(request: Request) {
       .in('key', ['defense_period_start', 'defense_period_end'])
 
     const periodMap = Object.fromEntries((periodRows || []).map((r) => [r.key, (r.value || '').trim()]))
-    const pStart = periodMap.defense_period_start ? parseISODateOnly(periodMap.defense_period_start) : null
-    const pEnd = periodMap.defense_period_end ? parseISODateOnly(periodMap.defense_period_end) : null
+    const period = resolveDefensePeriod(periodMap.defense_period_start, periodMap.defense_period_end)
 
-    if (pStart || pEnd) {
-      if (!dateInRangeInclusive(dateOnly, pStart, pEnd)) {
-        return NextResponse.json(
-          {
-            error: `La date doit être dans la période de soutenance configurée (${pStart || '…'} → ${pEnd || '…'}).`,
-          },
-          { status: 400 }
-        )
-      }
+    if (!period.complete) {
+      return NextResponse.json(
+        {
+          error:
+            'Définissez d’abord la période des soutenances (date de début et date de fin) dans Annonces & paramètres, puis enregistrez.',
+        },
+        { status: 400 }
+      )
+    }
+
+    if (!defenseDateInPeriod(dateOnly, period)) {
+      return NextResponse.json(
+        {
+          error: `La date de soutenance doit être entre ${period.start} et ${period.end} (période officielle).`,
+        },
+        { status: 400 }
+      )
     }
 
     const { data: project, error: pErr } = await supabase
@@ -109,14 +112,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Ce projet n’a pas d’encadrant assigné' }, { status: 400 })
     }
 
-    if (!['approved', 'in_progress'].includes(project.status as string)) {
+    const pst = String(project.status || '').toLowerCase()
+    if (pst === 'rejected' || pst === 'completed') {
       return NextResponse.json(
-        { error: 'Seuls les projets approuvés ou en cours peuvent avoir une soutenance' },
+        { error: 'Ce projet ne peut pas recevoir de soutenance (statut rejeté ou déjà terminé).' },
         { status: 400 }
       )
     }
 
-    if (!project.supervisor_defense_ready) {
+    if (!isSupervisorDefenseReady(project.supervisor_defense_ready)) {
       return NextResponse.json(
         {
           error:

@@ -1,6 +1,6 @@
 'use client'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type TopicMode = 'none' | 'existing' | 'suggest'
 
@@ -64,6 +64,14 @@ export default function SupervisionPage() {
     if (!loading && !data.supervisor) fetchProfessorsAndRequests()
   }, [loading, data.supervisor])
 
+  const topicsForSelectedProfessor = useMemo(() => {
+    if (!demandProfessorId) return []
+    return approvedTopics.filter((t: any) => {
+      const prof = Array.isArray(t.professor) ? t.professor[0] : t.professor
+      return prof?.id === demandProfessorId
+    })
+  }, [approvedTopics, demandProfessorId])
+
   const supervisor = data.supervisor
   const meetings = data.meetings || []
   const documents = data.documents || []
@@ -103,6 +111,16 @@ export default function SupervisionPage() {
   async function submitDemandRequest() {
     if (!demandProfessorId) return
     setError('')
+    if (topicMode === 'existing') {
+      if (!selectedTopicId) {
+        setError('Sélectionnez un sujet du catalogue de cet encadrant ou choisissez une autre option.')
+        return
+      }
+    }
+    if (topicMode === 'suggest' && !suggestedTitle.trim()) {
+      setError('Saisissez un titre de sujet ou choisissez une autre option.')
+      return
+    }
     setDemandSubmitting(true)
     try {
       const body: Record<string, unknown> = {
@@ -190,10 +208,17 @@ export default function SupervisionPage() {
               {requests.map((r: any) => (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
                   <div className="min-w-0">
-                    <p className="font-semibold text-gray-900">{r.professor?.full_name || 'Encadrant'}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-semibold text-gray-900">{r.professor?.full_name || 'Encadrant'}</p>
+                      {(r.preferred_topic_id || r.suggested_topic_title) && (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-violet-100 text-violet-800 border border-violet-200">
+                          Demande de sujet
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-600">{r.professor?.department}</p>
                     {r.topic?.title && (
-                      <p className="text-xs text-emerald-800 font-medium mt-1 truncate">Sujet : {r.topic.title}</p>
+                      <p className="text-xs text-emerald-800 font-medium mt-1 truncate">Sujet catalogue : {r.topic.title}</p>
                     )}
                     {r.suggested_topic_title && (
                       <p className="text-xs text-cyan-800 font-medium mt-1 truncate">
@@ -284,7 +309,11 @@ export default function SupervisionPage() {
                 {demandProfessor.full_name} — {demandProfessor.department}
               </p>
 
-              <p className="text-sm font-semibold text-gray-800 mb-3">Sujet de PFE (facultatif)</p>
+              <p className="text-sm font-semibold text-gray-800 mb-1">Sujet de PFE</p>
+              <p className="text-xs text-gray-500 mb-3">
+                Si vous choisissez ou proposez un sujet, la demande est une <strong>demande de sujet</strong> : en cas
+                d&apos;acceptation, ce sujet sera lié à votre projet PFE avec cet encadrant.
+              </p>
               <div className="space-y-2 mb-4">
                 <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gray-200 p-3 has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-50/50">
                   <input
@@ -299,15 +328,20 @@ export default function SupervisionPage() {
                     }}
                   />
                   <span className="text-sm text-gray-800">
-                    <span className="font-medium">Sans préciser</span>
-                    <span className="block text-gray-500 text-xs mt-0.5">Vous pourrez définir le sujet plus tard avec l&apos;encadrant.</span>
+                    <span className="font-medium">Sans préciser le sujet</span>
+                    <span className="block text-gray-500 text-xs mt-0.5">Encadrement seul ; le sujet pourra être défini plus tard.</span>
                   </span>
                 </label>
-                <label className="flex items-start gap-3 cursor-pointer rounded-xl border border-gray-200 p-3 has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-50/50">
+                <label
+                  className={`flex items-start gap-3 rounded-xl border border-gray-200 p-3 has-[:checked]:border-emerald-300 has-[:checked]:bg-emerald-50/50 ${
+                    topicsForSelectedProfessor.length === 0 ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
+                  }`}
+                >
                   <input
                     type="radio"
                     name="topicMode"
                     className="mt-1"
+                    disabled={topicsForSelectedProfessor.length === 0}
                     checked={topicMode === 'existing'}
                     onChange={() => {
                       setTopicMode('existing')
@@ -315,23 +349,24 @@ export default function SupervisionPage() {
                     }}
                   />
                   <span className="text-sm text-gray-800 flex-1 min-w-0">
-                    <span className="font-medium">Choisir un sujet du catalogue</span>
-                    {topicMode === 'existing' && (
+                    <span className="font-medium">Sujet du catalogue de cet encadrant</span>
+                    {topicsForSelectedProfessor.length === 0 && (
+                      <span className="block text-amber-700 text-xs mt-0.5">
+                        Aucun sujet publié par {demandProfessor?.full_name || 'cet encadrant'} pour le moment.
+                      </span>
+                    )}
+                    {topicMode === 'existing' && topicsForSelectedProfessor.length > 0 && (
                       <select
                         value={selectedTopicId}
                         onChange={(e) => setSelectedTopicId(e.target.value)}
                         className="mt-2 w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-emerald-500"
                       >
-                        <option value="">— Sélectionner un sujet approuvé —</option>
-                        {approvedTopics.map((t: any) => {
-                          const prof = Array.isArray(t.professor) ? t.professor[0] : t.professor
-                          const suffix = prof?.full_name ? ` — ${prof.full_name}` : ''
-                          return (
-                            <option key={t.id} value={t.id}>
-                              {t.title}{suffix}
-                            </option>
-                          )
-                        })}
+                        <option value="">— Choisir un sujet —</option>
+                        {topicsForSelectedProfessor.map((t: any) => (
+                          <option key={t.id} value={t.id}>
+                            {t.title}
+                          </option>
+                        ))}
                       </select>
                     )}
                   </span>

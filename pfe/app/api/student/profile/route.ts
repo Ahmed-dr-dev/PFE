@@ -1,3 +1,4 @@
+import { parseRecoveryEmailBody } from '@/lib/auth/recovery-email'
 import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
@@ -41,15 +42,26 @@ export async function PUT(request: Request) {
     const body = await request.json()
     const { full_name, phone, department, year } = body
 
+    const updates: Record<string, unknown> = {
+      full_name,
+      phone,
+      department,
+      year,
+      updated_at: new Date().toISOString(),
+    }
+
+    if ('recovery_email' in body) {
+      const p = parseRecoveryEmailBody(body.recovery_email)
+      if (p.kind === 'invalid') {
+        return NextResponse.json({ error: p.message }, { status: 400 })
+      }
+      if (p.kind === 'clear') updates.recovery_email = null
+      if (p.kind === 'set') updates.recovery_email = p.email
+    }
+
     const { data: profile, error } = await supabase
       .from('profiles')
-      .update({
-        full_name,
-        phone,
-        department,
-        year,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', userId)
       .select()
       .single()

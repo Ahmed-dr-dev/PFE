@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 export function SignInForm() {
   const router = useRouter()
@@ -89,6 +90,11 @@ export function SignInForm() {
           className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/25 focus:border-emerald-500 transition-shadow"
           placeholder="••••••••"
         />
+        <div className="mt-2 text-right">
+          <Link href="/auth/forgot-password" className="text-sm font-medium text-emerald-600 hover:text-emerald-700 hover:underline">
+            Mot de passe oublié ?
+          </Link>
+        </div>
       </div>
 
       <button

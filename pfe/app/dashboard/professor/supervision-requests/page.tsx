@@ -193,7 +193,14 @@ export default function ProfessorSupervisionRequestsPage() {
                       {s.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2) || '?'}
                     </div>
                     <div>
-                      <p className="text-gray-900 font-semibold">{s.full_name || 'Étudiant'}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="text-gray-900 font-semibold">{s.full_name || 'Étudiant'}</p>
+                        {(r.preferred_topic_id || r.suggested_topic_title) && (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide bg-violet-100 text-violet-800 border border-violet-200">
+                            Demande de sujet
+                          </span>
+                        )}
+                      </div>
                       <p className="text-gray-500 text-xs">{s.email}</p>
                       {s.department && <p className="text-gray-400 text-xs capitalize">{s.department}</p>}
                       {r.topic?.title && (

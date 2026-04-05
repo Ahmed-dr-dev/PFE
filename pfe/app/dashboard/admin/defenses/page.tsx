@@ -8,7 +8,13 @@ const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120]
 type EligibleProject = {
   id: string
   status: string
-  student: { id: string; full_name: string | null; email: string | null; department: string | null } | null
+  student: {
+    id: string
+    full_name: string | null
+    email: string | null
+    department: string | null
+    year: string | null
+  } | null
   topic: { title: string | null } | null
   supervisor: { id: string; full_name: string | null; email: string | null; department: string | null } | null
 }
@@ -37,6 +43,7 @@ export default function DefensesPage() {
   const [professors, setProfessors] = useState<ProfessorOpt[]>([])
 
   const [pfeProjectId, setPfeProjectId] = useState('')
+  const [studentDepartmentFilter, setStudentDepartmentFilter] = useState('')
   const [durationMinutes, setDurationMinutes] = useState(30)
   const [juror2Id, setJuror2Id] = useState('')
   const [juror3Id, setJuror3Id] = useState('')
@@ -46,6 +53,10 @@ export default function DefensesPage() {
   const [notes, setNotes] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [optionsError, setOptionsError] = useState('')
+  const [defensePeriodComplete, setDefensePeriodComplete] = useState(false)
+  const [validatedWaitingForPeriodCount, setValidatedWaitingForPeriodCount] = useState(0)
+  const [pdfLoading, setPdfLoading] = useState(false)
 
   const loadDefenses = useCallback(async () => {
     const defRes = await fetch('/api/admin/defenses', { cache: 'no-store' })
@@ -54,12 +65,22 @@ export default function DefensesPage() {
 
   const loadScheduleOptions = useCallback(async () => {
     setOptionsLoading(true)
+    setOptionsError('')
     try {
       const res = await fetch('/api/admin/defenses/schedule-options', { cache: 'no-store' })
-      if (!res.ok) return
-      const j = await res.json()
+      const j = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setOptionsError(j.error || `Erreur ${res.status}`)
+        setEligibleProjects([])
+        setProfessors([])
+        setDefensePeriodComplete(false)
+        setValidatedWaitingForPeriodCount(0)
+        return
+      }
       setPeriodStart(j.defensePeriodStart || null)
       setPeriodEnd(j.defensePeriodEnd || null)
+      setDefensePeriodComplete(!!j.defensePeriodComplete)
+      setValidatedWaitingForPeriodCount(typeof j.validatedWaitingForPeriodCount === 'number' ? j.validatedWaitingForPeriodCount : 0)
       setEligibleProjects(j.eligibleProjects || [])
       setProfessors(j.professors || [])
     } finally {
@@ -81,6 +102,10 @@ export default function DefensesPage() {
   }, [loadDefenses])
 
   useEffect(() => {
+    void loadScheduleOptions()
+  }, [loadScheduleOptions])
+
+  useEffect(() => {
     if (showForm) void loadScheduleOptions()
   }, [showForm, loadScheduleOptions])
 
@@ -93,6 +118,38 @@ export default function DefensesPage() {
     () => eligibleProjects.find((p) => p.id === pfeProjectId) || null,
     [eligibleProjects, pfeProjectId]
   )
+
+  const studyDepartmentOptions = useMemo(() => {
+    const set = new Set<string>()
+    eligibleProjects
+      .filter((p) => !scheduledIds.has(p.id))
+      .forEach((p) => {
+        const d = (p.student?.department || '').trim()
+        if (d) set.add(d)
+      })
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [eligibleProjects, scheduledIds])
+
+  const filteredProjectsForPicker = useMemo(() => {
+    let list = eligibleProjects.filter((p) => !scheduledIds.has(p.id))
+    if (studentDepartmentFilter === '') return list
+    if (studentDepartmentFilter === '__none__') {
+      return list.filter((p) => !(p.student?.department || '').trim())
+    }
+    return list.filter((p) => (p.student?.department || '').trim() === studentDepartmentFilter)
+  }, [eligibleProjects, scheduledIds, studentDepartmentFilter])
+
+  useEffect(() => {
+    if (!pfeProjectId) return
+    const ok = filteredProjectsForPicker.some((p) => p.id === pfeProjectId)
+    if (!ok) {
+      setPfeProjectId('')
+      setJuror2Id('')
+      setJuror3Id('')
+    }
+  }, [filteredProjectsForPicker, pfeProjectId])
+
+  const deptLabel = (d: string) => d.charAt(0).toUpperCase() + d.slice(1)
 
   const supervisorId = selectedProject?.supervisor?.id || ''
 
@@ -107,6 +164,7 @@ export default function DefensesPage() {
 
   const resetForm = () => {
     setPfeProjectId('')
+    setStudentDepartmentFilter('')
     setDurationMinutes(30)
     setJuror2Id('')
     setJuror3Id('')
@@ -163,6 +221,19 @@ export default function DefensesPage() {
     }
   }
 
+  const handleExportPlanningPdf = useCallback(async () => {
+    setPdfLoading(true)
+    try {
+      const { downloadDefensesPlanningPdf } = await import('@/lib/defenses-planning-pdf')
+      downloadDefensesPlanningPdf(defenses)
+    } catch (e) {
+      console.error(e)
+      window.alert('Impossible de générer le PDF. Réessayez ou vérifiez la console.')
+    } finally {
+      setPdfLoading(false)
+    }
+  }, [defenses])
+
   const handleStatusChange = async (id: string, status: string) => {
     try {
       const res = await fetch(`/api/admin/defenses/${id}`, {
@@ -176,8 +247,12 @@ export default function DefensesPage() {
     }
   }
 
-  const periodConfigured = !!(periodStart || periodEnd)
-  const canOpenForm = eligibleProjects.some((p) => !scheduledIds.has(p.id))
+  const canOpenForm = defensePeriodComplete && eligibleProjects.some((p) => !scheduledIds.has(p.id))
+  const planifierTitle = !defensePeriodComplete
+    ? 'Définissez d’abord la période des soutenances (Annonces & paramètres)'
+    : !eligibleProjects.some((p) => !scheduledIds.has(p.id))
+      ? 'Aucun étudiant : les encadrants doivent valider leurs étudiants, ou tous ont déjà une soutenance'
+      : undefined
 
   if (loading) {
     return (
@@ -194,51 +269,107 @@ export default function DefensesPage() {
           <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Soutenances</span>
           </h1>
-          <p className="text-gray-600 text-lg">Planifier les soutenances selon la période officielle et le jury (3 enseignants).</p>
+          <p className="text-gray-600 text-lg">
+            Flux : période (Annonces) → validation encadrant → planification ici (jury à 3, date dans la période).
+          </p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setShowForm(!showForm)
-            if (showForm) resetForm()
-          }}
-          disabled={!canOpenForm}
-          title={!canOpenForm ? 'Aucun étudiant éligible (validation encadrant + pas de soutenance active)' : undefined}
-          className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {showForm ? 'Annuler' : 'Planifier une soutenance'}
-        </button>
+        <div className="flex flex-col xs:flex-row gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={() => void handleExportPlanningPdf()}
+            disabled={pdfLoading}
+            className="px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50"
+          >
+            {pdfLoading ? 'PDF…' : 'Télécharger le planning (PDF)'}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setShowForm(!showForm)
+              if (showForm) resetForm()
+            }}
+            disabled={!canOpenForm}
+            title={planifierTitle}
+            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {showForm ? 'Annuler' : 'Planifier une soutenance'}
+          </button>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-cyan-200 bg-cyan-50/60 px-4 py-3 text-sm text-cyan-950">
-        <p className="font-semibold mb-1">Paramètres globaux</p>
-        <p>
-          Définissez la <strong>période des soutenances</strong> (date début / fin) dans{' '}
-          <Link href="/dashboard/admin/annonces" className="underline font-medium text-cyan-900">
-            Annonces &amp; paramètres
-          </Link>
-          . Les dates planifiées doivent tomber dans cet intervalle. L’<strong>encadrant</strong> doit marquer l’étudiant comme
-          prêt dans <strong>Mes étudiants</strong> (espace enseignant) avant qu’il apparaisse ici.
-        </p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div
+          className={`rounded-2xl border p-4 text-sm ${
+            defensePeriodComplete ? 'border-emerald-200 bg-emerald-50/80 text-emerald-950' : 'border-amber-200 bg-amber-50/80 text-amber-950'
+          }`}
+        >
+          <p className="font-bold mb-1">1. Période (admin)</p>
+          <p>
+            {defensePeriodComplete
+              ? `Enregistrée : ${periodStart} → ${periodEnd}`
+              : 'Renseignez les deux dates dans Annonces & paramètres et enregistrez.'}
+          </p>
+          {!defensePeriodComplete && (
+            <Link href="/dashboard/admin/annonces" className="inline-block mt-2 font-semibold underline">
+              Ouvrir Annonces
+            </Link>
+          )}
+        </div>
+        <div
+          className={`rounded-2xl border p-4 text-sm ${
+            eligibleProjects.length > 0 ? 'border-emerald-200 bg-emerald-50/80 text-emerald-950' : 'border-gray-200 bg-gray-50 text-gray-800'
+          }`}
+        >
+          <p className="font-bold mb-1">2. Validation (encadrant)</p>
+          <p>
+            {defensePeriodComplete
+              ? eligibleProjects.length > 0
+                ? `${eligibleProjects.length} étudiant(s) prêt(s) à planifier`
+                : 'Aucun étudiant n’a encore été validé par son encadrant.'
+              : 'Les encadrants ne peuvent valider qu’après l’étape 1.'}
+          </p>
+        </div>
+        <div
+          className={`rounded-2xl border p-4 text-sm ${
+            canOpenForm ? 'border-cyan-200 bg-cyan-50/80 text-cyan-950' : 'border-gray-200 bg-gray-50 text-gray-700'
+          }`}
+        >
+          <p className="font-bold mb-1">3. Planifier</p>
+          <p>Bouton « Planifier une soutenance » : jury 3 enseignants + date dans la période.</p>
+        </div>
       </div>
+
+      {!defensePeriodComplete && validatedWaitingForPeriodCount > 0 && (
+        <div className="rounded-2xl border border-amber-300 bg-amber-50 text-amber-950 text-sm px-4 py-3">
+          {validatedWaitingForPeriodCount} étudiant(s) déjà marqué(s) prêt(s) par un encadrant : ils apparaîtront ici dès que la
+          période (étape 1) sera enregistrée correctement (deux dates valides, début ≤ fin).
+        </div>
+      )}
 
       {showForm && (
         <form onSubmit={handleCreate} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-6">
           <h3 className="text-lg font-semibold text-gray-900">Nouvelle soutenance</h3>
 
+          {optionsError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 text-red-800 text-sm px-4 py-3">{optionsError}</div>
+          )}
+
           {optionsLoading ? (
             <p className="text-gray-600 text-sm">Chargement des options…</p>
           ) : (
             <>
-              {!periodConfigured && (
+              {!defensePeriodComplete && (
                 <div className="rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-sm px-4 py-3">
-                  Aucune période de soutenance configurée : vous pouvez tout de même enregistrer une date, ou configurez les
-                  dates dans Annonces &amp; paramètres pour activer le contrôle automatique.
+                  La planification est bloquée tant que la période officielle (deux dates, début ≤ fin) n’est pas enregistrée dans{' '}
+                  <Link href="/dashboard/admin/annonces" className="font-semibold underline">
+                    Annonces &amp; paramètres
+                  </Link>
+                  .
                 </div>
               )}
-              {periodConfigured && (
+              {defensePeriodComplete && (
                 <p className="text-sm text-gray-600">
-                  Période autorisée : <strong>{periodStart || '…'}</strong> → <strong>{periodEnd || '…'}</strong>
+                  Période autorisée pour la date de soutenance : <strong>{periodStart}</strong> → <strong>{periodEnd}</strong>
                 </p>
               )}
 
@@ -247,6 +378,30 @@ export default function DefensesPage() {
               )}
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="space-y-2 lg:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-900">Filtrer par filière (département de l’étudiant)</label>
+                  <p className="text-xs text-gray-500">
+                    Affinez la liste ci-dessous selon le domaine / département enregistré sur le profil étudiant.
+                  </p>
+                  <select
+                    value={studentDepartmentFilter}
+                    onChange={(e) => setStudentDepartmentFilter(e.target.value)}
+                    className="w-full max-w-md px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="">Toutes les filières</option>
+                    {studyDepartmentOptions.map((d) => (
+                      <option key={d} value={d}>
+                        {deptLabel(d)}
+                      </option>
+                    ))}
+                    {eligibleProjects.some(
+                      (p) => !scheduledIds.has(p.id) && !(p.student?.department || '').trim()
+                    ) ? (
+                      <option value="__none__">Non renseigné</option>
+                    ) : null}
+                  </select>
+                </div>
+
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-900">Étudiant / projet PFE</label>
                   <p className="text-xs text-gray-500">
@@ -264,14 +419,21 @@ export default function DefensesPage() {
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="">— Sélectionner —</option>
-                    {eligibleProjects
-                      .filter((p) => !scheduledIds.has(p.id))
-                      .map((p) => (
+                    {filteredProjectsForPicker.map((p) => {
+                      const dept = (p.student?.department || '').trim()
+                      const yr = (p.student?.year || '').trim()
+                      const filiere = [dept ? deptLabel(dept) : null, yr || null].filter(Boolean).join(' · ')
+                      const suffix = filiere ? ` (${filiere})` : ''
+                      return (
                         <option key={p.id} value={p.id}>
-                          {(p.student?.full_name || 'Étudiant') + ' — ' + (p.topic?.title || 'Sans sujet')}
+                          {(p.student?.full_name || 'Étudiant') + suffix + ' — ' + (p.topic?.title || 'Sans sujet')}
                         </option>
-                      ))}
+                      )
+                    })}
                   </select>
+                  {filteredProjectsForPicker.length === 0 && eligibleProjects.some((p) => !scheduledIds.has(p.id)) && (
+                    <p className="text-xs text-amber-700">Aucun étudiant pour ce filtre — choisissez une autre filière.</p>
+                  )}
                   {selectedProject?.supervisor && (
                     <p className="text-xs text-emerald-800 font-medium">
                       Encadrant (président de jury) : {selectedProject.supervisor.full_name || selectedProject.supervisor.email}
@@ -341,12 +503,12 @@ export default function DefensesPage() {
 
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-900">Date</label>
-                  <p className="text-xs text-gray-500">Doit être dans la période configurée (si celle-ci est renseignée).</p>
+                  <p className="text-xs text-gray-500">Uniquement entre le début et la fin de la période officielle.</p>
                   <input
                     required
                     type="date"
-                    min={periodStart || undefined}
-                    max={periodEnd || undefined}
+                    min={defensePeriodComplete && periodStart ? periodStart : undefined}
+                    max={defensePeriodComplete && periodEnd ? periodEnd : undefined}
                     value={scheduledDate}
                     onChange={(e) => setScheduledDate(e.target.value)}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"

@@ -59,6 +59,8 @@ function csvRowToBody(row: Record<string, string>, role: Role): Record<string, u
     const exp = (row.expertise ?? row.domaines ?? '').trim()
     body.expertise = exp ? exp.split(',').map(s => s.trim()).filter(Boolean) : []
   }
+  const rec = (row.recoveryemail ?? row.recovery_email ?? '').trim()
+  if (rec) body.recoveryEmail = rec
   return body
 }
 
@@ -100,6 +102,8 @@ export function CreateUserModal({ role, open, onClose, onSuccess }: Props) {
       const exp = (fd.get('expertise') as string)?.trim()
       body.expertise = exp ? exp.split(',').map(s => s.trim()).filter(Boolean) : []
     }
+    const rec = (fd.get('recoveryEmail') as string)?.trim()
+    if (rec) body.recoveryEmail = rec
     try {
       const res = await fetch('/api/admin/users', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await res.json()
@@ -210,6 +214,15 @@ export function CreateUserModal({ role, open, onClose, onSuccess }: Props) {
                 <input name="email" type="text" required className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200" placeholder="Numéro CIN" />
               </div>
               <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-1">E-mail de récupération (Brevo, optionnel)</label>
+                <input
+                  name="recoveryEmail"
+                  type="email"
+                  className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200"
+                  placeholder="Si le CIN n’est pas une adresse e-mail"
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">Téléphone</label>
                 <input name="phone" type="tel" className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200" placeholder="+212 6XX XXX XXX" />
               </div>
@@ -268,7 +281,7 @@ export function CreateUserModal({ role, open, onClose, onSuccess }: Props) {
           {mode === 'csv' && (
             <div className="space-y-4">
               <p className="text-gray-600 text-sm">
-                CSV avec en-têtes : <code className="text-emerald-400">email, fullName, password</code> (obligatoires), puis <code className="text-emerald-400">phone, year, department</code> (étudiants) ou <code className="text-emerald-400">department, office, officeHours, bio, expertise</code> (enseignants).
+                CSV avec en-têtes : <code className="text-emerald-400">email, fullName, password</code> (obligatoires), optionnel <code className="text-emerald-400">recoveryEmail</code> (e-mail Brevo si CIN ≠ e-mail), puis <code className="text-emerald-400">phone, year, department</code> (étudiants) ou <code className="text-emerald-400">department, office, officeHours, bio, expertise</code> (enseignants).
               </p>
               <input ref={fileInputRef} type="file" accept=".csv" className="hidden" onChange={handleFile} />
               <button

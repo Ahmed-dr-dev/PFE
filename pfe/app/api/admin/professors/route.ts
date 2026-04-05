@@ -1,4 +1,4 @@
-  import { requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -15,6 +15,7 @@ export async function GET() {
         id,
         full_name,
         email,
+        recovery_email,
         phone,
         department,
         office,
@@ -37,7 +38,9 @@ export async function GET() {
     const formattedProfessors = professors?.map(professor => ({
       id: professor.id,
       name: professor.full_name,
+      full_name: professor.full_name,
       email: professor.email,
+      recovery_email: professor.recovery_email ?? null,
       phone: professor.phone,
       department: professor.department,
       office: professor.office,

@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/auth'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabaseForAdminData } from '@/lib/supabase/admin-server'
 import { NextResponse } from 'next/server'
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -9,7 +9,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const { id } = await params
     const body = await request.json()
-    const supabase = await createClient()
+    const supabase = await getSupabaseForAdminData()
 
     const updateData: Record<string, unknown> = { updated_at: new Date().toISOString() }
     const allowed = ['scheduled_date', 'scheduled_time', 'room', 'jury_members', 'jury_professor_ids', 'duration_minutes', 'status', 'notes']

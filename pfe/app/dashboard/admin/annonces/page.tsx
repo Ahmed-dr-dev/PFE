@@ -1,14 +1,19 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useEffect } from 'react'
+
+/** Étape 1 du flux soutenances : à remplir en premier (voir page Soutenances admin). */
+const DEFENSE_PERIOD_SETTING_KEYS = [
+  { key: 'defense_period_start', label: 'Date de début de la période', type: 'date' as const },
+  { key: 'defense_period_end', label: 'Date de fin de la période', type: 'date' as const },
+]
 
 const SETTING_KEYS = [
   { key: 'academic_year', label: 'Année académique', placeholder: '2024-2025' },
   { key: 'topic_submission_deadline', label: 'Date limite soumission sujets', type: 'date' },
   { key: 'internship_request_deadline', label: 'Date limite demandes de stage', type: 'date' },
   { key: 'defense_registration_deadline', label: 'Date limite inscription soutenances', type: 'date' },
-  { key: 'defense_period_start', label: 'Période soutenances — date de début', type: 'date' },
-  { key: 'defense_period_end', label: 'Période soutenances — date de fin', type: 'date' },
 ]
 
 export default function AnnoncesPage() {
@@ -246,8 +251,32 @@ export default function AnnoncesPage() {
         {settingsLoading ? (
           <p className="text-gray-600">Chargement...</p>
         ) : (
-          <form onSubmit={handleSettingsSubmit} className="max-w-2xl">
+          <form onSubmit={handleSettingsSubmit} className="max-w-2xl space-y-6">
+            <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50/90 to-cyan-50/80 shadow-sm p-8 space-y-4">
+              <h3 className="text-lg font-bold text-gray-900">1. Période des soutenances (à configurer en premier)</h3>
+              <p className="text-sm text-gray-700">
+                Les encadrants ne pourront marquer un étudiant « prêt pour la soutenance » qu’après enregistrement de ces deux dates.
+                Ensuite, les étudiants validés apparaîtront sur la page{' '}
+                <Link href="/dashboard/admin/defenses" className="font-semibold text-emerald-800 underline underline-offset-2">
+                  Soutenances
+                </Link>{' '}
+                pour planifier une date dans cet intervalle.
+              </p>
+              {DEFENSE_PERIOD_SETTING_KEYS.map(({ key, label, type }) => (
+                <div key={key}>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">{label}</label>
+                  <input
+                    type={type}
+                    value={settings[key] || ''}
+                    onChange={(e) => setSettings({ ...settings, [key]: e.target.value })}
+                    className="w-full px-4 py-3 bg-white border border-emerald-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              ))}
+            </div>
+
             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 space-y-6">
+              <h3 className="text-lg font-bold text-gray-900 border-b border-gray-100 pb-3">Autres échéances</h3>
               {SETTING_KEYS.map(({ key, label, placeholder, type }) => (
                 <div key={key}>
                   <label className="block text-sm font-semibold text-gray-600 mb-2">{label}</label>

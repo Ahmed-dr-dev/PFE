@@ -11,6 +11,7 @@ export default function ProfilePage() {
     phone: '',
     department: '',
     year: '',
+    recovery_email: '',
   })
   const [passwordForm, setPasswordForm] = useState({
     current_password: '',
@@ -33,6 +34,7 @@ export default function ProfilePage() {
             phone: data.profile?.phone || '',
             department: data.profile?.department || '',
             year: data.profile?.year || '',
+            recovery_email: data.profile?.recovery_email || '',
           })
         }
       } catch (error) {
@@ -153,15 +155,33 @@ export default function ProfilePage() {
 
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
-                  Email
+                  Identifiant de connexion (CIN / e-mail)
                 </label>
                 <input
-                  type="email"
+                  type="text"
                   value={profile?.email || ''}
                   disabled
                   className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                 />
-                <p className="text-xs text-gray-500 mt-1">L'email ne peut pas être modifié</p>
+                <p className="text-xs text-gray-500 mt-1">Utilisé pour vous connecter — non modifiable ici.</p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">
+                  E-mail de récupération (mot de passe oublié)
+                </label>
+                <input
+                  type="email"
+                  value={formData.recovery_email}
+                  onChange={(e) => setFormData({ ...formData, recovery_email: e.target.value })}
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 transition-colors"
+                  placeholder="ex. prenom.nom@gmail.com"
+                  autoComplete="email"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Adresse où Brevo enverra le lien de réinitialisation. Obligatoire si votre identifiant de connexion n’est pas
+                  une vraie adresse e-mail. Laissez vide pour effacer.
+                </p>
               </div>
 
               <div>

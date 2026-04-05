@@ -113,11 +113,20 @@ export async function POST(request: Request) {
     if (preferredTopicId) {
       const { data: topicRow } = await supabase
         .from('pfe_topics')
-        .select('id, status')
+        .select('id, status, professor_id')
         .eq('id', preferredTopicId)
         .maybeSingle()
       if (!topicRow || topicRow.status !== 'approved') {
         return NextResponse.json({ error: 'Sujet introuvable ou non validé' }, { status: 400 })
+      }
+      if (topicRow.professor_id !== professorId) {
+        return NextResponse.json(
+          {
+            error:
+              'Choisissez un sujet proposé par cet encadrant, ou proposez votre propre titre / sans préciser le sujet.',
+          },
+          { status: 400 }
+        )
       }
     }
 
@@ -169,8 +178,8 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: reopenErr.message }, { status: 500 })
         }
         const notifParts: string[] = []
-        if (preferredTopicId) notifParts.push('sujet existant indiqué')
-        if (suggestedTopicTitle) notifParts.push('proposition de sujet')
+        if (preferredTopicId) notifParts.push('demande avec sujet (catalogue)')
+        if (suggestedTopicTitle) notifParts.push('demande avec sujet (proposition)')
         if (messageFinal) notifParts.push('message joint')
         await createNotification(supabase, {
           recipientId: professorId,
@@ -215,8 +224,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
     const notifParts: string[] = []
-    if (preferredTopicId) notifParts.push('sujet existant choisi')
-    if (suggestedTopicTitle) notifParts.push('proposition de sujet')
+    if (preferredTopicId) notifParts.push('demande avec sujet (catalogue)')
+    if (suggestedTopicTitle) notifParts.push('demande avec sujet (proposition)')
     if (messageFinal) notifParts.push('message')
     await createNotification(supabase, {
       recipientId: professorId,

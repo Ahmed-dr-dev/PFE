@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/auth'
-      import { createClient } from '@/lib/supabase/server'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -16,6 +16,7 @@ export async function GET() {
         id,
         full_name,
         email,
+        recovery_email,
         phone,
         department,
         year,
@@ -51,6 +52,7 @@ export async function GET() {
         name: student.full_name,
         full_name: student.full_name,
         email: student.email,
+        recovery_email: student.recovery_email ?? null,
         phone: student.phone,
         department: student.department,
         year: student.year,

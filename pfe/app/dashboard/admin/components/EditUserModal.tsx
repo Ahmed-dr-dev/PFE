@@ -9,6 +9,7 @@ type User = {
   full_name?: string
   name?: string
   email?: string
+  recovery_email?: string | null
   phone?: string | null
   department?: string | null
   year?: string | null
@@ -68,6 +69,7 @@ export function EditUserModal({ role, user, open, onClose, onSuccess }: Props) {
       email: (fd.get('email') as string) || user.email,
       department: (fd.get('department') as string) || null,
       phone: (fd.get('phone') as string) || null,
+      recoveryEmail: ((fd.get('recoveryEmail') as string) ?? '').trim(),
     }
     const newPassword = (fd.get('password') as string)?.trim()
     if (newPassword && newPassword.length >= 6) body.password = newPassword
@@ -108,7 +110,7 @@ export function EditUserModal({ role, user, open, onClose, onSuccess }: Props) {
           <h2 className="text-xl font-bold text-gray-900">{title}</h2>
           <button type="button" onClick={onClose} className="p-2 text-gray-600 hover:text-gray-900 rounded-lg">✕</button>
         </div>
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form key={user.id} onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{error}</div>}
           <div>
             <label className="block text-sm font-semibold text-gray-600 mb-1">Nom complet</label>
@@ -117,6 +119,21 @@ export function EditUserModal({ role, user, open, onClose, onSuccess }: Props) {
           <div>
             <label className="block text-sm font-semibold text-gray-600 mb-1">CIN (identifiant)</label>
             <input name="email" type="text" defaultValue={user.email || ''} className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200" required />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-600 mb-1">E-mail de récupération (Brevo, optionnel)</label>
+            {user.recovery_email ? (
+              <p className="text-xs text-emerald-700 font-medium mb-1.5 break-all" title={user.recovery_email}>
+                Enregistré : {user.recovery_email}
+              </p>
+            ) : null}
+            <input
+              name="recoveryEmail"
+              type="email"
+              defaultValue={user.recovery_email || ''}
+              className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200"
+              placeholder="Lien mot de passe oublié — laisser vide si identifiant = e-mail"
+            />
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-600 mb-1">Téléphone</label>

@@ -1,6 +1,7 @@
+import { parseRecoveryEmailBody } from '@/lib/auth/recovery-email'
+import { requireAuth } from '@/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import { requireAuth } from '@/lib/auth'
 
 export async function GET() {
   try {
@@ -42,20 +43,38 @@ export async function PUT(request: Request) {
     const supabase = await createClient()
 
     const body = await request.json()
-    const { full_name, phone, department, office, office_hours, bio, expertise } = body
+
+    const updates: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    }
+
+    if ('full_name' in body) updates.full_name = body.full_name
+    if ('phone' in body) updates.phone = body.phone
+    if ('department' in body) updates.department = body.department
+    if ('office' in body) updates.office = body.office
+    if ('office_hours' in body) updates.office_hours = body.office_hours
+    if ('bio' in body) updates.bio = body.bio
+    if ('expertise' in body) {
+      updates.expertise = Array.isArray(body.expertise) ? body.expertise : null
+    }
+
+    if ('recovery_email' in body) {
+      const p = parseRecoveryEmailBody(body.recovery_email)
+      if (p.kind === 'invalid') {
+        return NextResponse.json({ error: p.message }, { status: 400 })
+      }
+      if (p.kind === 'clear') updates.recovery_email = null
+      if (p.kind === 'set') updates.recovery_email = p.email
+    }
+
+    const keys = Object.keys(updates).filter((k) => k !== 'updated_at')
+    if (keys.length === 0) {
+      return NextResponse.json({ error: 'Aucun champ à mettre à jour' }, { status: 400 })
+    }
 
     const { data: profile, error } = await supabase
       .from('profiles')
-      .update({
-        full_name,
-        phone,
-        department,
-        office,
-        office_hours,
-        bio,
-        expertise: Array.isArray(expertise) ? expertise : null,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updates)
       .eq('id', userId)
       .select()
       .single()
