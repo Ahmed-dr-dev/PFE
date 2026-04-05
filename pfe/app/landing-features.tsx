@@ -7,8 +7,9 @@ const DEADLINE_LABELS: Record<string, string> = {
   internship_request_deadline: 'Date limite demandes de stage',
   defense_registration_deadline: 'Date limite inscription aux soutenances',
 }
-
-function formatDate(value: string) {
+ 
+function formatDate(value: string) {   
+  
   if (!value || !value.trim()) return '—'
   const d = new Date(value.includes('T') ? value : `${value}T12:00:00`)
   if (Number.isNaN(d.getTime())) return value
