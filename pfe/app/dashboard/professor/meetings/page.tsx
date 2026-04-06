@@ -27,6 +27,11 @@ export default function MyMeetingsPage() {
   })
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [supervisedStudents, setSupervisedStudents] = useState<{ id: string; full_name?: string; email?: string }[]>([])
+  const [studentsLoading, setStudentsLoading] = useState(false)
+  const [audienceTarget, setAudienceTarget] = useState<'all' | 'one' | 'selected'>('all')
+  const [oneStudentId, setOneStudentId] = useState('')
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Record<string, boolean>>({})
   const [formData, setFormData] = useState({
     date: '',
     time: '',
@@ -60,6 +65,38 @@ export default function MyMeetingsPage() {
   useEffect(() => {
     loadAll()
   }, [loadAll])
+
+  useEffect(() => {
+    if (!showForm) return
+    let cancelled = false
+    ;(async () => {
+      setStudentsLoading(true)
+      try {
+        const res = await fetch('/api/professor/students')
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        const list = (data.students || []) as { id: string; full_name?: string; email?: string }[]
+        const sorted = [...list].sort((a, b) =>
+          (a.full_name || a.email || '').localeCompare(b.full_name || b.email || '', 'fr')
+        )
+        if (cancelled) return
+        setSupervisedStudents(sorted)
+        setOneStudentId(sorted[0]?.id || '')
+        const init: Record<string, boolean> = {}
+        sorted.forEach((s) => {
+          init[s.id] = false
+        })
+        setSelectedStudentIds(init)
+      } catch {
+        /* ignore */
+      } finally {
+        if (!cancelled) setStudentsLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [showForm])
 
   const patchProposal = async (id: string, body: Record<string, unknown>) => {
     setPropBusy(id)
@@ -109,24 +146,49 @@ export default function MyMeetingsPage() {
       alert('Date et heure requises')
       return
     }
+    if (supervisedStudents.length === 0) {
+      alert('Aucun étudiant encadré')
+      return
+    }
+    const payload: Record<string, unknown> = {
+      date: formData.date,
+      time: formData.time,
+      duration: formData.duration,
+      type: formData.type,
+      location: formData.location || null,
+      notes: formData.notes || null,
+    }
+    if (audienceTarget === 'all') {
+      payload.audience = 'all'
+    } else if (audienceTarget === 'one') {
+      if (!oneStudentId) {
+        alert('Choisissez un étudiant')
+        return
+      }
+      payload.audience = 'individual'
+      payload.student_id = oneStudentId
+    } else {
+      const ids = Object.entries(selectedStudentIds)
+        .filter(([, on]) => on)
+        .map(([id]) => id)
+      if (!ids.length) {
+        alert('Cochez au moins un étudiant')
+        return
+      }
+      payload.audience = 'selected'
+      payload.student_ids = ids
+    }
     setSaving(true)
     try {
       const res = await fetch('/api/professor/meetings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          date: formData.date,
-          time: formData.time,
-          duration: formData.duration,
-          type: formData.type,
-          location: formData.location || null,
-          notes: formData.notes || null,
-          audience: 'group',
-        }),
+        body: JSON.stringify(payload),
       })
       const data = await res.json()
       if (res.ok) {
         setShowForm(false)
+        setAudienceTarget('all')
         setFormData({ date: '', time: '', duration: 60, type: 'Suivi', location: '', notes: '' })
         await loadAll()
       } else {
@@ -339,7 +401,10 @@ export default function MyMeetingsPage() {
           <h2 className="text-xl font-bold text-gray-900">Planifier une réunion</h2>
           <button
             type="button"
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => {
+              setShowForm(!showForm)
+              if (showForm) setAudienceTarget('all')
+            }}
             className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium"
           >
             {showForm ? 'Annuler' : 'Nouvelle réunion'}
@@ -347,9 +412,108 @@ export default function MyMeetingsPage() {
         </div>
         {showForm && (
           <form onSubmit={handleCreateMeeting} className="border-t border-gray-200 pt-6 mt-4 space-y-4">
-            <div className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-3 text-sm text-violet-800">
-              Cette réunion sera créée pour tous vos étudiants encadrés.
-            </div>
+            {studentsLoading ? (
+              <p className="text-sm text-gray-600">Chargement des étudiants…</p>
+            ) : supervisedStudents.length === 0 ? (
+              <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                Vous n&apos;avez aucun étudiant encadré : impossible de planifier une réunion.
+              </p>
+            ) : (
+              <fieldset className="rounded-lg border border-violet-200 bg-violet-50 px-4 py-4 space-y-3">
+                <legend className="text-sm font-semibold text-violet-900 px-1">Destinataires</legend>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="audience"
+                    checked={audienceTarget === 'all'}
+                    onChange={() => setAudienceTarget('all')}
+                    className="mt-1"
+                  />
+                  <span className="text-sm text-violet-900">
+                    <span className="font-medium">Tous mes étudiants encadrés</span>
+                    <span className="block text-violet-800/90"> ({supervisedStudents.length}) — une invitation pour chacun, affichée comme réunion de groupe.</span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="audience"
+                    checked={audienceTarget === 'one'}
+                    onChange={() => setAudienceTarget('one')}
+                    className="mt-1"
+                  />
+                  <span className="text-sm text-violet-900 font-medium">Un seul étudiant</span>
+                </label>
+                {audienceTarget === 'one' && (
+                  <div className="pl-7">
+                    <select
+                      value={oneStudentId}
+                      onChange={(e) => setOneStudentId(e.target.value)}
+                      className="w-full max-w-md px-3 py-2 bg-white border border-violet-200 rounded-lg text-gray-900 text-sm"
+                    >
+                      {supervisedStudents.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.full_name || s.email || s.id}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="audience"
+                    checked={audienceTarget === 'selected'}
+                    onChange={() => setAudienceTarget('selected')}
+                    className="mt-1"
+                  />
+                  <span className="text-sm text-violet-900 font-medium">Plusieurs étudiants (sélection)</span>
+                </label>
+                {audienceTarget === 'selected' && (
+                  <div className="pl-7 space-y-2">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedStudentIds(Object.fromEntries(supervisedStudents.map((s) => [s.id, true])))
+                        }
+                        className="text-xs font-semibold px-2 py-1 rounded-md bg-white border border-violet-200 text-violet-800 hover:bg-violet-100"
+                      >
+                        Tout sélectionner
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSelectedStudentIds(Object.fromEntries(supervisedStudents.map((s) => [s.id, false])))
+                        }
+                        className="text-xs font-semibold px-2 py-1 rounded-md bg-white border border-violet-200 text-violet-800 hover:bg-violet-100"
+                      >
+                        Aucun
+                      </button>
+                    </div>
+                    <ul className="max-h-48 overflow-y-auto rounded-lg border border-violet-200 bg-white divide-y divide-gray-100">
+                      {supervisedStudents.map((s) => (
+                        <li key={s.id} className="px-3 py-2">
+                          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-800">
+                            <input
+                              type="checkbox"
+                              checked={!!selectedStudentIds[s.id]}
+                              onChange={() =>
+                                setSelectedStudentIds((prev) => ({ ...prev, [s.id]: !prev[s.id] }))
+                              }
+                            />
+                            <span>{s.full_name || s.email}</span>
+                            {s.email && s.full_name ? (
+                              <span className="text-gray-500 text-xs truncate">{s.email}</span>
+                            ) : null}
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </fieldset>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">Date</label>
@@ -378,7 +542,11 @@ export default function MyMeetingsPage() {
               <label className="block text-sm font-semibold text-gray-600 mb-1">Notes</label>
               <textarea value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} rows={2} className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200" placeholder="Optionnel" />
             </div>
-            <button type="submit" disabled={saving} className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={saving || studentsLoading || supervisedStudents.length === 0}
+              className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium disabled:opacity-50"
+            >
               {saving ? 'Création...' : 'Planifier la réunion'}
             </button>
           </form>

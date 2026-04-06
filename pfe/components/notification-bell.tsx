@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { NOTIFICATIONS_CHANGED_EVENT } from '@/lib/hooks/use-notifications-unread'
 
 type Row = {
   id: string
@@ -64,7 +65,8 @@ export function NotificationBell() {
       credentials: 'include',
       body: JSON.stringify({ id }),
     })
-    load()
+    await load()
+    window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT))
   }
 
   const markAll = async () => {
@@ -74,7 +76,8 @@ export function NotificationBell() {
       credentials: 'include',
       body: JSON.stringify({ markAll: true }),
     })
-    load()
+    await load()
+    window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT))
   }
 
   return (

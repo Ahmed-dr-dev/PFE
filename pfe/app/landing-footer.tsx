@@ -73,7 +73,7 @@ export function LandingFooter() {
           <ul className="space-y-2 text-sm">
             <li>
               <Link href="#contact-accueil" className="text-slate-300 hover:text-white underline-offset-2 hover:underline">
-                Formulaire d&apos;accueil
+                Aide rapide (chat)
               </Link>
             </li>
             <li>

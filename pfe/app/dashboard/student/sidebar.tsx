@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useNotificationsUnreadCount } from '@/lib/hooks/use-notifications-unread'
+import { SuiviNavNotificationAlert, SUIVI_MON_PFE_HREF } from '@/components/suivi-nav-notification-alert'
 
 const navigation = [
   {
@@ -90,6 +92,7 @@ const navigation = [
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { unread: unreadNotifications } = useNotificationsUnreadCount()
   const [profile, setProfile] = useState<any>(null)
 
   useEffect(() => {
@@ -140,7 +143,12 @@ export function Sidebar() {
                 <span className={isActive ? 'text-emerald-600' : 'text-gray-500 group-hover:text-emerald-600 transition-colors'}>
                   {item.icon}
                 </span>
-                <span>{item.name}</span>
+                <span className="flex-1 min-w-0 flex items-center gap-2">
+                  <span className="truncate">{item.name}</span>
+                  {item.href === SUIVI_MON_PFE_HREF ? (
+                    <SuiviNavNotificationAlert unread={unreadNotifications} />
+                  ) : null}
+                </span>
               </Link>
             )
           })}

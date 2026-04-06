@@ -7,6 +7,8 @@ const SETTING_LABELS: Record<string, string> = {
   topic_submission_deadline: 'Date limite soumission sujets',
   internship_request_deadline: 'Date limite demandes de stage',
   defense_registration_deadline: 'Date limite inscription soutenances',
+  defense_period_start: 'Début de la période des soutenances',
+  defense_period_end: 'Fin de la période des soutenances',
 }
 
 export default function ProfessorAnnoncesPage() {

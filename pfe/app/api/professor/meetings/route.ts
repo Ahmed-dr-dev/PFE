@@ -18,6 +18,7 @@ export async function GET() {
       .from('meetings')
       .select(`
         id,
+        supervisor_id,
         date,
         time,
         duration,
@@ -106,21 +107,16 @@ export async function POST(request: Request) {
     const userId = auth.user!.id
     const supabase = await createClient()
     const body = await request.json()
-    const { date, time, duration, type, notes, location, audience, student_id } = body
+    const { date, time, duration, type, notes, location, audience, student_id, student_ids } = body
 
     if (!date || !time) {
       return NextResponse.json({ error: 'Date et heure requises' }, { status: 400 })
     }
 
-    const audienceType = 'group'
-    if (audience === 'individual' || student_id) {
-      return NextResponse.json(
-        { error: "La planification individuelle n'est pas autorisée. Cette page crée une réunion pour tous les étudiants." },
-        { status: 400 }
-      )
-    }
+    const rawAudience = typeof audience === 'string' ? audience : 'group'
+    const audienceMode =
+      rawAudience === 'all' || rawAudience === 'group' ? 'all' : rawAudience === 'selected' ? 'selected' : 'individual'
 
-    // Create one meeting per supervised student (group audience)
     const { data: projects } = await supabase
       .from('pfe_projects')
       .select('id, student_id')
@@ -129,7 +125,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Aucun étudiant encadré' }, { status: 400 })
     }
 
-    const rows = projects.map((p: { id: string; student_id: string }) => ({
+    const byStudent = new Map<string, { id: string; student_id: string }>()
+    for (const p of projects as { id: string; student_id: string }[]) {
+      if (p.student_id && !byStudent.has(p.student_id)) byStudent.set(p.student_id, p)
+    }
+    const uniqueProjects = Array.from(byStudent.values())
+
+    let targetProjects: { id: string; student_id: string }[] = uniqueProjects
+
+    if (audienceMode === 'individual') {
+      const sid = typeof student_id === 'string' ? student_id.trim() : ''
+      if (!sid) {
+        return NextResponse.json({ error: 'Sélectionnez un étudiant' }, { status: 400 })
+      }
+      targetProjects = uniqueProjects.filter((p) => p.student_id === sid)
+      if (!targetProjects.length) {
+        return NextResponse.json({ error: 'Étudiant non trouvé parmi vos encadrés' }, { status: 400 })
+      }
+    } else if (audienceMode === 'selected') {
+      const ids = Array.isArray(student_ids) ? student_ids.map((x: unknown) => String(x).trim()).filter(Boolean) : []
+      if (!ids.length) {
+        return NextResponse.json({ error: 'Sélectionnez au moins un étudiant' }, { status: 400 })
+      }
+      const allowed = new Set(uniqueProjects.map((p) => p.student_id))
+      const picked = ids.filter((id: string) => allowed.has(id))
+      if (!picked.length) {
+        return NextResponse.json({ error: 'Aucun étudiant valide dans la sélection' }, { status: 400 })
+      }
+      const pickSet = new Set(picked)
+      targetProjects = uniqueProjects.filter((p) => pickSet.has(p.student_id))
+    }
+
+    const audienceType = audienceMode === 'all' ? 'group' : 'individual'
+
+    const rows = targetProjects.map((p: { id: string; student_id: string }) => ({
       pfe_project_id: p.id,
       student_id: p.student_id,
       supervisor_id: userId,
@@ -140,12 +169,12 @@ export async function POST(request: Request) {
       notes: notes || null,
       location: location || null,
       status: 'planned',
-      audience_type: 'group',
+      audience_type: audienceType,
     }))
     const { data: inserted, error } = await supabase.from('meetings').insert(rows).select()
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     const seen = new Set<string>()
-    for (const p of projects) {
+    for (const p of targetProjects) {
       const sid = p.student_id as string
       if (!sid || seen.has(sid)) continue
       seen.add(sid)

@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { LandingFeatures } from './landing-features'
 import { LandingFooter } from './landing-footer'
-import { LandingSupportForm } from './landing-support-form'
+import { LandingHelpChat } from './landing-help-chat'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -141,7 +141,7 @@ export default async function Home() {
           </div>
         </section>
 
-        <LandingSupportForm />
+        <LandingHelpChat />
 
         <LandingFooter />
       </main>

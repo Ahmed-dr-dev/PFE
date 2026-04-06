@@ -57,15 +57,15 @@ export default function StudentsPage() {
   }
 
   const statusColors: Record<string, string> = {
-    pending: 'bg-yellow-50 text-yellow-800 border-yellow-200',
     in_progress: 'bg-blue-50 text-blue-700 border-blue-200',
     completed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    approved: 'bg-teal-50 text-teal-800 border-teal-200',
   }
 
   const statusLabels: Record<string, string> = {
-    pending: 'En attente',
     in_progress: 'En cours',
     completed: 'Terminé',
+    approved: 'Approuvé',
   }
 
   // Get unique departments
@@ -152,9 +152,13 @@ export default function StudentsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-gray-900 text-sm truncate">{student.full_name || student.name || 'N/A'}</span>
-                    {student.pfeStatus && (
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium border ${statusColors[student.pfeStatus] || statusColors.pending}`}>
-                        {statusLabels[student.pfeStatus] || 'En attente'}
+                    {student.pfeStatus && student.pfeStatus !== 'pending' && (
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs font-medium border ${
+                          statusColors[student.pfeStatus] || 'bg-gray-50 text-gray-700 border-gray-200'
+                        }`}
+                      >
+                        {statusLabels[student.pfeStatus] || student.pfeStatus}
                       </span>
                     )}
                   </div>

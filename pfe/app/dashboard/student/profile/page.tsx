@@ -130,7 +130,10 @@ export default function ProfilePage() {
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
           <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Profil</span>
         </h1>
-        <p className="text-gray-600 text-lg">Gérez vos informations personnelles</p>
+        <p className="text-gray-600 text-lg">Consultation de vos informations personnelles</p>
+        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 mt-3 max-w-2xl">
+          Les champs sont en lecture seule. Pour toute modification, contactez l&apos;administration.
+        </p>
       </div>
 
       <div className="max-w-2xl">
@@ -147,7 +150,8 @@ export default function ProfilePage() {
                   type="text"
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 transition-colors"
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 placeholder-gray-400 cursor-not-allowed"
                   placeholder="Votre nom complet"
                   required
                 />
@@ -174,7 +178,8 @@ export default function ProfilePage() {
                   type="email"
                   value={formData.recovery_email}
                   onChange={(e) => setFormData({ ...formData, recovery_email: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 transition-colors"
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 placeholder-gray-400 cursor-not-allowed"
                   placeholder="ex. prenom.nom@gmail.com"
                   autoComplete="email"
                 />
@@ -192,7 +197,8 @@ export default function ProfilePage() {
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:border-emerald-200 transition-colors"
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 placeholder-gray-400 cursor-not-allowed"
                   placeholder="Votre numéro de téléphone"
                 />
               </div>
@@ -204,7 +210,8 @@ export default function ProfilePage() {
                 <select
                   value={formData.department}
                   onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                 >
                   <option value="">Sélectionner un département</option>
                   {departments.map((dept) => (
@@ -222,7 +229,8 @@ export default function ProfilePage() {
                 <select
                   value={formData.year}
                   onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                 >
                   <option value="">Sélectionner une année</option>
                   {years.map((year) => (
@@ -238,10 +246,10 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              disabled={saving}
-              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg hover:from-emerald-700 hover:to-cyan-700 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg font-semibold opacity-50 cursor-not-allowed"
             >
-              {saving ? 'Enregistrement...' : 'Enregistrer les modifications'}
+              Enregistrement désactivé
             </button>
           </div>
         </form>
@@ -262,7 +270,8 @@ export default function ProfilePage() {
                   type="password"
                   value={passwordForm.current_password}
                   onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200"
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                   placeholder="Mot de passe actuel"
                 />
               </div>
@@ -272,7 +281,8 @@ export default function ProfilePage() {
                   type="password"
                   value={passwordForm.new_password}
                   onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200"
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                   placeholder="Au moins 6 caractères"
                 />
               </div>
@@ -282,16 +292,17 @@ export default function ProfilePage() {
                   type="password"
                   value={passwordForm.confirm_password}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200"
+                  disabled
+                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
                   placeholder="Confirmer"
                 />
               </div>
               <button
                 type="submit"
-                disabled={passwordSaving}
-                className="px-6 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 font-semibold disabled:opacity-50"
+                disabled
+                className="px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold opacity-50 cursor-not-allowed"
               >
-                {passwordSaving ? 'Modification...' : 'Modifier le mot de passe'}
+                Modification du mot de passe désactivée
               </button>
             </div>
           </div>

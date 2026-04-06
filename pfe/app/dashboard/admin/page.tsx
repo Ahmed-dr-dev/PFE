@@ -235,9 +235,9 @@ export default function DashboardPage() {
               />
               <KpiCard
                 tone="emerald"
-                value={stats.studentsWithSupervisor}
-                label="Avec encadrant"
-                hint="Nombre d’étudiants ayant au moins un projet PFE avec encadrant assigné."
+                value={stats.pfeInProgressCount}
+                label="PFE au statut « en cours »"
+                hint="Étudiants avec au moins un projet dont le statut est « en cours » (workflow)."
                 icon={
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -267,9 +267,9 @@ export default function DashboardPage() {
               />
               <KpiCard
                 tone="orange"
-                value={stats.pfeInProgressCount}
-                label="PFE en cours (étudiants)"
-                hint="Étudiants avec au moins un projet au statut « en cours »."
+                value={stats.studentsWithSupervisor}
+                label="PFE actifs"
+                hint="Étudiants ayant déjà un encadrant assigné sur au moins un projet PFE."
                 icon={
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path

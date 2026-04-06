@@ -385,11 +385,10 @@ function SuiviMonPfeInner() {
                         </div>
                       )}
                       <div className="flex gap-2 pt-3">
-                        {doc.file_path && (
+                        {doc.id && (
                           <a
-                            href={doc.file_path}
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href={`/api/student/documents/${doc.id}`}
+                            download={doc.name || doc.file_name || 'document'}
                             className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl text-sm font-semibold text-center text-gray-900"
                           >
                             Télécharger
@@ -420,12 +419,11 @@ function SuiviMonPfeInner() {
                           </p>
                         </div>
                       </div>
-                      {doc.file_path && (
+                      {doc.id && (
                         <a
-                          href={doc.file_path}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-block px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-200 rounded-xl text-sm font-semibold text-gray-900"
+                          href={`/api/student/documents/${doc.id}`}
+                          download={doc.name || doc.file_name || 'document'}
+                          className="inline-block px-4 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-sm font-semibold text-emerald-900"
                         >
                           Télécharger
                         </a>
