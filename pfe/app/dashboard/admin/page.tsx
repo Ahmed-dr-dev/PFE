@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { DashboardCharts } from './components/dashboard-charts'
 
 type Stats = {
   filters: { department: string | null; year: string | null }
@@ -214,6 +215,20 @@ export default function DashboardPage() {
               . Les enseignants sont filtrés par département lorsque celui-ci est choisi.
             </p>
           )}
+
+          <DashboardCharts
+            stats={{
+              studentsWithSupervisor: stats.studentsWithSupervisor,
+              studentsWithoutSupervisor: stats.studentsWithoutSupervisor,
+              pfeInProgressCount: stats.pfeInProgressCount,
+              pfeCompletedCount: stats.pfeCompletedCount,
+              pendingTopics: stats.pendingTopics,
+              approvedTopics: stats.approvedTopics,
+              supervisionSlotsUsed: stats.supervisionSlotsUsed,
+              totalSupervisionSlots: stats.totalSupervisionSlots,
+              capacityUtilizationPercent: stats.capacityUtilizationPercent,
+            }}
+          />
 
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-4">Étudiants & PFE</h2>

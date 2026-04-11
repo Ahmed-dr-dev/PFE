@@ -23,6 +23,7 @@ export default function MeetingsPage() {
   const [counterId, setCounterId] = useState<string | null>(null)
   const [counterFields, setCounterFields] = useState({ date: '', time: '', student_notes: '' })
   const [busyId, setBusyId] = useState<string | null>(null)
+  const today = new Date().toISOString().split('T')[0]
 
   const refresh = useCallback(async () => {
     try {
@@ -52,6 +53,10 @@ export default function MeetingsPage() {
   const submitProposal = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!proposalForm.date || !proposalForm.time) return
+    if (proposalForm.date < today) {
+      alert('La date proposée ne peut pas être dans le passé.')
+      return
+    }
     setSavingProposal(true)
     try {
       const res = await fetch('/api/student/meeting-proposals', {
@@ -164,6 +169,7 @@ export default function MeetingsPage() {
               <input
                 type="date"
                 required
+                min={today}
                 value={proposalForm.date}
                 onChange={(e) => setProposalForm({ ...proposalForm, date: e.target.value })}
                 className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900"
@@ -315,6 +321,7 @@ export default function MeetingsPage() {
                           <label className="block text-xs font-semibold text-gray-600 mb-1">Nouvelle date</label>
                           <input
                             type="date"
+                            min={today}
                             value={counterFields.date}
                             onChange={(e) => setCounterFields({ ...counterFields, date: e.target.value })}
                             className="w-full px-3 py-2 bg-gray-100 border rounded-lg text-sm"
@@ -344,14 +351,18 @@ export default function MeetingsPage() {
                       <button
                         type="button"
                         disabled={busyId === p.id}
-                        onClick={() =>
+                        onClick={() => {
+                          if (counterFields.date < today) {
+                            alert('La date proposée ne peut pas être dans le passé.')
+                            return
+                          }
                           patchProposal(p.id, {
                             action: 'counter',
                             date: counterFields.date,
                             time: counterFields.time,
                             student_notes: counterFields.student_notes || null,
                           })
-                        }
+                        }}
                         className="px-4 py-2 bg-amber-600 text-white text-sm rounded-lg hover:bg-amber-700 disabled:opacity-50"
                       >
                         Envoyer la contre-proposition

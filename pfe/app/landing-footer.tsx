@@ -30,7 +30,7 @@ export function LandingFooter() {
   const year = new Date().getFullYear()
 
   return (
-    <footer className="border-t border-slate-800 bg-slate-900 text-slate-300">
+    <footer id="contact-faculte" className="border-t border-slate-800 bg-slate-900 text-slate-300 scroll-mt-24">
       <div className="max-w-7xl mx-auto px-6 py-12 grid gap-10 md:grid-cols-2 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-lg font-bold text-white tracking-tight">Contact faculté</h2>
@@ -73,7 +73,7 @@ export function LandingFooter() {
           <ul className="space-y-2 text-sm">
             <li>
               <Link href="#contact-accueil" className="text-slate-300 hover:text-white underline-offset-2 hover:underline">
-                Aide rapide (chat)
+                FAQ
               </Link>
             </li>
             <li>

@@ -1,10 +1,13 @@
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
 export async function getUserId(): Promise<string | null> {
   const cookieStore = await cookies()
-  const userId = cookieStore.get('user_id')?.value
-  return userId || null
+  const fromCookie = cookieStore.get('user_id')?.value
+  if (fromCookie) return fromCookie
+  // Mobile clients send user id via header instead of cookie
+  const headerStore = await headers()
+  return headerStore.get('x-user-id') || null
 }
 
 export async function getCurrentUser() {

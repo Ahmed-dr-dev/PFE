@@ -66,6 +66,10 @@ export default function ProfessorsPage() {
     return matchesDepartment
   })
 
+  const totalProfessors = professors.length
+  const hasActiveFilters = departmentFilter !== 'all'
+  const filteredCount = filteredProfessors.length
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -74,6 +78,17 @@ export default function ProfessorsPage() {
             Gestion des <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">enseignants</span>
           </h1>
           <p className="text-gray-600 text-lg">Gérez la liste des enseignants et leurs informations</p>
+          <p className="mt-3 text-sm font-semibold text-gray-800">
+            <span className="text-2xl tabular-nums text-emerald-700">{totalProfessors}</span>
+            <span className="ml-2">
+              enseignant{totalProfessors !== 1 ? 's' : ''} au total
+            </span>
+            {hasActiveFilters && (
+              <span className="ml-2 text-gray-500 font-normal">
+                · {filteredCount} affiché{filteredCount !== 1 ? 's' : ''} après filtres
+              </span>
+            )}
+          </p>
         </div>
         <button
           type="button"

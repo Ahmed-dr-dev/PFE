@@ -58,6 +58,17 @@ export default function DefensesPage() {
   const [validatedWaitingForPeriodCount, setValidatedWaitingForPeriodCount] = useState(0)
   const [pdfLoading, setPdfLoading] = useState(false)
 
+  const [editId, setEditId] = useState<string | null>(null)
+  const [editDate, setEditDate] = useState('')
+  const [editTime, setEditTime] = useState('')
+  const [editRoom, setEditRoom] = useState('')
+  const [editDuration, setEditDuration] = useState(30)
+  const [editNotes, setEditNotes] = useState('')
+  const [editJuror2Id, setEditJuror2Id] = useState('')
+  const [editJuror3Id, setEditJuror3Id] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState('')
+
   const loadDefenses = useCallback(async () => {
     const defRes = await fetch('/api/admin/defenses', { cache: 'no-store' })
     if (defRes.ok) setDefenses((await defRes.json()).defenses || [])
@@ -218,6 +229,54 @@ export default function DefensesPage() {
       setSubmitError('Erreur réseau')
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const openEdit = (d: any) => {
+    setEditId(d.id)
+    setEditDate(d.scheduled_date || '')
+    setEditTime(d.scheduled_time ? String(d.scheduled_time).slice(0, 5) : '')
+    setEditRoom(d.room || '')
+    setEditDuration(d.duration_minutes || 30)
+    setEditNotes(d.notes || '')
+    const ids: string[] = d.jury_professor_ids || []
+    setEditJuror2Id(ids[1] || '')
+    setEditJuror3Id(ids[2] || '')
+    setEditError('')
+  }
+
+  const handleEdit = async (d: any) => {
+    if (!editDate) { setEditError('La date est requise.'); return }
+    if (!editJuror2Id || !editJuror3Id || editJuror2Id === editJuror3Id) {
+      setEditError('Choisissez deux membres distincts pour le jury.')
+      return
+    }
+    setEditSaving(true)
+    setEditError('')
+    const pp = normalizePfeProject(d)
+    const supervisorId = pp?.supervisor?.id || (d.jury_professor_ids?.[0] ?? '')
+    const newJuryIds = [supervisorId, editJuror2Id, editJuror3Id]
+    try {
+      const res = await fetch(`/api/admin/defenses/${d.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scheduled_date: editDate,
+          scheduled_time: editTime || null,
+          room: editRoom.trim() || null,
+          duration_minutes: editDuration,
+          notes: editNotes.trim() || null,
+          jury_professor_ids: newJuryIds,
+        }),
+      })
+      const j = await res.json()
+      if (!res.ok) { setEditError(j.error || 'Erreur'); return }
+      await loadDefenses()
+      setEditId(null)
+    } catch {
+      setEditError('Erreur réseau')
+    } finally {
+      setEditSaving(false)
     }
   }
 
@@ -442,30 +501,25 @@ export default function DefensesPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-900">Durée de la soutenance</label>
-                  <p className="text-xs text-gray-500">Temps prévu pour la séance (présentation + questions).</p>
-                  <select
-                    value={durationMinutes}
-                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                  <label className="block text-sm font-semibold text-gray-900">Heure de début</label>
+                  <p className="text-xs text-gray-500">Heure à laquelle commence la soutenance.</p>
+                  <input
+                    type="time"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {DURATION_OPTIONS.map((m) => (
-                      <option key={m} value={m}>
-                        {m} minutes
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div className="space-y-2 lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-900">Jury — 2e et 3e membre</label>
+                  <label className="block text-sm font-semibold text-gray-900">Jury — Rapporteur &amp; Président</label>
                   <p className="text-xs text-gray-500">
-                    Le jury comporte <strong>3 enseignants</strong> : l’encadrant de l’étudiant (automatique) et{' '}
-                    <strong>deux autres professeurs</strong>, tous distincts.
+                    Le jury comporte <strong>3 enseignants</strong> : l’encadrant (automatique),{' '}
+                    le <strong>rapporteur</strong> et le <strong>président du jury</strong>, tous distincts.
                   </p>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">2e membre</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-violet-500 inline-block shrink-0" />Rapporteur</label>
                       <select
                         required
                         value={juror2Id}
@@ -482,7 +536,7 @@ export default function DefensesPage() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">3e membre</label>
+                      <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block shrink-0" />Président du jury</label>
                       <select
                         required
                         value={juror3Id}
@@ -515,14 +569,19 @@ export default function DefensesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-900">Heure de début</label>
-                  <p className="text-xs text-gray-500">Heure à laquelle commence la soutenance.</p>
-                  <input
-                    type="time"
-                    value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
+                  <label className="block text-sm font-semibold text-gray-900">Durée de la soutenance</label>
+                  <p className="text-xs text-gray-500">Temps prévu pour la séance (présentation + questions).</p>
+                  <select
+                    value={durationMinutes}
+                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+                  >
+                    {DURATION_OPTIONS.map((m) => (
+                      <option key={m} value={m}>
+                        {m} minutes
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="space-y-2 lg:col-span-2">
@@ -588,7 +647,17 @@ export default function DefensesPage() {
                       {d.room && ` — ${d.room}`}
                     </p>
                     {d.jury_members?.length > 0 && (
-                      <p className="text-gray-500 text-xs mt-1">Jury : {d.jury_members.join(', ')}</p>
+                      <div className="text-gray-500 text-xs mt-1 space-y-0.5">
+                        {d.jury_members[0] && (
+                          <p><span className="font-medium text-gray-600">Encadrant :</span> {d.jury_members[0]}</p>
+                        )}
+                        {d.jury_members[1] && (
+                          <p><span className="font-medium text-violet-700">Rapporteur :</span> {d.jury_members[1]}</p>
+                        )}
+                        {d.jury_members[2] && (
+                          <p><span className="font-medium text-amber-700">Président du jury :</span> {d.jury_members[2]}</p>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -611,6 +680,13 @@ export default function DefensesPage() {
                             ? 'Annulée'
                             : 'Reportée'}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() => editId === d.id ? setEditId(null) : openEdit(d)}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded text-sm hover:bg-gray-200"
+                    >
+                      {editId === d.id ? 'Fermer' : 'Modifier'}
+                    </button>
                     {d.status === 'scheduled' && (
                       <>
                         <button
@@ -638,6 +714,124 @@ export default function DefensesPage() {
                     )}
                   </div>
                 </div>
+
+                {editId === d.id && (() => {
+                  const pp2 = normalizePfeProject(d)
+                  const supId = pp2?.supervisor?.id || d.jury_professor_ids?.[0] || ''
+                  const editableProfessors = professors.filter((p) => p.id !== supId)
+                  return (
+                    <div className="mt-5 pt-5 border-t border-gray-100">
+                      <p className="text-sm font-semibold text-gray-700 mb-4">Modifier la soutenance</p>
+                      {editError && (
+                        <div className="mb-3 rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm px-4 py-2">{editError}</div>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Date</label>
+                          <input
+                            type="date"
+                            value={editDate}
+                            min={defensePeriodComplete && periodStart ? periodStart : undefined}
+                            max={defensePeriodComplete && periodEnd ? periodEnd : undefined}
+                            onChange={(e) => setEditDate(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Heure de début</label>
+                          <input
+                            type="time"
+                            value={editTime}
+                            onChange={(e) => setEditTime(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Durée (min)</label>
+                          <select
+                            value={editDuration}
+                            onChange={(e) => setEditDuration(Number(e.target.value))}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            {DURATION_OPTIONS.map((m) => (
+                              <option key={m} value={m}>{m} min</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Salle ou lien</label>
+                          <input
+                            value={editRoom}
+                            onChange={(e) => setEditRoom(e.target.value)}
+                            placeholder="Salle 102, Zoom…"
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">
+                            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-violet-500 inline-block" /> Rapporteur</span>
+                          </label>
+                          <select
+                            value={editJuror2Id}
+                            onChange={(e) => { setEditJuror2Id(e.target.value); if (e.target.value === editJuror3Id) setEditJuror3Id('') }}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            <option value="">— Choisir —</option>
+                            {editableProfessors.map((pr) => (
+                              <option key={pr.id} value={pr.id} disabled={pr.id === editJuror3Id}>
+                                {(pr.full_name || pr.id) + (pr.department ? ` · ${pr.department}` : '')}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">
+                            <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> Président du jury</span>
+                          </label>
+                          <select
+                            value={editJuror3Id}
+                            onChange={(e) => setEditJuror3Id(e.target.value)}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          >
+                            <option value="">— Choisir —</option>
+                            {editableProfessors.map((pr) => (
+                              <option key={pr.id} value={pr.id} disabled={pr.id === editJuror2Id}>
+                                {(pr.full_name || pr.id) + (pr.department ? ` · ${pr.department}` : '')}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="sm:col-span-2 lg:col-span-4">
+                          <label className="block text-xs font-semibold text-gray-600 mb-1">Notes internes</label>
+                          <textarea
+                            value={editNotes}
+                            onChange={(e) => setEditNotes(e.target.value)}
+                            rows={2}
+                            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                            placeholder="Notes optionnelles"
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-4 flex gap-2">
+                        <button
+                          type="button"
+                          disabled={editSaving}
+                          onClick={() => void handleEdit(d)}
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          {editSaving ? 'Enregistrement…' : 'Enregistrer'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditId(null)}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-200"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })()}
               </div>
             )
           })}

@@ -192,6 +192,11 @@ export default function ProfessorSuiviStudentPage() {
   const [notesSaving, setNotesSaving] = useState(false)
   const [notesEditing, setNotesEditing] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState<string | null>(null)
+  const [appValidated, setAppValidated] = useState(false)
+  const [rapportValidated, setRapportValidated] = useState(false)
+  const [soutenanceValidated, setSoutenanceValidated] = useState(false)
+  const [soutenanceValidatedAt, setSoutenanceValidatedAt] = useState<string | null>(null)
+  const [soutenanceSaving, setSoutenanceSaving] = useState(false)
 
   async function refetchSuivi() {
     try {
@@ -200,6 +205,10 @@ export default function ProfessorSuiviStudentPage() {
         const d = await res.json()
         setData(d)
         setNotes(d.project?.supervisor_notes || '')
+        setAppValidated(d.project?.app_validated ?? false)
+        setRapportValidated(d.project?.rapport_validated ?? false)
+        setSoutenanceValidated(d.project?.soutenance_validated ?? false)
+        setSoutenanceValidatedAt(d.project?.soutenance_validated_at ?? null)
       }
     } catch {
       /* ignore */
@@ -215,6 +224,10 @@ export default function ProfessorSuiviStudentPage() {
           const d = await res.json()
           setData(d)
           setNotes(d.project?.supervisor_notes || '')
+          setAppValidated(d.project?.app_validated ?? false)
+          setRapportValidated(d.project?.rapport_validated ?? false)
+          setSoutenanceValidated(d.project?.soutenance_validated ?? false)
+          setSoutenanceValidatedAt(d.project?.soutenance_validated_at ?? null)
         }
       } catch (error) {
         // Handle error
@@ -253,6 +266,52 @@ export default function ProfessorSuiviStudentPage() {
       ...data,
       documents: data.documents.map((d: any) => (d.id === docId ? { ...d, professor_review } : d)),
     })
+  }
+
+  const handleCheckboxChange = async (field: 'app_validated' | 'rapport_validated', value: boolean) => {
+    if (field === 'app_validated') setAppValidated(value)
+    else setRapportValidated(value)
+    await fetch(`/api/professor/suivi/${studentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+  }
+
+  const handleValidateSoutenance = async () => {
+    if (!appValidated || !rapportValidated) return
+    setSoutenanceSaving(true)
+    try {
+      const res = await fetch(`/api/professor/suivi/${studentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ soutenance_validated: true }),
+      })
+      if (res.ok) {
+        setSoutenanceValidated(true)
+        setSoutenanceValidatedAt(new Date().toISOString())
+      }
+    } finally {
+      setSoutenanceSaving(false)
+    }
+  }
+
+  const handleRevokeSoutenance = async () => {
+    if (!confirm('Révoquer la validation de soutenance ?')) return
+    setSoutenanceSaving(true)
+    try {
+      const res = await fetch(`/api/professor/suivi/${studentId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ soutenance_validated: false }),
+      })
+      if (res.ok) {
+        setSoutenanceValidated(false)
+        setSoutenanceValidatedAt(null)
+      }
+    } finally {
+      setSoutenanceSaving(false)
+    }
   }
 
   if (loading) {
@@ -315,6 +374,88 @@ export default function ProfessorSuiviStudentPage() {
         </div>
 
         <div className="p-6 space-y-6">
+
+          {/* ── Validation soutenance ── */}
+          <section className={`rounded-xl border p-5 ${soutenanceValidated ? 'bg-emerald-50 border-emerald-300' : 'bg-white border-gray-200'}`}>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900 mb-1">Validation pour la soutenance</h2>
+                <p className="text-sm text-gray-500">Cochez les deux cases pour débloquer la validation.</p>
+              </div>
+              {soutenanceValidated && soutenanceValidatedAt && (
+                <span className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-800 rounded-full text-xs font-semibold border border-emerald-300">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  Validé le {new Date(soutenanceValidatedAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </span>
+              )}
+            </div>
+
+            <div className="mt-4 flex flex-col sm:flex-row gap-4">
+              <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer select-none transition-colors ${appValidated ? 'bg-emerald-50 border-emerald-400' : 'bg-gray-50 border-gray-200 hover:border-emerald-300'}`}>
+                <input
+                  type="checkbox"
+                  checked={appValidated}
+                  onChange={(e) => handleCheckboxChange('app_validated', e.target.checked)}
+                  className="w-5 h-5 rounded accent-emerald-600"
+                  disabled={soutenanceValidated}
+                />
+                <div>
+                  <span className="font-semibold text-gray-900 text-sm">Application validée</span>
+                  <p className="text-xs text-gray-500">L&apos;application développée est conforme</p>
+                </div>
+              </label>
+
+              <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer select-none transition-colors ${rapportValidated ? 'bg-emerald-50 border-emerald-400' : 'bg-gray-50 border-gray-200 hover:border-emerald-300'}`}>
+                <input
+                  type="checkbox"
+                  checked={rapportValidated}
+                  onChange={(e) => handleCheckboxChange('rapport_validated', e.target.checked)}
+                  className="w-5 h-5 rounded accent-emerald-600"
+                  disabled={soutenanceValidated}
+                />
+                <div>
+                  <span className="font-semibold text-gray-900 text-sm">Rapport validé</span>
+                  <p className="text-xs text-gray-500">Le rapport écrit est complet et accepté</p>
+                </div>
+              </label>
+            </div>
+
+            <div className="mt-5 flex items-center gap-3 flex-wrap">
+              {!soutenanceValidated ? (
+                <button
+                  type="button"
+                  disabled={!appValidated || !rapportValidated || soutenanceSaving}
+                  onClick={handleValidateSoutenance}
+                  title={!appValidated || !rapportValidated ? 'Cochez les deux cases avant de valider' : ''}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all shadow-sm
+                    disabled:opacity-40 disabled:cursor-not-allowed
+                    enabled:bg-gradient-to-r enabled:from-emerald-600 enabled:to-cyan-600 enabled:text-white enabled:hover:from-emerald-700 enabled:hover:to-cyan-700 enabled:shadow-md"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  {soutenanceSaving ? 'Enregistrement...' : 'Valider pour la soutenance'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={soutenanceSaving}
+                  onClick={handleRevokeSoutenance}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border border-red-300 text-red-700 bg-red-50 hover:bg-red-100 disabled:opacity-50"
+                >
+                  Révoquer la validation
+                </button>
+              )}
+              {(!appValidated || !rapportValidated) && !soutenanceValidated && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-1.5">
+                  {!appValidated && !rapportValidated
+                    ? 'Les deux cases doivent être cochées.'
+                    : !appValidated
+                    ? "L'application n'est pas encore validée."
+                    : "Le rapport n'est pas encore validé."}
+                </p>
+              )}
+            </div>
+          </section>
+
           <section>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-3">
               <h2 className="text-lg font-bold text-gray-900">Note / Remarques pour l&apos;étudiant</h2>

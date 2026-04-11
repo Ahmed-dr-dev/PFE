@@ -82,6 +82,11 @@ export default function StudentsPage() {
     return matchesStatus && matchesDepartment
   })
 
+  const totalStudents = students.length
+  const hasActiveFilters =
+    statusFilter !== 'all' || departmentFilter !== 'all'
+  const filteredCount = filteredStudents.length
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -90,6 +95,17 @@ export default function StudentsPage() {
             Gestion des <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">étudiants</span>
           </h1>
           <p className="text-gray-600 text-lg">Gérez la liste des étudiants et leurs informations</p>
+          <p className="mt-3 text-sm font-semibold text-gray-800">
+            <span className="text-2xl tabular-nums text-emerald-700">{totalStudents}</span>
+            <span className="ml-2">
+              étudiant{totalStudents !== 1 ? 's' : ''} au total
+            </span>
+            {hasActiveFilters && (
+              <span className="ml-2 text-gray-500 font-normal">
+                · {filteredCount} affiché{filteredCount !== 1 ? 's' : ''} après filtres
+              </span>
+            )}
+          </p>
         </div>
         <button
           type="button"
