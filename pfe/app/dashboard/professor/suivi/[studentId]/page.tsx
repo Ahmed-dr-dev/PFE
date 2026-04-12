@@ -353,6 +353,9 @@ export default function ProfessorSuiviStudentPage() {
       (d: any) => d.category === title && d.uploaded_by === student.id
     )
 
+  const missingDocs = docStructure.filter((t) => !studentUploadedTitle(t))
+  const allDocsUploaded = missingDocs.length === 0
+
   const displayedDocuments =
     categoryFilter === null
       ? documents
@@ -405,20 +408,46 @@ export default function ProfessorSuiviStudentPage() {
                 </div>
               </label>
 
-              <label className={`flex items-center gap-3 p-3 rounded-xl border cursor-pointer select-none transition-colors ${rapportValidated ? 'bg-emerald-50 border-emerald-400' : 'bg-gray-50 border-gray-200 hover:border-emerald-300'}`}>
+              <label className={`flex items-center gap-3 p-3 rounded-xl border select-none transition-colors ${
+                !allDocsUploaded ? 'cursor-not-allowed opacity-60 bg-gray-50 border-gray-200' :
+                rapportValidated ? 'cursor-pointer bg-emerald-50 border-emerald-400' :
+                'cursor-pointer bg-gray-50 border-gray-200 hover:border-emerald-300'
+              }`}>
                 <input
                   type="checkbox"
                   checked={rapportValidated}
                   onChange={(e) => handleCheckboxChange('rapport_validated', e.target.checked)}
                   className="w-5 h-5 rounded accent-emerald-600"
-                  disabled={soutenanceValidated}
+                  disabled={soutenanceValidated || !allDocsUploaded}
                 />
                 <div>
                   <span className="font-semibold text-gray-900 text-sm">Rapport validé</span>
-                  <p className="text-xs text-gray-500">Le rapport écrit est complet et accepté</p>
+                  <p className="text-xs text-gray-500">
+                    {allDocsUploaded
+                      ? "Le rapport écrit est complet et accepté"
+                      : `${missingDocs.length} document(s) manquant(s)`}
+                  </p>
                 </div>
               </label>
             </div>
+
+            {!allDocsUploaded && (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                <p className="font-semibold mb-1.5">
+                  Documents manquants — le rapport ne peut pas être validé tant que l&apos;étudiant n&apos;a pas déposé tous les fichiers requis :
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {missingDocs.map((t) => (
+                    <span key={t} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 border border-amber-300 text-amber-900 text-xs font-semibold">
+                      <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="mt-5 flex items-center gap-3 flex-wrap">
               {!soutenanceValidated ? (
@@ -450,6 +479,8 @@ export default function ProfessorSuiviStudentPage() {
                     ? 'Les deux cases doivent être cochées.'
                     : !appValidated
                     ? "L'application n'est pas encore validée."
+                    : !allDocsUploaded
+                    ? `Le rapport ne peut pas être validé : ${missingDocs.length} document(s) manquant(s).`
                     : "Le rapport n'est pas encore validé."}
                 </p>
               )}

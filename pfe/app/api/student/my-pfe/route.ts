@@ -21,6 +21,9 @@ export async function GET() {
         created_at,
         updated_at,
         supervisor_notes,
+        app_validated,
+        rapport_validated,
+        soutenance_validated,
         topic:pfe_topics(
           id,
           title,

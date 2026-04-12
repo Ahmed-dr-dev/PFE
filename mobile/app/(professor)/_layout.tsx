@@ -21,9 +21,9 @@ export default function ProfessorLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Tableau de bord',
-          tabBarLabel: 'Accueil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
+          title: 'Mon profil',
+          tabBarLabel: 'Profil',
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-circle-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -35,27 +35,27 @@ export default function ProfessorLayout() {
         }}
       />
       <Tabs.Screen
-        name="meetings"
+        name="defenses"
         options={{
-          title: 'Réunions',
-          tabBarLabel: 'Réunions',
-          tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
+          title: 'Mes soutenances',
+          tabBarLabel: 'Soutenances',
+          tabBarIcon: ({ color, size }) => <Ionicons name="school-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="documents"
+        name="requests"
         options={{
-          title: 'Documents',
-          tabBarLabel: 'Documents',
-          tabBarIcon: ({ color, size }) => <Ionicons name="document-outline" size={size} color={color} />,
+          title: "Demandes d'encadrement",
+          tabBarLabel: 'Encadrement',
+          tabBarIcon: ({ color, size }) => <Ionicons name="mail-open-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="announcements"
+        name="jury"
         options={{
-          title: 'Annonces',
-          tabBarLabel: 'Annonces',
-          tabBarIcon: ({ color, size }) => <Ionicons name="megaphone-outline" size={size} color={color} />,
+          title: 'Jury — Président',
+          tabBarLabel: 'Jury',
+          tabBarIcon: ({ color, size }) => <Ionicons name="ribbon-outline" size={size} color={color} />,
         }}
       />
     </Tabs>

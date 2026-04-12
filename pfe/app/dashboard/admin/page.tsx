@@ -216,19 +216,6 @@ export default function DashboardPage() {
             </p>
           )}
 
-          <DashboardCharts
-            stats={{
-              studentsWithSupervisor: stats.studentsWithSupervisor,
-              studentsWithoutSupervisor: stats.studentsWithoutSupervisor,
-              pfeInProgressCount: stats.pfeInProgressCount,
-              pfeCompletedCount: stats.pfeCompletedCount,
-              pendingTopics: stats.pendingTopics,
-              approvedTopics: stats.approvedTopics,
-              supervisionSlotsUsed: stats.supervisionSlotsUsed,
-              totalSupervisionSlots: stats.totalSupervisionSlots,
-              capacityUtilizationPercent: stats.capacityUtilizationPercent,
-            }}
-          />
 
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-4">Étudiants & PFE</h2>
@@ -593,6 +580,15 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
+
+          <DashboardCharts
+            stats={{
+              studentsWithSupervisor: stats.studentsWithSupervisor,
+              studentsWithoutSupervisor: stats.studentsWithoutSupervisor,
+              pfeInProgressCount: stats.pfeInProgressCount,
+              pfeCompletedCount: stats.pfeCompletedCount,
+            }}
+          />
         </>
       )}
     </div>

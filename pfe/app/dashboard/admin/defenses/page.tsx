@@ -57,6 +57,7 @@ export default function DefensesPage() {
   const [defensePeriodComplete, setDefensePeriodComplete] = useState(false)
   const [validatedWaitingForPeriodCount, setValidatedWaitingForPeriodCount] = useState(0)
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [fichePdfLoading, setFichePdfLoading] = useState<string | null>(null)
 
   const [editId, setEditId] = useState<string | null>(null)
   const [editDate, setEditDate] = useState('')
@@ -292,6 +293,19 @@ export default function DefensesPage() {
       setPdfLoading(false)
     }
   }, [defenses])
+
+  const handleFichePdf = useCallback(async (d: any) => {
+    setFichePdfLoading(d.id)
+    try {
+      const { downloadDefenseFichePdf } = await import('@/lib/defenses-planning-pdf')
+      downloadDefenseFichePdf(d)
+    } catch (e) {
+      console.error(e)
+      window.alert('Impossible de générer la fiche PDF.')
+    } finally {
+      setFichePdfLoading(null)
+    }
+  }, [])
 
   const handleStatusChange = async (id: string, status: string) => {
     try {
@@ -659,6 +673,18 @@ export default function DefensesPage() {
                         )}
                       </div>
                     )}
+                    {/* Note attribuée par le président du jury */}
+                    {d.note != null ? (
+                      <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
+                        <span className="text-xs font-semibold text-emerald-700">Note :</span>
+                        <span className="text-lg font-bold text-emerald-700 tabular-nums">{d.note}<span className="text-xs font-normal"> / 20</span></span>
+                        {d.note_comment && (
+                          <span className="text-xs text-emerald-600 italic border-l border-emerald-200 pl-2 max-w-xs truncate">{d.note_comment}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="mt-2 text-xs text-gray-400 italic">Note non attribuée</p>
+                    )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span
@@ -686,6 +712,17 @@ export default function DefensesPage() {
                       className="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded text-sm hover:bg-gray-200"
                     >
                       {editId === d.id ? 'Fermer' : 'Modifier'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void handleFichePdf(d)}
+                      disabled={fichePdfLoading === d.id}
+                      className="px-3 py-1 bg-white text-gray-700 border border-gray-300 rounded text-sm hover:bg-gray-50 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      {fichePdfLoading === d.id ? 'PDF…' : 'Fiche PDF'}
                     </button>
                     {d.status === 'scheduled' && (
                       <>

@@ -68,7 +68,7 @@ export async function GET() {
     // Get defense (soutenance) - read-only for student, scheduled by admin
     const { data: defense } = await supabase
       .from('defenses')
-      .select('id, scheduled_date, scheduled_time, room, jury_members, duration_minutes, status')
+      .select('id, scheduled_date, scheduled_time, room, jury_members, duration_minutes, status, note, note_comment')
       .eq('pfe_project_id', pfe.id)
       .in('status', ['scheduled', 'postponed'])
       .maybeSingle()

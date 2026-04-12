@@ -21,17 +21,25 @@ export default function StudentLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Mon tableau de bord',
-          tabBarLabel: 'Accueil',
-          tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="pfe"
-        options={{
           title: 'Mon PFE',
           tabBarLabel: 'Mon PFE',
           tabBarIcon: ({ color, size }) => <Ionicons name="school-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="encadrant"
+        options={{
+          title: 'Mon encadrant',
+          tabBarLabel: 'Encadrant',
+          tabBarIcon: ({ color, size }) => <Ionicons name="person-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="soutenance"
+        options={{
+          title: 'Ma soutenance',
+          tabBarLabel: 'Soutenance',
+          tabBarIcon: ({ color, size }) => <Ionicons name="ribbon-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -40,14 +48,6 @@ export default function StudentLayout() {
           title: 'Réunions',
           tabBarLabel: 'Réunions',
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="documents"
-        options={{
-          title: 'Documents',
-          tabBarLabel: 'Documents',
-          tabBarIcon: ({ color, size }) => <Ionicons name="document-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

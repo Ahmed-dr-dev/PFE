@@ -1,125 +1,146 @@
+'use client'
+
 import Link from 'next/link'
-
-type Choice = { label: string; reply: string }
-
-type FaqBlock = { title: string; items: Choice[] }
-
-const FAQ_BLOCKS: FaqBlock[] = [
-  {
-    title: 'Vous êtes plutôt…',
-    items: [
-      {
-        label: 'Étudiant(e)',
-        reply:
-          'Sur la plateforme PFE, vous pouvez consulter les sujets, demander un encadrement, suivre votre projet et vos réunions. Connectez-vous avec le CIN ou l’e-mail fourni par l’école.',
-      },
-      {
-        label: 'Enseignant(e)',
-        reply:
-          'Vous proposez des sujets, gérez les demandes de supervision, planifiez des réunions et suivez vos étudiants. Accès avec les identifiants communiqués par l’administration.',
-      },
-      {
-        label: 'Visiteur / autre',
-        reply:
-          'La plateforme est réservée aux comptes ISAEG (étudiants, enseignants, administration). Pour toute question générale, utilisez les coordonnées de la faculté en bas de page.',
-      },
-    ],
-  },
-  {
-    title: 'Comment obtenir ou réinitialiser l’accès ?',
-    items: [
-      {
-        label: 'Première connexion',
-        reply:
-          'Les identifiants sont délivré(e)s par la scolarité ou l’administration PFE. Utilisez la page Connexion avec votre CIN ou votre e-mail institutionnel.',
-      },
-      {
-        label: 'Mot de passe oublié',
-        reply:
-          'Sur la page de connexion, choisissez « Mot de passe oublié ». Si vous vous connectez avec un CIN, renseignez d’abord un e-mail de récupération dans votre profil (avec l’aide de l’admin si besoin).',
-      },
-      {
-        label: 'Compte bloqué',
-        reply:
-          'Contactez la scolarité ou la coordination PFE de la faculté (téléphone et e-mail en pied de page).',
-      },
-    ],
-  },
-  {
-    title: 'Que faire sur la plateforme en priorité ?',
-    items: [
-      {
-        label: 'Choisir / valider un sujet',
-        reply:
-          'Parcourez les sujets disponibles, postulez ou proposez un sujet selon les dates limites affichées dans Annonces et sur le tableau de bord.',
-      },
-      {
-        label: 'Réunions et suivi',
-        reply:
-          'Les créneaux se planifient avec l’encadrant ; les notifications vous informent des mises à jour. Consultez l’espace Suivi ou Mes réunions après connexion.',
-      },
-      {
-        label: 'Documents et soutenance',
-        reply:
-          'Les dépôts et étapes de validation dépendent des consignes de votre département ; l’administration publie les échéances dans les annonces.',
-      },
-    ],
-  },
-  {
-    title: 'Besoin d’un contact humain ?',
-    items: [
-      {
-        label: 'Contacter la faculté',
-        reply:
-          'Retrouvez l’adresse, le téléphone et l’e-mail de l’ISAEG dans le pied de page de cette page (Contact faculté).',
-      },
-      {
-        label: 'Accéder à la plateforme',
-        reply:
-          'Connectez-vous ci-dessous pour accéder à votre espace. Bonne réussite pour votre PFE !',
-      },
-    ],
-  },
-]
+import { useState } from 'react'
 
 export function LandingFaq() {
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [subject, setSubject] = useState('')
+  const [message, setMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/public/support-contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, subject, message }),
+      })
+      const json = await res.json()
+      if (!res.ok) { setError(json.error || 'Erreur lors de l\'envoi.'); return }
+      setSuccess(true)
+      setName(''); setEmail(''); setSubject(''); setMessage('')
+    } catch {
+      setError('Erreur réseau. Veuillez réessayer.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <section id="contact-accueil" className="py-16 md:py-20 bg-slate-50 border-t border-gray-200 scroll-mt-24">
-      <div className="max-w-3xl mx-auto px-6">
+      <div className="max-w-2xl mx-auto px-6">
+
         <div className="text-center mb-10">
-          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Questions fréquentes</h3>
+          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Poser une question</h3>
           <p className="text-gray-600 text-sm md:text-base max-w-xl mx-auto">
-            Réponses courtes aux questions les plus posées sur l’accès et l’utilisation de la plateforme PFE ISAEG.
+            Une question sur la plateforme PFE ISAEG ? Envoyez un message à l'administration.
+            Nous vous répondrons par e-mail.
           </p>
         </div>
 
-        <div className="space-y-6">
-          {FAQ_BLOCKS.map((block) => (
-            <div
-              key={block.title}
-              className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden"
+        {success ? (
+          <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-8 text-center space-y-4">
+            <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mx-auto">
+              <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h4 className="text-xl font-bold text-gray-900">Message envoyé !</h4>
+            <p className="text-gray-600 text-sm">
+              Votre question a bien été transmise à l'administration. Vous recevrez une réponse à l'adresse indiquée.
+            </p>
+            <button
+              type="button"
+              onClick={() => setSuccess(false)}
+              className="mt-2 text-sm font-semibold text-emerald-600 hover:underline"
             >
-              <h4 className="px-5 py-4 text-base font-bold text-gray-900 border-b border-gray-100 bg-gradient-to-r from-emerald-600/8 to-cyan-600/8">
-                {block.title}
-              </h4>
-              <div className="divide-y divide-gray-100">
-                {block.items.map((item) => (
-                  <details key={item.label} className="group px-5 py-1">
-                    <summary className="cursor-pointer list-none py-3 flex items-center justify-between gap-3 text-sm font-semibold text-gray-900 hover:text-emerald-700 [&::-webkit-details-marker]:hidden">
-                      <span>{item.label}</span>
-                      <span className="shrink-0 text-gray-400 transition-transform duration-200 group-open:rotate-180 text-xs leading-none">
-                        ▼
-                      </span>
-                    </summary>
-                    <p className="pb-4 pl-0.5 text-sm text-gray-600 leading-relaxed">{item.reply}</p>
-                  </details>
-                ))}
+              Envoyer une autre question
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white rounded-2xl border border-gray-200 shadow-sm p-8 space-y-5"
+          >
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm px-4 py-3">
+                {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Nom complet <span className="text-red-500">*</span>
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Votre nom"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-sm font-semibold text-gray-700">
+                  Adresse e-mail <span className="text-red-500">*</span>
+                </label>
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="votre@email.com"
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
               </div>
             </div>
-          ))}
-        </div>
 
-        <div className="mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-gray-700">Sujet (optionnel)</label>
+              <input
+                type="text"
+                value={subject}
+                onChange={(e) => setSubject(e.target.value)}
+                placeholder="Ex. : Problème de connexion, question sur les sujets…"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-sm font-semibold text-gray-700">
+                Votre question <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                required
+                rows={5}
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Décrivez votre question ou problème en détail…"
+                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-semibold text-sm hover:from-emerald-700 hover:to-cyan-700 disabled:opacity-60 disabled:cursor-not-allowed shadow-md transition-all"
+            >
+              {loading ? 'Envoi en cours…' : 'Envoyer ma question'}
+            </button>
+          </form>
+        )}
+
+        <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
           <Link
             href="/auth/signin"
             className="inline-flex justify-center px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-cyan-600 text-white font-semibold hover:from-emerald-700 hover:to-cyan-700 text-sm shadow-md text-center"
@@ -133,6 +154,7 @@ export function LandingFaq() {
             Contact faculté
           </a>
         </div>
+
       </div>
     </section>
   )

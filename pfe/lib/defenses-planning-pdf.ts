@@ -108,6 +108,154 @@ function buildGroups(planned: DefenseRow[]): Group[] {
   return groups
 }
 
+// ─── Fiche individuelle ────────────────────────────────────────────────────────
+
+type FicheDefense = Record<string, unknown> & {
+  scheduled_date?: string | null
+  scheduled_time?: string | null
+  room?: string | null
+  duration_minutes?: number | null
+  jury_members?: string[] | null
+  notes?: string | null
+  note?: number | null
+  note_comment?: string | null
+  status?: string
+}
+
+/** Génère et télécharge un PDF de fiche pour une soutenance individuelle. */
+export function downloadDefenseFichePdf(defense: FicheDefense): void {
+  const { student, supervisor } = normalizePfe(defense as Record<string, unknown>)
+  const topic = (() => {
+    const p = defense.pfe_project as Record<string, unknown> | null | undefined
+    if (p) {
+      const t = p.topic
+      return ((Array.isArray(t) ? t[0] : t) as { title?: string } | null)?.title || null
+    }
+    const pp2 = defense.pfe_projects
+    const pp = Array.isArray(pp2) ? pp2[0] : pp2
+    if (!pp || typeof pp !== 'object') return null
+    const t2 = (pp as Record<string, unknown>).topic
+    return ((Array.isArray(t2) ? t2[0] : t2) as { title?: string } | null)?.title || null
+  })()
+
+  const jm: string[] = Array.isArray(defense.jury_members) ? defense.jury_members : []
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const pageW = doc.internal.pageSize.getWidth()
+  const margin = 20
+
+  // ── Header bar ──────────────────────────────────────────────────────────────
+  doc.setFillColor(34, 197, 94) // emerald-500
+  doc.rect(0, 0, pageW, 28, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(16)
+  doc.setTextColor(255, 255, 255)
+  doc.text('FICHE DE SOUTENANCE PFE', pageW / 2, 13, { align: 'center' })
+  doc.setFontSize(9)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Générée le ${new Date().toLocaleDateString('fr-FR')}`, pageW / 2, 21, { align: 'center' })
+
+  let y = 38
+
+  // ── Student / topic ─────────────────────────────────────────────────────────
+  const drawSection = (title: string) => {
+    doc.setFillColor(240, 240, 240)
+    doc.rect(margin, y, pageW - margin * 2, 7, 'F')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10)
+    doc.setTextColor(30, 30, 30)
+    doc.text(title, margin + 3, y + 5)
+    y += 10
+  }
+
+  const drawRow = (label: string, value: string) => {
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(9)
+    doc.setTextColor(80, 80, 80)
+    doc.text(label, margin + 3, y)
+    doc.setFont('helvetica', 'normal')
+    doc.setTextColor(20, 20, 20)
+    const wrapped = doc.splitTextToSize(value, pageW - margin * 2 - 45)
+    doc.text(wrapped, margin + 45, y)
+    y += wrapped.length * 5 + 2
+  }
+
+  drawSection('Étudiant et sujet')
+  drawRow('Étudiant :', student?.full_name || '—')
+  if (topic) drawRow('Sujet PFE :', topic)
+  y += 4
+
+  drawSection('Informations de la soutenance')
+  drawRow('Date :', formatDatePlanning(defense.scheduled_date ?? null))
+  drawRow('Heure :', formatHeure(defense.scheduled_time ?? null))
+  if (defense.room) drawRow('Salle :', String(defense.room))
+  if (defense.duration_minutes) drawRow('Durée :', `${defense.duration_minutes} minutes`)
+  y += 4
+
+  drawSection('Composition du jury')
+  drawRow('Encadrant :', jm[0] || supervisor?.full_name || '—')
+  drawRow('Rapporteur :', jm[1] || '—')
+  drawRow('Président du jury :', jm[2] || '—')
+  y += 4
+
+  // ── Note ────────────────────────────────────────────────────────────────────
+  const hasNote = defense.note !== null && defense.note !== undefined
+  drawSection('Note finale')
+  if (hasNote) {
+    // Big note box
+    doc.setFillColor(209, 250, 229) // emerald-100
+    doc.setDrawColor(16, 185, 129) // emerald-500
+    doc.setLineWidth(0.5)
+    doc.roundedRect(margin, y, 50, 18, 3, 3, 'FD')
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(18)
+    doc.setTextColor(5, 150, 105) // emerald-600
+    doc.text(`${defense.note} / 20`, margin + 25, y + 12, { align: 'center' })
+    y += 22
+
+    if (defense.note_comment) {
+      doc.setFont('helvetica', 'italic')
+      doc.setFontSize(9)
+      doc.setTextColor(60, 60, 60)
+      const lines = doc.splitTextToSize(`Appréciation : ${defense.note_comment}`, pageW - margin * 2 - 6)
+      doc.text(lines, margin + 3, y)
+      y += lines.length * 5 + 4
+    }
+  } else {
+    doc.setFont('helvetica', 'italic')
+    doc.setFontSize(9)
+    doc.setTextColor(150, 150, 150)
+    doc.text('Note non encore attribuée par le Président du jury.', margin + 3, y + 5)
+    y += 12
+  }
+
+  if (defense.notes) {
+    y += 2
+    drawSection('Notes administratives')
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(9)
+    doc.setTextColor(60, 60, 60)
+    const lines = doc.splitTextToSize(String(defense.notes), pageW - margin * 2 - 6)
+    doc.text(lines, margin + 3, y)
+    y += lines.length * 5 + 4
+  }
+
+  // ── Footer ──────────────────────────────────────────────────────────────────
+  const pageH = doc.internal.pageSize.getHeight()
+  doc.setDrawColor(200, 200, 200)
+  doc.setLineWidth(0.3)
+  doc.line(margin, pageH - 14, pageW - margin, pageH - 14)
+  doc.setFont('helvetica', 'italic')
+  doc.setFontSize(8)
+  doc.setTextColor(160, 160, 160)
+  doc.text('Plateforme PFE ISAEG — Document généré automatiquement', pageW / 2, pageH - 8, { align: 'center' })
+
+  const studentName = (student?.full_name || 'etudiant').replace(/\s+/g, '-').toLowerCase()
+  doc.save(`fiche-soutenance-${studentName}-${new Date().toISOString().slice(0, 10)}.pdf`)
+}
+
+// ─── Planning complet ──────────────────────────────────────────────────────────
+
 /** Télécharge un PDF du planning (soutenances au statut « planifiée » uniquement). */
 export function downloadDefensesPlanningPdf(defenses: unknown[]): void {
   const planned = (defenses as DefenseRow[]).filter((d) => d && d.status === 'scheduled')

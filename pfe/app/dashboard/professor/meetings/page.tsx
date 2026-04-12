@@ -118,6 +118,19 @@ export default function MyMeetingsPage() {
     }
   }
 
+  // Dates that already have at least one meeting (YYYY-MM-DD strings)
+  const busyDates: Set<string> = new Set(
+    meetings
+      .filter((m: any) => m.status !== 'cancelled')
+      .map((m: any) => {
+        const raw: string = m.date ?? ''
+        return raw.length >= 10 ? raw.slice(0, 10) : ''
+      })
+      .filter(Boolean)
+  )
+
+  const selectedDateBusy = formData.date ? busyDates.has(formData.date) : false
+
   const filteredMeetings = meetings.filter((meeting: any) => {
     if (searchQuery.date) {
       const meetingDate = new Date(meeting.date).toISOString().split('T')[0]
@@ -514,10 +527,63 @@ export default function MyMeetingsPage() {
                 )}
               </fieldset>
             )}
+            {/* Busy-date legend */}
+            {busyDates.size > 0 && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-xs text-blue-800 space-y-1.5">
+                <p className="font-semibold text-blue-900">Dates déjà occupées :</p>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(busyDates)
+                    .sort()
+                    .map((d) => (
+                      <span
+                        key={d}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 border border-blue-200 font-medium"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+                        {new Date(d + 'T00:00:00').toLocaleDateString('fr-FR', {
+                          weekday: 'short',
+                          day: 'numeric',
+                          month: 'short',
+                        })}
+                      </span>
+                    ))}
+                </div>
+                <p className="text-blue-700">Choisissez une autre date pour éviter les conflits.</p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">Date</label>
-                <input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200" required />
+                <input
+                  type="date"
+                  value={formData.date}
+                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none transition-colors ${
+                    selectedDateBusy
+                      ? 'border-orange-400 bg-orange-50 focus:border-orange-400'
+                      : formData.date
+                      ? 'border-emerald-400 bg-emerald-50 focus:border-emerald-400'
+                      : 'border-gray-200 focus:border-emerald-200'
+                  }`}
+                  required
+                />
+                {selectedDateBusy && (
+                  <p className="mt-1 text-xs font-semibold text-orange-700 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Vous avez déjà une réunion ce jour-là.
+                  </p>
+                )}
+                {formData.date && !selectedDateBusy && (
+                  <p className="mt-1 text-xs font-semibold text-emerald-700 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Date disponible.
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-1">Heure</label>
