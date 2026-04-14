@@ -1,5 +1,6 @@
 import { api } from '@/lib/api'
-import { Badge, Btn, C, Card, Divider, Empty, ErrorBox, Loader, Row, Screen, SectionTitle } from '@/components/ui'
+import { Badge, Btn, C, Card, Empty, ErrorBox, Loader, Row, Screen, SectionTitle } from '@/components/ui'
+import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { StyleSheet, Text, TextInput, View } from 'react-native'
 
@@ -42,13 +43,11 @@ function statusColor(s: string) {
 }
 
 export default function ProfStudents() {
+  const router = useRouter()
   const [students, setStudents] = useState<Student[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const [expanded, setExpanded] = useState<string | null>(null)
-  const [notes, setNotes] = useState('')
-  const [saving, setSaving] = useState(false)
 
   const load = useCallback(async () => {
     setError('')
@@ -69,23 +68,6 @@ export default function ProfStudents() {
     return !q || (s.full_name || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q)
   })
 
-  const toggleExpand = (id: string) => {
-    setExpanded((prev) => (prev === id ? null : id))
-    setNotes('')
-  }
-
-  const handleValidate = async (studentId: string, field: 'app_validated' | 'rapport_validated' | 'soutenance_validated', val: boolean) => {
-    setSaving(true)
-    try {
-      await api.patch(`/api/professor/suivi/${studentId}`, { [field]: val })
-      await load()
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <Screen>
       <SectionTitle>Mes étudiants ({students.length})</SectionTitle>
@@ -102,7 +84,6 @@ export default function ProfStudents() {
       ) : (
         filtered.map((st) => {
           const proj = st.project
-          const isOpen = expanded === st.id
           return (
             <Card key={st.id} style={sty.card}>
               <Row>
@@ -121,38 +102,22 @@ export default function ProfStudents() {
                 ) : null}
               </Row>
 
-              <Btn label={isOpen ? 'Fermer' : 'Voir suivi'} onPress={() => toggleExpand(st.id)} variant="secondary" small />
+              {/* Validation dots summary */}
+              <Row style={sty.dotsRow}>
+                <View style={[sty.dot, { backgroundColor: proj?.app_validated ? C.emerald : C.gray200 }]} />
+                <Text style={sty.dotLabel}>App</Text>
+                <View style={[sty.dot, { backgroundColor: proj?.rapport_validated ? C.emerald : C.gray200 }]} />
+                <Text style={sty.dotLabel}>Rapport</Text>
+                <View style={[sty.dot, { backgroundColor: proj?.soutenance_validated ? C.emerald : C.gray200 }]} />
+                <Text style={sty.dotLabel}>Soutenance</Text>
+              </Row>
 
-              {isOpen && proj && (
-                <View style={sty.suivi}>
-                  <Divider />
-                  <Text style={sty.suiviTitle}>Validation soutenance</Text>
-                  <Row>
-                    <Btn
-                      label={proj.app_validated ? '✓ App validée' : 'Valider App'}
-                      onPress={() => handleValidate(st.id, 'app_validated', !proj.app_validated)}
-                      variant={proj.app_validated ? 'primary' : 'secondary'}
-                      small
-                      loading={saving}
-                    />
-                    <Btn
-                      label={proj.rapport_validated ? '✓ Rapport validé' : 'Valider Rapport'}
-                      onPress={() => handleValidate(st.id, 'rapport_validated', !proj.rapport_validated)}
-                      variant={proj.rapport_validated ? 'primary' : 'secondary'}
-                      small
-                      loading={saving}
-                    />
-                  </Row>
-                  {proj.app_validated && proj.rapport_validated && (
-                    <Btn
-                      label={proj.soutenance_validated ? '✓ Soutenance validée' : 'Valider pour soutenance'}
-                      onPress={() => handleValidate(st.id, 'soutenance_validated', !proj.soutenance_validated)}
-                      variant={proj.soutenance_validated ? 'primary' : 'danger'}
-                      loading={saving}
-                    />
-                  )}
-                </View>
-              )}
+              <Btn
+                label="Voir le suivi →"
+                onPress={() => router.push(`/(professor)/suivi/${st.id}` as any)}
+                variant="secondary"
+                small
+              />
             </Card>
           )
         })
@@ -172,11 +137,12 @@ const sty = StyleSheet.create({
     borderWidth: 1,
     borderColor: C.gray200,
   },
-  card: { gap: 10 },
-  name: { fontSize: 15, fontWeight: '700', color: C.gray900 },
-  email: { fontSize: 12, color: C.gray500 },
-  meta: { fontSize: 12, color: C.gray400, marginTop: 2 },
-  topic: { fontSize: 13, color: C.emerald, fontWeight: '600', marginTop: 4 },
-  suivi: { gap: 10 },
-  suiviTitle: { fontSize: 13, fontWeight: '700', color: C.gray700 },
+  card:      { gap: 10 },
+  name:      { fontSize: 15, fontWeight: '700', color: C.gray900 },
+  email:     { fontSize: 12, color: C.gray500 },
+  meta:      { fontSize: 12, color: C.gray400, marginTop: 2 },
+  topic:     { fontSize: 13, color: C.emerald, fontWeight: '600', marginTop: 4 },
+  dotsRow:   { alignItems: 'center', gap: 6 },
+  dot:       { width: 9, height: 9, borderRadius: 5 },
+  dotLabel:  { fontSize: 11, color: C.gray500, marginRight: 6 },
 })

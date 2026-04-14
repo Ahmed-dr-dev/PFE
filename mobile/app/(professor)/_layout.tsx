@@ -58,6 +58,10 @@ export default function ProfessorLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="ribbon-outline" size={size} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="suivi/[studentId]"
+        options={{ href: null, title: 'Suivi étudiant' }}
+      />
     </Tabs>
   )
 }
