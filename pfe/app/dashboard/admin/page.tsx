@@ -95,15 +95,17 @@ function KpiCard({
     slate: 'from-slate-500/20 to-slate-600/20 border-slate-500/30 text-slate-500',
   }
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
+    <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm flex items-center gap-3">
       <div
-        className={`w-14 h-14 bg-gradient-to-br ${tones[tone]} rounded-xl flex items-center justify-center border mb-4`}
+        className={`w-10 h-10 bg-gradient-to-br ${tones[tone]} rounded-lg flex items-center justify-center border shrink-0`}
       >
-        {icon}
+        <span className="scale-75">{icon}</span>
       </div>
-      <p className="text-4xl font-bold text-gray-900 tabular-nums">{value}</p>
-      <p className="text-gray-700 font-medium mt-1">{label}</p>
-      {hint ? <p className="text-xs text-gray-500 mt-2">{hint}</p> : null}
+      <div className="min-w-0">
+        <p className="text-2xl font-bold text-gray-900 tabular-nums leading-tight">{value}</p>
+        <p className="text-gray-600 text-xs font-medium mt-0.5 leading-snug">{label}</p>
+        {hint ? <p className="text-xs text-gray-400 mt-0.5 truncate">{hint}</p> : null}
+      </div>
     </div>
   )
 }
@@ -219,7 +221,7 @@ export default function DashboardPage() {
 
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-4">Étudiants & PFE</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
               <KpiCard
                 tone="blue"
                 value={stats.totalStudents}
@@ -319,7 +321,7 @@ export default function DashboardPage() {
 
           <section>
             <h2 className="text-lg font-bold text-gray-900 mb-4">Enseignants & encadrement</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3">
               <KpiCard
                 tone="purple"
                 value={stats.totalProfessors}
@@ -424,59 +426,6 @@ export default function DashboardPage() {
                       strokeLinejoin="round"
                       strokeWidth={2}
                       d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                }
-              />
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Sujets & workflow</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <KpiCard
-                tone="orange"
-                value={stats.pendingTopics}
-                label="Sujets en attente de validation"
-                hint={department ? 'Pour le département du sujet.' : undefined}
-                icon={
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                }
-              />
-              <KpiCard
-                tone="emerald"
-                value={stats.approvedTopics}
-                label="Sujets approuvés"
-                hint={department ? 'Pour le département du sujet.' : undefined}
-                icon={
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                }
-              />
-              <KpiCard
-                tone="slate"
-                value={stats.pendingAssignments}
-                label="Affectations en attente (total)"
-                icon={
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
                 }
