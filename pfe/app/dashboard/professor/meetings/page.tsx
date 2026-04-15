@@ -119,6 +119,8 @@ export default function MyMeetingsPage() {
   }
 
   // Dates that already have at least one meeting (YYYY-MM-DD strings)
+  const today = new Date().toISOString().split('T')[0]
+
   const busyDates: Set<string> = new Set(
     meetings
       .filter((m: any) => m.status !== 'cancelled')
@@ -157,6 +159,11 @@ export default function MyMeetingsPage() {
     e.preventDefault()
     if (!formData.date || !formData.time) {
       alert('Date et heure requises')
+      return
+    }
+    const selectedDateTime = new Date(`${formData.date}T${formData.time}`)
+    if (selectedDateTime <= new Date()) {
+      alert('Impossible de planifier une réunion dans le passé.')
       return
     }
     if (supervisedStudents.length === 0) {
@@ -335,6 +342,7 @@ export default function MyMeetingsPage() {
                         <input
                           type="date"
                           value={propCounter.date}
+                          min={today}
                           onChange={(e) => setPropCounter({ ...propCounter, date: e.target.value })}
                           className="w-full px-3 py-2 bg-white border rounded-lg text-sm"
                         />
@@ -558,6 +566,7 @@ export default function MyMeetingsPage() {
                 <input
                   type="date"
                   value={formData.date}
+                  min={today}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   className={`w-full px-4 py-2 bg-gray-100 border rounded-lg text-gray-900 focus:outline-none transition-colors ${
                     selectedDateBusy
@@ -576,7 +585,15 @@ export default function MyMeetingsPage() {
                     Vous avez déjà une réunion ce jour-là.
                   </p>
                 )}
-                {formData.date && !selectedDateBusy && (
+                {formData.date && formData.date < today && (
+                  <p className="mt-1 text-xs font-semibold text-red-600 flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Date dans le passé.
+                  </p>
+                )}
+                {formData.date && formData.date >= today && !selectedDateBusy && (
                   <p className="mt-1 text-xs font-semibold text-emerald-700 flex items-center gap-1">
                     <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -610,7 +627,7 @@ export default function MyMeetingsPage() {
             </div>
             <button
               type="submit"
-              disabled={saving || studentsLoading || supervisedStudents.length === 0}
+              disabled={saving || studentsLoading || supervisedStudents.length === 0 || (!!formData.date && formData.date < today)}
               className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium disabled:opacity-50"
             >
               {saving ? 'Création...' : 'Planifier la réunion'}

@@ -261,8 +261,25 @@ export default function MeetingsPage() {
         </div>
       )}
 
+      {/* Meeting counter */}
+      {meetings && meetings.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {[
+            { label: 'Total', count: meetings.length, color: 'bg-gray-100 text-gray-700 border-gray-200' },
+            { label: 'Planifiées', count: meetings.filter((m: any) => m.status === 'scheduled' || (!m.status || (m.status !== 'completed' && m.status !== 'cancelled'))).length, color: 'bg-blue-50 text-blue-700 border-blue-200' },
+            { label: 'Terminées', count: meetings.filter((m: any) => m.status === 'completed').length, color: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+            { label: 'Annulées', count: meetings.filter((m: any) => m.status === 'cancelled').length, color: 'bg-red-50 text-red-600 border-red-200' },
+          ].map(({ label, count, color }) => (
+            <div key={label} className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-semibold ${color}`}>
+              <span className="text-xl font-bold tabular-nums">{count}</span>
+              <span>{label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className="space-y-4">
-        {meetings && meetings.length > 0 ? meetings.map((meeting: any) => {
+        {meetings && meetings.length > 0 ? meetings.map((meeting: any, index: number) => {
           const meetingDate = new Date(meeting.date || meeting.meeting_date)
           const timeStr = meeting.time || meetingDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
           
@@ -271,60 +288,54 @@ export default function MeetingsPage() {
               key={meeting.id}
               className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex flex-col items-center justify-center border border-blue-500/30">
-                    <span className="text-xs font-bold text-blue-700">
-                      {meetingDate.toLocaleDateString('fr-FR', { day: 'numeric' })}
-                    </span>
-                    <span className="text-xs font-medium text-blue-700">
-                      {meetingDate.toLocaleDateString('fr-FR', { month: 'short' })}
+              <div className="flex items-start gap-4">
+                {/* Meeting number badge */}
+                <div className="shrink-0 w-7 h-7 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center">
+                  <span className="text-xs font-bold text-gray-500 tabular-nums">{index + 1}</span>
+                </div>
+                <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 flex flex-col items-center justify-center border border-blue-500/30 shrink-0">
+                  <span className="text-xs font-bold text-blue-700">
+                    {meetingDate.toLocaleDateString('fr-FR', { day: 'numeric' })}
+                  </span>
+                  <span className="text-xs font-medium text-blue-700">
+                    {meetingDate.toLocaleDateString('fr-FR', { month: 'short' })}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <h3 className="text-gray-900 font-semibold text-lg">{meeting.type || meeting.meeting_type || 'Réunion'}</h3>
+                    <span
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold border ${
+                        meeting.status === 'completed'
+                          ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : meeting.status === 'cancelled'
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-blue-50 text-blue-700 border-blue-200'
+                      }`}
+                    >
+                      {meeting.status === 'completed' ? 'Terminé' : meeting.status === 'cancelled' ? 'Annulé' : 'Planifié'}
                     </span>
                   </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-gray-900 font-semibold text-lg">{meeting.type || meeting.meeting_type || 'Réunion'}</h3>
-                      <span
-                        className={`px-3 py-1 rounded-lg text-xs font-semibold border ${
-                          meeting.status === 'completed'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : meeting.status === 'cancelled'
-                            ? 'bg-red-50 text-red-700 border-red-200'
-                            : 'bg-blue-50 text-blue-700 border-blue-200'
-                        }`}
-                      >
-                        {meeting.status === 'completed' ? 'Terminé' : meeting.status === 'cancelled' ? 'Annulé' : 'Planifié'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
+                  <div className="flex items-center gap-4 text-sm text-gray-600 mb-2 flex-wrap">
+                    <span className="flex items-center gap-1">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      {timeStr} ({meeting.duration || meeting.duration_minutes || 60} min)
+                    </span>
+                    {meeting.location && (
                       <span className="flex items-center gap-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
-                        {timeStr} ({meeting.duration || meeting.duration_minutes || 60} min)
+                        {meeting.location}
                       </span>
-                      {meeting.location && (
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                          </svg>
-                          {meeting.location}
-                        </span>
-                      )}
-                    </div>
-                    {meeting.notes && (
-                      <p className="text-gray-700 text-sm">{meeting.notes}</p>
                     )}
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handleEdit(meeting)}
-                    className="px-4 py-2 bg-gray-100 text-white rounded-lg hover:bg-gray-200 transition-all duration-200 font-semibold text-sm"
-                  >
-                    Modifier
-                  </button>
+                  {meeting.notes && (
+                    <p className="text-gray-700 text-sm">{meeting.notes}</p>
+                  )}
                 </div>
               </div>
             </div>

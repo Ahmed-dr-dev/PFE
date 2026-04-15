@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 
 const PERIOD_KEYS = ['defense_period_start', 'defense_period_end'] as const
 
-function isSupervisorDefenseReady(value: unknown): boolean {
+function isBoolTrue(value: unknown): boolean {
   if (value === true || value === 1) return true
   if (typeof value === 'string') {
     const s = value.toLowerCase()
@@ -42,23 +42,19 @@ export async function GET() {
         id,
         status,
         supervisor_id,
-        supervisor_defense_ready,
+        app_validated,
+        rapport_validated,
+        soutenance_validated,
         student:profiles!pfe_projects_student_id_fkey(id, full_name, email, department, year),
         topic:pfe_topics(id, title),
         supervisor:profiles!pfe_projects_supervisor_id_fkey(id, full_name, email, department)
       `)
       .not('supervisor_id', 'is', null)
+      .eq('app_validated', true)
+      .eq('rapport_validated', true)
+      .eq('soutenance_validated', true)
 
     if (projErr) {
-      if (projErr.message?.includes('supervisor_defense_ready') || projErr.code === '42703') {
-        return NextResponse.json(
-          {
-            error:
-              'Colonne supervisor_defense_ready manquante. Exécutez la migration defenses-scheduling-supervisor-ready.sql.',
-          },
-          { status: 503 }
-        )
-      }
       return NextResponse.json({ error: projErr.message }, { status: 500 })
     }
 
@@ -69,7 +65,7 @@ export async function GET() {
         if (st === 'completed') return false
         return true
       })
-      .filter((p: { id: string; supervisor_defense_ready?: unknown }) => isSupervisorDefenseReady(p.supervisor_defense_ready))
+      .filter((p: { id: string; soutenance_validated?: unknown }) => isBoolTrue(p.soutenance_validated))
       .filter((p: { id: string }) => !blocked.has(p.id))
       .map((p: any) => {
         const student = Array.isArray(p.student) ? p.student[0] : p.student
@@ -100,6 +96,7 @@ export async function GET() {
       defensePeriodComplete: period.complete,
       validatedWaitingForPeriodCount: period.complete ? 0 : baseList.length,
       eligibleProjects,
+      pendingDefenseStudents: baseList,
       professors: profs || [],
       usingServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
     })

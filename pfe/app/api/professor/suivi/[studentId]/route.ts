@@ -140,7 +140,7 @@ export async function PATCH(
 
     const { data: project } = await supabase
       .from('pfe_projects')
-      .select('id')
+      .select('id, app_validated, rapport_validated')
       .eq('student_id', studentId)
       .eq('supervisor_id', userId)
       .maybeSingle()
@@ -157,6 +157,16 @@ export async function PATCH(
     if (app_validated !== undefined) updates.app_validated = app_validated
     if (rapport_validated !== undefined) updates.rapport_validated = rapport_validated
     if (soutenance_validated !== undefined) {
+      if (soutenance_validated === true) {
+        const appOk = app_validated !== undefined ? app_validated : project.app_validated
+        const rapportOk = rapport_validated !== undefined ? rapport_validated : project.rapport_validated
+        if (!appOk || !rapportOk) {
+          return NextResponse.json(
+            { error: 'L\u2019application et le rapport doivent \u00eatre valid\u00e9s avant de valider la soutenance.' },
+            { status: 400 }
+          )
+        }
+      }
       updates.soutenance_validated = soutenance_validated
       updates.soutenance_validated_at = soutenance_validated ? new Date().toISOString() : null
     }

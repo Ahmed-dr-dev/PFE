@@ -3,14 +3,6 @@ import { requireAuth } from '@/lib/auth'
 import { getSupabaseForAdminData } from '@/lib/supabase/admin-server'
 import { NextResponse } from 'next/server'
 
-function isSupervisorDefenseReady(value: unknown): boolean {
-  if (value === true || value === 1) return true
-  if (typeof value === 'string') {
-    const s = value.toLowerCase()
-    return s === 'true' || s === 't' || s === '1'
-  }
-  return false
-}
 
 export async function GET() {
   try {
@@ -100,7 +92,7 @@ export async function POST(request: Request) {
 
     const { data: project, error: pErr } = await supabase
       .from('pfe_projects')
-      .select('id, supervisor_id, status, supervisor_defense_ready')
+      .select('id, supervisor_id, status, app_validated, rapport_validated, soutenance_validated')
       .eq('id', pfe_project_id)
       .maybeSingle()
 
@@ -120,11 +112,25 @@ export async function POST(request: Request) {
       )
     }
 
-    if (!isSupervisorDefenseReady(project.supervisor_defense_ready)) {
+    if (!project.app_validated) {
+      return NextResponse.json(
+        { error: 'L’application de l’étudiant doit être validée avant de planifier une soutenance.' },
+        { status: 400 }
+      )
+    }
+
+    if (!project.rapport_validated) {
+      return NextResponse.json(
+        { error: 'Le rapport de l’étudiant doit être validé avant de planifier une soutenance.' },
+        { status: 400 }
+      )
+    }
+
+    if (!project.soutenance_validated) {
       return NextResponse.json(
         {
           error:
-            'L’encadrant doit d’abord valider cet étudiant pour la soutenance (espace enseignant → Mes étudiants).',
+            'L’encadrant doit valider l’étudiant pour la soutenance (suivi → Valider pour la soutenance).',
         },
         { status: 400 }
       )

@@ -21,6 +21,11 @@ type EligibleProject = {
 
 type ProfessorOpt = { id: string; full_name: string | null; email: string | null; department: string | null }
 
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+
 function normalizePfeProject(d: any) {
   if (d.pfe_project) return d.pfe_project
   const p = d.pfe_projects
@@ -40,6 +45,7 @@ export default function DefensesPage() {
   const [periodStart, setPeriodStart] = useState<string | null>(null)
   const [periodEnd, setPeriodEnd] = useState<string | null>(null)
   const [eligibleProjects, setEligibleProjects] = useState<EligibleProject[]>([])
+  const [pendingDefenseStudents, setPendingDefenseStudents] = useState<EligibleProject[]>([])
   const [professors, setProfessors] = useState<ProfessorOpt[]>([])
 
   const [pfeProjectId, setPfeProjectId] = useState('')
@@ -94,6 +100,7 @@ export default function DefensesPage() {
       setDefensePeriodComplete(!!j.defensePeriodComplete)
       setValidatedWaitingForPeriodCount(typeof j.validatedWaitingForPeriodCount === 'number' ? j.validatedWaitingForPeriodCount : 0)
       setEligibleProjects(j.eligibleProjects || [])
+      setPendingDefenseStudents(j.pendingDefenseStudents || [])
       setProfessors(j.professors || [])
     } finally {
       setOptionsLoading(false)
@@ -170,9 +177,68 @@ export default function DefensesPage() {
     return professors.filter((p) => p.id !== supervisorId)
   }, [professors, supervisorId])
 
+  // Professors already busy on the selected date/time slot
+  const busyProfessorIds = useMemo(() => {
+    if (!scheduledDate) return new Set<string>()
+    const busy = new Set<string>()
+    defenses
+      .filter((d) => d.status !== 'cancelled' && d.scheduled_date === scheduledDate)
+      .forEach((d) => {
+        const ids: string[] = d.jury_professor_ids || []
+        if (scheduledTime && d.scheduled_time) {
+          const newStart = timeToMinutes(scheduledTime)
+          const newEnd = newStart + durationMinutes
+          const existStart = timeToMinutes(String(d.scheduled_time).slice(0, 5))
+          const existEnd = existStart + (d.duration_minutes || 30)
+          if (newStart < existEnd && newEnd > existStart) {
+            ids.forEach((id) => busy.add(id))
+          }
+        } else {
+          ids.forEach((id) => busy.add(id))
+        }
+      })
+    return busy
+  }, [defenses, scheduledDate, scheduledTime, durationMinutes])
+
+  // Existing defense that conflicts with the selected slot
+  const slotConflict = useMemo(() => {
+    if (!scheduledDate || !scheduledTime) return null
+    return defenses
+      .filter((d) => d.status !== 'cancelled' && d.scheduled_date === scheduledDate)
+      .find((d) => {
+        if (!d.scheduled_time) return false
+        const newStart = timeToMinutes(scheduledTime)
+        const newEnd = newStart + durationMinutes
+        const existStart = timeToMinutes(String(d.scheduled_time).slice(0, 5))
+        const existEnd = existStart + (d.duration_minutes || 30)
+        return newStart < existEnd && newEnd > existStart
+      }) || null
+  }, [defenses, scheduledDate, scheduledTime, durationMinutes])
+
+  // Professors available at the selected slot (not busy, not the supervisor)
+  const availableProfessors = useMemo(() => {
+    if (!scheduledDate) return otherProfessors
+    return otherProfessors.filter((p) => !busyProfessorIds.has(p.id))
+  }, [otherProfessors, busyProfessorIds, scheduledDate])
+
   useEffect(() => {
     if (juror2Id && juror2Id === juror3Id) setJuror3Id('')
   }, [juror2Id, juror3Id])
+
+  // Reset jury if selected jurors became unavailable after date/time change
+  useEffect(() => {
+    if (juror2Id && busyProfessorIds.has(juror2Id)) setJuror2Id('')
+    if (juror3Id && busyProfessorIds.has(juror3Id)) setJuror3Id('')
+  }, [busyProfessorIds, juror2Id, juror3Id])
+
+  const openFormForProject = (projectId: string) => {
+    resetForm()
+    setPfeProjectId(projectId)
+    setJuror2Id('')
+    setJuror3Id('')
+    setShowForm(true)
+    setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 50)
+  }
 
   const resetForm = () => {
     setPfeProjectId('')
@@ -190,8 +256,22 @@ export default function DefensesPage() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
     setSubmitError('')
-    if (!pfeProjectId || !scheduledDate) {
-      setSubmitError('Choisissez un étudiant / projet et une date.')
+    if (!scheduledDate) {
+      setSubmitError('Sélectionnez d’abord une date.')
+      return
+    }
+    if (scheduledDate < today) {
+      setSubmitError('Impossible de planifier une soutenance dans le passé.')
+      return
+    }
+    if (slotConflict) {
+      const pp = normalizePfeProject(slotConflict)
+      const name = pp?.student?.full_name || 'un autre étudiant'
+      setSubmitError()
+      return
+    }
+    if (!pfeProjectId) {
+      setSubmitError('Choisissez un étudiant / projet.')
       return
     }
     if (!supervisorId) {
@@ -320,6 +400,13 @@ export default function DefensesPage() {
     }
   }
 
+  const today = new Date().toISOString().split('T')[0]
+
+  // min date = the later of today and the period start
+  const dateMin = defensePeriodComplete && periodStart
+    ? periodStart > today ? periodStart : today
+    : today
+
   const canOpenForm = defensePeriodComplete && eligibleProjects.some((p) => !scheduledIds.has(p.id))
   const planifierTitle = !defensePeriodComplete
     ? 'Définissez d’abord la période des soutenances (Annonces & paramètres)'
@@ -398,7 +485,7 @@ export default function DefensesPage() {
             {defensePeriodComplete
               ? eligibleProjects.length > 0
                 ? `${eligibleProjects.length} étudiant(s) prêt(s) à planifier`
-                : 'Aucun étudiant n’a encore été validé par son encadrant.'
+                : 'Aucun étudiant n’a application + rapport validés et soutenance approuvée par son encadrant.'
               : 'Les encadrants ne peuvent valider qu’après l’étape 1.'}
           </p>
         </div>
@@ -416,6 +503,86 @@ export default function DefensesPage() {
         <div className="rounded-2xl border border-amber-300 bg-amber-50 text-amber-950 text-sm px-4 py-3">
           {validatedWaitingForPeriodCount} étudiant(s) déjà marqué(s) prêt(s) par un encadrant : ils apparaîtront ici dès que la
           période (étape 1) sera enregistrée correctement (deux dates valides, début ≤ fin).
+        </div>
+      )}
+
+      {/* Pending defense students — validated by supervisor, not yet scheduled */}
+      {pendingDefenseStudents.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h2 className="text-base font-bold text-gray-900">
+                Étudiants validés — en attente de planification
+              </h2>
+              <span className="ml-1 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                {pendingDefenseStudents.filter((p) => !scheduledIds.has(p.id)).length}
+              </span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {pendingDefenseStudents.map((p) => {
+              const alreadyScheduled = scheduledIds.has(p.id)
+              return (
+                <div
+                  key={p.id}
+                  className={`bg-white rounded-xl border p-4 shadow-sm flex flex-col gap-3 ${
+                    alreadyScheduled ? 'border-gray-200 opacity-60' : 'border-emerald-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-gray-900 truncate">
+                        {p.student?.full_name || p.student?.email || 'Étudiant'}
+                      </p>
+                      {p.student?.department && (
+                        <p className="text-xs text-gray-500 truncate">{p.student.department}{p.student.year ? ` · ${p.student.year}` : ''}</p>
+                      )}
+                    </div>
+                    {alreadyScheduled && (
+                      <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 border border-gray-200">
+                        Planifié
+                      </span>
+                    )}
+                    {!alreadyScheduled && (
+                      <span className="shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Prêt
+                      </span>
+                    )}
+                  </div>
+                  {p.topic?.title && (
+                    <p className="text-xs text-gray-600 bg-gray-50 rounded-lg px-2.5 py-1.5 border border-gray-100 truncate">
+                      {p.topic.title}
+                    </p>
+                  )}
+                  {p.supervisor && (
+                    <p className="text-xs text-gray-500 flex items-center gap-1">
+                      <svg className="w-3.5 h-3.5 shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Encadrant : {p.supervisor.full_name || p.supervisor.email}
+                    </p>
+                  )}
+                  {!alreadyScheduled && (
+                    <button
+                      type="button"
+                      disabled={!canOpenForm}
+                      title={planifierTitle}
+                      onClick={() => openFormForProject(p.id)}
+                      className="w-full mt-auto text-xs font-semibold text-white bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-700 hover:to-cyan-700 rounded-lg px-3 py-2 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Planifier la soutenance
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -450,183 +617,243 @@ export default function DefensesPage() {
                 <div className="rounded-xl border border-red-200 bg-red-50 text-red-800 text-sm px-4 py-3">{submitError}</div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-2 lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-900">Filtrer par filière (département de l’étudiant)</label>
-                  <p className="text-xs text-gray-500">
-                    Affinez la liste ci-dessous selon le domaine / département enregistré sur le profil étudiant.
-                  </p>
-                  <select
-                    value={studentDepartmentFilter}
-                    onChange={(e) => setStudentDepartmentFilter(e.target.value)}
-                    className="w-full max-w-md px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="">Toutes les filières</option>
-                    {studyDepartmentOptions.map((d) => (
-                      <option key={d} value={d}>
-                        {deptLabel(d)}
-                      </option>
-                    ))}
-                    {eligibleProjects.some(
-                      (p) => !scheduledIds.has(p.id) && !(p.student?.department || '').trim()
-                    ) ? (
-                      <option value="__none__">Non renseigné</option>
-                    ) : null}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-900">Étudiant / projet PFE</label>
-                  <p className="text-xs text-gray-500">
-                    Uniquement les projets <strong>validés par l’encadrant pour la soutenance</strong>, sans soutenance déjà
-                    planifiée (non annulée).
-                  </p>
-                  <select
-                    required
-                    value={pfeProjectId}
-                    onChange={(e) => {
-                      setPfeProjectId(e.target.value)
-                      setJuror2Id('')
-                      setJuror3Id('')
-                    }}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="">— Sélectionner —</option>
-                    {filteredProjectsForPicker.map((p) => {
-                      const dept = (p.student?.department || '').trim()
-                      const yr = (p.student?.year || '').trim()
-                      const filiere = [dept ? deptLabel(dept) : null, yr || null].filter(Boolean).join(' · ')
-                      const suffix = filiere ? ` (${filiere})` : ''
-                      return (
-                        <option key={p.id} value={p.id}>
-                          {(p.student?.full_name || 'Étudiant') + suffix + ' — ' + (p.topic?.title || 'Sans sujet')}
-                        </option>
-                      )
-                    })}
-                  </select>
-                  {filteredProjectsForPicker.length === 0 && eligibleProjects.some((p) => !scheduledIds.has(p.id)) && (
-                    <p className="text-xs text-amber-700">Aucun étudiant pour ce filtre — choisissez une autre filière.</p>
-                  )}
-                  {selectedProject?.supervisor && (
-                    <p className="text-xs text-emerald-800 font-medium">
-                      Encadrant (président de jury) : {selectedProject.supervisor.full_name || selectedProject.supervisor.email}
-                    </p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-900">Heure de début</label>
-                  <p className="text-xs text-gray-500">Heure à laquelle commence la soutenance.</p>
-                  <input
-                    type="time"
-                    value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
-                </div>
-
-                <div className="space-y-2 lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-900">Jury — Rapporteur &amp; Président</label>
-                  <p className="text-xs text-gray-500">
-                    Le jury comporte <strong>3 enseignants</strong> : l’encadrant (automatique),{' '}
-                    le <strong>rapporteur</strong> et le <strong>président du jury</strong>, tous distincts.
-                  </p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-violet-500 inline-block shrink-0" />Rapporteur</label>
-                      <select
-                        required
-                        value={juror2Id}
-                        onChange={(e) => setJuror2Id(e.target.value)}
-                        disabled={!supervisorId}
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
-                      >
-                        <option value="">— Choisir un enseignant —</option>
-                        {otherProfessors.map((pr) => (
-                          <option key={pr.id} value={pr.id} disabled={pr.id === juror3Id}>
-                            {(pr.full_name || pr.id) + (pr.department ? ` · ${pr.department}` : '')}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-amber-500 inline-block shrink-0" />Président du jury</label>
-                      <select
-                        required
-                        value={juror3Id}
-                        onChange={(e) => setJuror3Id(e.target.value)}
-                        disabled={!supervisorId}
-                        className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
-                      >
-                        <option value="">— Choisir un enseignant —</option>
-                        {otherProfessors.map((pr) => (
-                          <option key={pr.id} value={pr.id} disabled={pr.id === juror2Id}>
-                            {(pr.full_name || pr.id) + (pr.department ? ` · ${pr.department}` : '')}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+              {/* STEP 1 — Créneau */}
+              <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4 space-y-4">
+                <p className="text-xs font-bold text-blue-700 uppercase tracking-wider">Étape 1 — Créneau</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-900">Date <span className="text-red-500">*</span></label>
+                    <p className="text-xs text-gray-500">Dans la période officielle.</p>
+                    <input
+                      required
+                      type="date"
+                      min={dateMin}
+                      max={defensePeriodComplete && periodEnd ? periodEnd : undefined}
+                      value={scheduledDate}
+                      onChange={(e) => { setScheduledDate(e.target.value); setJuror2Id(''); setJuror3Id('') }}
+                      className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${scheduledDate && scheduledDate < today ? 'border-red-400 bg-red-50' : slotConflict ? 'border-red-400 bg-red-50' : 'bg-gray-50 border-gray-200'}`}
+                    />
+                    {scheduledDate && scheduledDate < today && (
+                      <p className="text-xs font-semibold text-red-600 flex items-center gap-1 mt-1">
+                        <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Impossible de planifier dans le passé.
+                      </p>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-900">Heure de début</label>
+                    <p className="text-xs text-gray-500">Heure de la soutenance.</p>
+                    <input
+                      type="time"
+                      value={scheduledTime}
+                      onChange={(e) => { setScheduledTime(e.target.value); setJuror2Id(''); setJuror3Id('') }}
+                      className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${slotConflict ? 'border-red-400 bg-red-50' : 'bg-gray-50 border-gray-200'}`}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-900">Durée</label>
+                    <p className="text-xs text-gray-500">Présentation + questions.</p>
+                    <select
+                      value={durationMinutes}
+                      onChange={(e) => { setDurationMinutes(Number(e.target.value)); setJuror2Id(''); setJuror3Id('') }}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      {DURATION_OPTIONS.map((m) => (
+                        <option key={m} value={m}>{m} minutes</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
+                {slotConflict && (() => {
+                  const pp = normalizePfeProject(slotConflict)
+                  return (
+                    <div className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-sm text-red-800">
+                      <svg className="w-4 h-4 shrink-0 mt-0.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span>
+                        Créneau occupé par <strong>{pp?.student?.full_name || 'un étudiant'}</strong> à{' '}
+                        <strong>{String(slotConflict.scheduled_time).slice(0, 5)}</strong> ({slotConflict.duration_minutes} min).
+                        Choisissez un autre horaire.
+                      </span>
+                    </div>
+                  )
+                })()}
+                {scheduledDate && !slotConflict && defenses.filter(d => d.status !== 'cancelled' && d.scheduled_date === scheduledDate).length > 0 && (
+                  <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 space-y-1">
+                    <p className="font-semibold">Soutenances déjà prévues ce jour :</p>
+                    {defenses.filter(d => d.status !== 'cancelled' && d.scheduled_date === scheduledDate).map(d => {
+                      const pp2 = normalizePfeProject(d)
+                      return (
+                        <p key={d.id}>
+                          • {pp2?.student?.full_name || '?'} — {d.scheduled_time ? String(d.scheduled_time).slice(0, 5) : '—'} ({d.duration_minutes} min)
+                        </p>
+                      )
+                    })}
+                  </div>
+                )}
+                {scheduledDate && !slotConflict && defenses.filter(d => d.status !== 'cancelled' && d.scheduled_date === scheduledDate).length === 0 && (
+                  <p className="text-xs text-emerald-700 font-medium flex items-center gap-1">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Aucune soutenance planifiée ce jour.
+                  </p>
+                )}
+              </div>
 
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-900">Date</label>
-                  <p className="text-xs text-gray-500">Uniquement entre le début et la fin de la période officielle.</p>
-                  <input
-                    required
-                    type="date"
-                    min={defensePeriodComplete && periodStart ? periodStart : undefined}
-                    max={defensePeriodComplete && periodEnd ? periodEnd : undefined}
-                    value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  />
+              {/* STEP 2 — Étudiant */}
+              <div className={`rounded-xl border p-4 space-y-3 transition-opacity ${!scheduledDate ? 'opacity-50 pointer-events-none' : ''}`}>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Étape 2 — Étudiant</p>
+                {!scheduledDate && <p className="text-xs text-gray-400 italic">Sélectionnez d&apos;abord une date.</p>}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-900">Filière</label>
+                    <select
+                      value={studentDepartmentFilter}
+                      onChange={(e) => setStudentDepartmentFilter(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="">Toutes les filières</option>
+                      {studyDepartmentOptions.map((d) => (
+                        <option key={d} value={d}>{deptLabel(d)}</option>
+                      ))}
+                      {eligibleProjects.some((p) => !scheduledIds.has(p.id) && !(p.student?.department || '').trim()) && (
+                        <option value="__none__">Non renseigné</option>
+                      )}
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-900">
+                      Étudiant / projet PFE <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={pfeProjectId}
+                      onChange={(e) => { setPfeProjectId(e.target.value); setJuror2Id(''); setJuror3Id('') }}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="">— Sélectionner —</option>
+                      {filteredProjectsForPicker.map((p) => {
+                        const dept = (p.student?.department || '').trim()
+                        const yr = (p.student?.year || '').trim()
+                        const filiere = [dept ? deptLabel(dept) : null, yr || null].filter(Boolean).join(' · ')
+                        const suffix = filiere ? ` (${filiere})` : ''
+                        return (
+                          <option key={p.id} value={p.id}>
+                            {(p.student?.full_name || 'Étudiant') + suffix + ' — ' + (p.topic?.title || 'Sans sujet')}
+                          </option>
+                        )
+                      })}
+                    </select>
+                    {filteredProjectsForPicker.length === 0 && eligibleProjects.some((p) => !scheduledIds.has(p.id)) && (
+                      <p className="text-xs text-amber-700 mt-1">Aucun étudiant pour ce filtre.</p>
+                    )}
+                    {selectedProject?.supervisor && (
+                      <p className="text-xs text-emerald-800 font-medium mt-1">
+                        Encadrant : {selectedProject.supervisor.full_name || selectedProject.supervisor.email}
+                      </p>
+                    )}
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-900">Durée de la soutenance</label>
-                  <p className="text-xs text-gray-500">Temps prévu pour la séance (présentation + questions).</p>
-                  <select
-                    value={durationMinutes}
-                    onChange={(e) => setDurationMinutes(Number(e.target.value))}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    {DURATION_OPTIONS.map((m) => (
-                      <option key={m} value={m}>
-                        {m} minutes
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              </div>
 
-                <div className="space-y-2 lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-900">Salle ou lien</label>
-                  <p className="text-xs text-gray-500">Lieu physique ou indication de visioconférence.</p>
-                  <input
-                    value={room}
-                    onChange={(e) => setRoom(e.target.value)}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Ex. : Amphi A, Salle 102, lien Zoom…"
-                  />
+              {/* STEP 3 — Jury */}
+              <div className={`rounded-xl border p-4 space-y-3 transition-opacity ${!supervisorId ? 'opacity-50 pointer-events-none' : ''}`}>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Étape 3 — Jury</p>
+                  {scheduledDate && busyProfessorIds.size > 0 && (
+                    <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5 font-medium">
+                      {busyProfessorIds.size} enseignant(s) indisponible(s) sur ce créneau
+                    </span>
+                  )}
                 </div>
+                {!supervisorId && <p className="text-xs text-gray-400 italic">Sélectionnez d&apos;abord un étudiant.</p>}
+                <p className="text-xs text-gray-500">
+                  Encadrant (auto) + rapporteur + président. Seuls les enseignants{' '}
+                  <strong>disponibles</strong> sur ce créneau sont affichés.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1">
+                      <span className="w-2 h-2 rounded-full bg-violet-500 inline-block shrink-0" />
+                      Rapporteur
+                    </label>
+                    <select
+                      required
+                      value={juror2Id}
+                      onChange={(e) => setJuror2Id(e.target.value)}
+                      disabled={!supervisorId}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                    >
+                      <option value="">— Choisir —</option>
+                      {availableProfessors.map((pr) => (
+                        <option key={pr.id} value={pr.id} disabled={pr.id === juror3Id}>
+                          {(pr.full_name || pr.id) + (pr.department ? ` · ${pr.department}` : '')}
+                        </option>
+                      ))}
+                    </select>
+                    {availableProfessors.length === 0 && supervisorId && (
+                      <p className="text-xs text-red-600 mt-1">Aucun enseignant disponible sur ce créneau.</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-1">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 inline-block shrink-0" />
+                      Président du jury
+                    </label>
+                    <select
+                      required
+                      value={juror3Id}
+                      onChange={(e) => setJuror3Id(e.target.value)}
+                      disabled={!supervisorId}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
+                    >
+                      <option value="">— Choisir —</option>
+                      {availableProfessors.map((pr) => (
+                        <option key={pr.id} value={pr.id} disabled={pr.id === juror2Id}>
+                          {(pr.full_name || pr.id) + (pr.department ? ` · ${pr.department}` : '')}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
 
-                <div className="space-y-2 lg:col-span-2">
-                  <label className="block text-sm font-semibold text-gray-900">Notes internes</label>
-                  <p className="text-xs text-gray-500">Optionnel — visible côté administration.</p>
-                  <textarea
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    rows={2}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="Notes optionnelles"
-                  />
+              {/* STEP 4 — Détails */}
+              <div className="rounded-xl border p-4 space-y-4">
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Étape 4 — Détails</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-900">Salle ou lien</label>
+                    <input
+                      value={room}
+                      onChange={(e) => setRoom(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Amphi A, Salle 102, lien Zoom…"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-sm font-semibold text-gray-900">Notes internes</label>
+                    <textarea
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      rows={2}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Notes optionnelles"
+                    />
+                  </div>
                 </div>
               </div>
             </>
           )}
 
+
           <button
             type="submit"
-            disabled={submitting || optionsLoading}
+            disabled={submitting || optionsLoading || (!!scheduledDate && scheduledDate < today) || !!slotConflict}
             className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50"
           >
             {submitting ? 'Enregistrement…' : 'Planifier'}
@@ -768,7 +995,7 @@ export default function DefensesPage() {
                           <input
                             type="date"
                             value={editDate}
-                            min={defensePeriodComplete && periodStart ? periodStart : undefined}
+                            min={dateMin}
                             max={defensePeriodComplete && periodEnd ? periodEnd : undefined}
                             onChange={(e) => setEditDate(e.target.value)}
                             className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
