@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { DashboardCharts } from './components/dashboard-charts'
 
@@ -432,103 +431,6 @@ export default function DashboardPage() {
               />
             </div>
           </section>
-
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-bold text-gray-900">Aperçu étudiants</h3>
-                <Link href="/dashboard/admin/students" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
-                  Tout voir →
-                </Link>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-500 border-b border-gray-100">
-                      <th className="px-4 py-3 font-semibold">Nom</th>
-                      <th className="px-4 py-3 font-semibold">Dépt. / année</th>
-                      <th className="px-4 py-3 font-semibold">Encadrant</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.studentsPreview.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
-                          Aucun étudiant dans cet aperçu (ajustez les filtres).
-                        </td>
-                      </tr>
-                    ) : (
-                      stats.studentsPreview.map((s) => (
-                        <tr key={s.id} className="border-b border-gray-50 hover:bg-gray-50/80">
-                          <td className="px-4 py-3">
-                            <Link href={`/dashboard/admin/students/${s.id}`} className="font-medium text-gray-900 hover:text-emerald-600">
-                              {s.full_name || '—'}
-                            </Link>
-                            <p className="text-xs text-gray-500 truncate max-w-[200px]">{s.email}</p>
-                          </td>
-                          <td className="px-4 py-3 text-gray-600">
-                            {[s.department && deptLabel(s.department), s.year].filter(Boolean).join(' · ') || '—'}
-                          </td>
-                          <td className="px-4 py-3">
-                            {s.hasSupervisor ? (
-                              <span className="text-emerald-700 font-medium">{s.supervisorName}</span>
-                            ) : (
-                              <span className="text-amber-700">Sans encadrant</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
-              <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-                <h3 className="font-bold text-gray-900">Aperçu enseignants</h3>
-                <Link href="/dashboard/admin/professors" className="text-sm font-semibold text-emerald-600 hover:text-emerald-700">
-                  Tout voir →
-                </Link>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-left text-gray-500 border-b border-gray-100">
-                      <th className="px-4 py-3 font-semibold">Nom</th>
-                      <th className="px-4 py-3 font-semibold">Département</th>
-                      <th className="px-4 py-3 font-semibold">Étudiants / cap.</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.professorsPreview.length === 0 ? (
-                      <tr>
-                        <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
-                          Aucun enseignant dans ce périmètre.
-                        </td>
-                      </tr>
-                    ) : (
-                      stats.professorsPreview.map((p) => (
-                        <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/80">
-                          <td className="px-4 py-3">
-                            <Link href={`/dashboard/admin/professors/${p.id}`} className="font-medium text-gray-900 hover:text-emerald-600">
-                              {p.full_name || '—'}
-                            </Link>
-                            <p className="text-xs text-gray-500 truncate max-w-[200px]">{p.email}</p>
-                          </td>
-                          <td className="px-4 py-3 text-gray-600">{p.department ? deptLabel(p.department) : '—'}</td>
-                          <td className="px-4 py-3 tabular-nums">
-                            <span className="font-semibold text-gray-900">{p.studentsSupervised}</span>
-                            <span className="text-gray-400"> / {p.capacity}</span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
 
           <DashboardCharts
             stats={{
