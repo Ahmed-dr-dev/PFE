@@ -2,13 +2,54 @@
 import { TopicCard } from './topic-card'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { DeadlineBlockedPanel } from '../deadline-blocked-panel'
+
+function isDeadlinePassed(value: string | null | undefined): boolean {
+  if (!value?.trim()) return false
+  const ymd = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (ymd) {
+    return Date.now() > Date.UTC(+ymd[1], +ymd[2] - 1, +ymd[3], 23, 59, 59, 999)
+  }
+  const t = new Date(value)
+  if (isNaN(t.getTime())) return false
+  return Date.now() > Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate(), 23, 59, 59, 999)
+}
+
+function formatDeadlineFr(value: string | null | undefined): string {
+  if (!value?.trim()) return ''
+  const ymd = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (ymd) {
+    const d = new Date(Date.UTC(+ymd[1], +ymd[2] - 1, +ymd[3]))
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+  }
+  const t = new Date(value)
+  return isNaN(t.getTime()) ? value : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
 
 export default function TopicsPage() {
+  const [deadlineStatus, setDeadlineStatus] = useState<'loading' | 'blocked' | 'ok'>('loading')
+  const [deadlineLabel, setDeadlineLabel] = useState('')
   const [topics, setTopics] = useState<any[]>([])
   const [hasSupervisor, setHasSupervisor] = useState<boolean>(true)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    fetch('/api/student/settings')
+      .then((r) => r.json())
+      .then((data) => {
+        const val = data.settings?.topic_submission_deadline
+        if (isDeadlinePassed(val)) {
+          setDeadlineLabel(formatDeadlineFr(val))
+          setDeadlineStatus('blocked')
+        } else {
+          setDeadlineStatus('ok')
+        }
+      })
+      .catch(() => setDeadlineStatus('ok'))
+  }, [])
+
+  useEffect(() => {
+    if (deadlineStatus !== 'ok') return
     async function fetchData() {
       try {
         const topicsRes = await fetch('/api/student/topics', { cache: 'no-store' })
@@ -24,7 +65,7 @@ export default function TopicsPage() {
       }
     }
     fetchData()
-  }, [])
+  }, [deadlineStatus])
 
   // Transform topics to match TopicCard expected format
   const formattedTopics = topics.map((topic: any) => ({
@@ -36,6 +77,24 @@ export default function TopicsPage() {
     applicationStatus: topic.applicationStatus || null,
     topicAssignedToOther: !!topic.topicAssignedToOther,
   }))
+
+  if (deadlineStatus === 'loading') {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-gray-600">Chargement...</p>
+      </div>
+    )
+  }
+
+  if (deadlineStatus === 'blocked') {
+    return (
+      <DeadlineBlockedPanel
+        title="Délai de soumission des sujets dépassé"
+        message={`La date limite de soumission des sujets de PFE est dépassée${deadlineLabel ? ` (${deadlineLabel})` : '.'}`}
+        deadlineLabel={deadlineLabel}
+      />
+    )
+  }
 
   return (
     <div className="space-y-8">

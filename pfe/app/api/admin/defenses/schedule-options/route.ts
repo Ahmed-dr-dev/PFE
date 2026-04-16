@@ -80,7 +80,7 @@ export async function GET() {
         }
       })
 
-    const eligibleProjects = period.complete ? baseList : []
+    const eligibleProjects = baseList
 
     const { data: profs, error: profErr } = await supabase
       .from('profiles')

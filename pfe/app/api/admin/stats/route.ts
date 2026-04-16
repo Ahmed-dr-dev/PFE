@@ -78,23 +78,33 @@ export async function GET(request: Request) {
       studentsWithSupervisor = supervisedInFilter.size
       studentsWithoutSupervisor = Math.max(0, totalStudents - studentsWithSupervisor)
 
-      const projectsInFilter: { status: string; student_id: string }[] = []
+      // PFE en cours = PFEs affectés (avec encadrant)
+      pfeInProgressCount = supervisedInFilter.size
+
+      // PFE terminés = projets ayant une soutenance planifiée (non annulée)
+      const pfeProjectIdsInFilter: string[] = []
       for (const part of chunkIds(studentIds, CHUNK)) {
         if (!part.length) continue
         const { data: rows } = await supabase
           .from('pfe_projects')
-          .select('status, student_id')
+          .select('id, student_id')
           .in('student_id', part)
-        if (rows?.length) projectsInFilter.push(...(rows as { status: string; student_id: string }[]))
+        if (rows?.length) pfeProjectIdsInFilter.push(...rows.map((r: { id: string }) => r.id))
       }
-      const studentHasInProgress = new Set(
-        projectsInFilter.filter((p) => p.status === 'in_progress').map((p) => p.student_id)
-      )
-      const studentHasCompleted = new Set(
-        projectsInFilter.filter((p) => p.status === 'completed').map((p) => p.student_id)
-      )
-      pfeInProgressCount = studentHasInProgress.size
-      pfeCompletedCount = studentHasCompleted.size
+      const defensedStudents = new Set<string>()
+      for (const part of chunkIds(pfeProjectIdsInFilter, CHUNK)) {
+        if (!part.length) continue
+        const { data: defRows } = await supabase
+          .from('defenses')
+          .select('pfe_project_id, pfe_projects(student_id)')
+          .in('pfe_project_id', part)
+          .neq('status', 'cancelled')
+        defRows?.forEach((d: any) => {
+          const pp = Array.isArray(d.pfe_projects) ? d.pfe_projects[0] : d.pfe_projects
+          if (pp?.student_id) defensedStudents.add(pp.student_id)
+        })
+      }
+      pfeCompletedCount = defensedStudents.size
     } else {
       const { count: ts } = await supabase
         .from('profiles')
@@ -110,15 +120,21 @@ export async function GET(request: Request) {
       studentsWithSupervisor = supervisedSet.size
       studentsWithoutSupervisor = Math.max(0, totalStudents - studentsWithSupervisor)
 
-      const { data: statusRows } = await supabase.from('pfe_projects').select('status, student_id')
-      const inProg = new Set(
-        (statusRows || []).filter((r: { status: string }) => r.status === 'in_progress').map((r: { student_id: string }) => r.student_id)
+      // PFE en cours = PFEs affectés (avec encadrant)
+      pfeInProgressCount = studentsWithSupervisor
+
+      // PFE terminés = projets ayant une soutenance planifiée (non annulée)
+      const { data: defenseRows } = await supabase
+        .from('defenses')
+        .select('pfe_projects(student_id)')
+        .neq('status', 'cancelled')
+      const completedStudents = new Set(
+        (defenseRows || []).map((d: any) => {
+          const pp = Array.isArray(d.pfe_projects) ? d.pfe_projects[0] : d.pfe_projects
+          return pp?.student_id
+        }).filter(Boolean)
       )
-      const compl = new Set(
-        (statusRows || []).filter((r: { status: string }) => r.status === 'completed').map((r: { student_id: string }) => r.student_id)
-      )
-      pfeInProgressCount = inProg.size
-      pfeCompletedCount = compl.size
+      pfeCompletedCount = completedStudents.size
     }
 
     let profQuery = supabase

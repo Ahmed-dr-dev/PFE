@@ -270,9 +270,9 @@ export default function ProfilePage() {
                   type="password"
                   value={passwordForm.current_password}
                   onChange={(e) => setPasswordForm({ ...passwordForm, current_password: e.target.value })}
-                  disabled
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="Mot de passe actuel"
+                  autoComplete="current-password"
                 />
               </div>
               <div>
@@ -281,9 +281,9 @@ export default function ProfilePage() {
                   type="password"
                   value={passwordForm.new_password}
                   onChange={(e) => setPasswordForm({ ...passwordForm, new_password: e.target.value })}
-                  disabled
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="Au moins 6 caractères"
+                  autoComplete="new-password"
                 />
               </div>
               <div>
@@ -292,17 +292,17 @@ export default function ProfilePage() {
                   type="password"
                   value={passwordForm.confirm_password}
                   onChange={(e) => setPasswordForm({ ...passwordForm, confirm_password: e.target.value })}
-                  disabled
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 cursor-not-allowed"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   placeholder="Confirmer"
+                  autoComplete="new-password"
                 />
               </div>
               <button
                 type="submit"
-                disabled
-                className="px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold opacity-50 cursor-not-allowed"
+                disabled={passwordSaving}
+                className="px-6 py-3 bg-gray-800 text-white rounded-lg font-semibold hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Modification du mot de passe désactivée
+                {passwordSaving ? 'Enregistrement…' : 'Modifier le mot de passe'}
               </button>
             </div>
           </div>

@@ -33,6 +33,7 @@ export default function MeetingsPage() {
     location: '',
   })
 
+
   useEffect(() => {
     if (id) {
       async function fetchMeetings() {
@@ -46,7 +47,7 @@ export default function MeetingsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     try {
       if (editingMeeting) {
         // Update meeting

@@ -1,8 +1,12 @@
-import { defenseDateInPeriod, parseDefenseDateOnly, resolveDefensePeriod } from '@/lib/defense-period'
+import { parseDefenseDateOnly } from '@/lib/defense-period'
 import { requireAuth } from '@/lib/auth'
 import { getSupabaseForAdminData } from '@/lib/supabase/admin-server'
 import { NextResponse } from 'next/server'
 
+function timeToMinutes(t: string): number {
+  const [h, m] = String(t).slice(0, 5).split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
 
 export async function GET() {
   try {
@@ -48,8 +52,7 @@ export async function POST(request: Request) {
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
     const body = await request.json()
-    const { pfe_project_id, scheduled_date, scheduled_time, room, notes, duration_minutes: durationRaw, jury_professor_ids: juryIdsRaw } =
-      body
+    const { pfe_project_id, scheduled_date, scheduled_time, room, notes, duration_minutes: durationRaw, jury_professor_ids: juryIdsRaw } = body
 
     const dateOnly = typeof scheduled_date === 'string' ? parseDefenseDateOnly(scheduled_date) : null
     if (!pfe_project_id || !dateOnly) {
@@ -61,34 +64,15 @@ export async function POST(request: Request) {
         ? Math.min(240, Math.max(15, Math.floor(durationRaw)))
         : 30
 
+    const today = new Date().toISOString().split('T')[0]
+    if (dateOnly < today) {
+      return NextResponse.json(
+        { error: 'Impossible de planifier une soutenance dans le passé.' },
+        { status: 400 }
+      )
+    }
+
     const supabase = await getSupabaseForAdminData()
-
-    const { data: periodRows } = await supabase
-      .from('platform_settings')
-      .select('key, value')
-      .in('key', ['defense_period_start', 'defense_period_end'])
-
-    const periodMap = Object.fromEntries((periodRows || []).map((r) => [r.key, (r.value || '').trim()]))
-    const period = resolveDefensePeriod(periodMap.defense_period_start, periodMap.defense_period_end)
-
-    if (!period.complete) {
-      return NextResponse.json(
-        {
-          error:
-            'Définissez d’abord la période des soutenances (date de début et date de fin) dans Annonces & paramètres, puis enregistrez.',
-        },
-        { status: 400 }
-      )
-    }
-
-    if (!defenseDateInPeriod(dateOnly, period)) {
-      return NextResponse.json(
-        {
-          error: `La date de soutenance doit être entre ${period.start} et ${period.end} (période officielle).`,
-        },
-        { status: 400 }
-      )
-    }
 
     const { data: project, error: pErr } = await supabase
       .from('pfe_projects')
@@ -101,37 +85,34 @@ export async function POST(request: Request) {
     }
 
     if (!project.supervisor_id) {
-      return NextResponse.json({ error: 'Ce projet n’a pas d’encadrant assigné' }, { status: 400 })
+      return NextResponse.json({ error: "Ce projet n'a pas d'encadrant assign\u00e9" }, { status: 400 })
     }
 
     const pst = String(project.status || '').toLowerCase()
     if (pst === 'rejected' || pst === 'completed') {
       return NextResponse.json(
-        { error: 'Ce projet ne peut pas recevoir de soutenance (statut rejeté ou déjà terminé).' },
+        { error: 'Ce projet ne peut pas recevoir de soutenance (statut rejet\u00e9 ou d\u00e9j\u00e0 termin\u00e9).' },
         { status: 400 }
       )
     }
 
     if (!project.app_validated) {
       return NextResponse.json(
-        { error: 'L’application de l’étudiant doit être validée avant de planifier une soutenance.' },
+        { error: "L'application de l'\u00e9tudiant doit \u00eatre valid\u00e9e avant de planifier une soutenance." },
         { status: 400 }
       )
     }
 
     if (!project.rapport_validated) {
       return NextResponse.json(
-        { error: 'Le rapport de l’étudiant doit être validé avant de planifier une soutenance.' },
+        { error: "Le rapport de l'\u00e9tudiant doit \u00eatre valid\u00e9 avant de planifier une soutenance." },
         { status: 400 }
       )
     }
 
     if (!project.soutenance_validated) {
       return NextResponse.json(
-        {
-          error:
-            'L’encadrant doit valider l’étudiant pour la soutenance (suivi → Valider pour la soutenance).',
-        },
+        { error: "L'encadrant doit valider l'\u00e9tudiant pour la soutenance (suivi \u2192 Valider pour la soutenance)." },
         { status: 400 }
       )
     }
@@ -144,12 +125,12 @@ export async function POST(request: Request) {
       .maybeSingle()
 
     if (existingDef) {
-      return NextResponse.json({ error: 'Une soutenance non annulée existe déjà pour ce projet' }, { status: 400 })
+      return NextResponse.json({ error: 'Une soutenance non annul\u00e9e existe d\u00e9j\u00e0 pour ce projet' }, { status: 400 })
     }
 
     if (!Array.isArray(juryIdsRaw) || juryIdsRaw.length !== 3) {
       return NextResponse.json(
-        { error: 'Le jury doit comporter exactement 3 enseignants : l’encadrant puis deux autres membres.' },
+        { error: "Le jury doit comporter exactement 3 enseignants\u00a0: l'encadrant puis deux autres membres." },
         { status: 400 }
       )
     }
@@ -158,14 +139,42 @@ export async function POST(request: Request) {
     const supId = project.supervisor_id as string
     if (juryProfessorIds[0] !== supId) {
       return NextResponse.json(
-        { error: 'Le premier membre du jury doit être l’encadrant de l’étudiant' },
+        { error: "Le premier membre du jury doit \u00eatre l'encadrant de l'\u00e9tudiant" },
         { status: 400 }
       )
     }
     const uniq = new Set(juryProfessorIds)
     if (uniq.size !== 3) {
-      return NextResponse.json({ error: 'Les trois membres du jury doivent être distincts' }, { status: 400 })
+      return NextResponse.json({ error: 'Les trois membres du jury doivent \u00eatre distincts' }, { status: 400 })
     }
+
+    // Check: supervisor must not already supervise another defense at the same date/time slot
+    const { data: sameDateDefenses } = await supabase
+      .from('defenses')
+      .select('id, scheduled_time, duration_minutes, jury_professor_ids')
+      .eq('scheduled_date', dateOnly)
+      .neq('status', 'cancelled')
+
+    const supervisorConflict = (sameDateDefenses || []).some((dc: any) => {
+      const ids: string[] = dc.jury_professor_ids || []
+      if (ids[0] !== supId) return false
+      if (scheduled_time && dc.scheduled_time) {
+        const newStart = timeToMinutes(scheduled_time)
+        const newEnd = newStart + duration
+        const existStart = timeToMinutes(String(dc.scheduled_time))
+        const existEnd = existStart + (dc.duration_minutes || 30)
+        return newStart < existEnd && newEnd > existStart
+      }
+      return true
+    })
+
+    if (supervisorConflict) {
+      return NextResponse.json(
+        { error: 'Cet encadrant supervise d\u00e9j\u00e0 un autre \u00e9tudiant sur ce cr\u00e9neau.' },
+        { status: 400 }
+      )
+    }
+
     const { data: jurors, error: jErr } = await supabase
       .from('profiles')
       .select('id, full_name, role')
@@ -174,7 +183,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Membres du jury invalides' }, { status: 400 })
     }
     if (jurors.some((j) => j.role !== 'professor')) {
-      return NextResponse.json({ error: 'Tous les membres du jury doivent être des enseignants' }, { status: 400 })
+      return NextResponse.json({ error: 'Tous les membres du jury doivent \u00eatre des enseignants' }, { status: 400 })
     }
     const orderMap = new Map(juryProfessorIds.map((id, i) => [id, i]))
     const juryNames = [...jurors]
@@ -190,19 +199,15 @@ export async function POST(request: Request) {
       notes: typeof notes === 'string' && notes.trim() ? notes.trim().slice(0, 4000) : null,
       status: 'scheduled',
       duration_minutes: duration,
+      jury_professor_ids: juryProfessorIds,
     }
-
-    insertPayload.jury_professor_ids = juryProfessorIds
 
     const { data, error } = await supabase.from('defenses').insert(insertPayload).select().single()
 
     if (error) {
       if (error.message?.includes('duration_minutes') || error.message?.includes('jury_professor_ids')) {
         return NextResponse.json(
-          {
-            error:
-              'Colonnes de soutenance manquantes. Exécutez la migration defenses-scheduling-supervisor-ready.sql.',
-          },
+          { error: 'Colonnes de soutenance manquantes. Ex\u00e9cutez la migration defenses-scheduling-supervisor-ready.sql.' },
           { status: 503 }
         )
       }
@@ -211,8 +216,7 @@ export async function POST(request: Request) {
 
     const { data: fullRow } = await supabase
       .from('defenses')
-      .select(
-        `
+      .select(`
         *,
         pfe_projects(
           id,
@@ -224,8 +228,7 @@ export async function POST(request: Request) {
           topic:pfe_topics(id, title),
           supervisor:profiles!pfe_projects_supervisor_id_fkey(id, full_name)
         )
-      `
-      )
+      `)
       .eq('id', data.id)
       .single()
 

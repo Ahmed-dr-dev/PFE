@@ -1,5 +1,5 @@
 import { requireAuth } from '@/lib/auth'
-import { createClient } from '@/lib/supabase/server'
+import { getSupabaseForAdminData } from '@/lib/supabase/admin-server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -7,7 +7,7 @@ export async function GET() {
     const auth = await requireAuth('admin')
     if (auth.error) return NextResponse.json({ error: auth.error }, { status: auth.status })
 
-    const supabase = await createClient()
+    const supabase = await getSupabaseForAdminData()
     const { data, error } = await supabase
       .from('support_contact_submissions')
       .select('id, name, email, subject, message, created_at')

@@ -1,14 +1,55 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { DeadlineBlockedPanel } from '../deadline-blocked-panel'
+
+function isDeadlinePassed(value: string | null | undefined): boolean {
+  if (!value?.trim()) return false
+  const ymd = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (ymd) {
+    return Date.now() > Date.UTC(+ymd[1], +ymd[2] - 1, +ymd[3], 23, 59, 59, 999)
+  }
+  const t = new Date(value)
+  if (isNaN(t.getTime())) return false
+  return Date.now() > Date.UTC(t.getUTCFullYear(), t.getUTCMonth(), t.getUTCDate(), 23, 59, 59, 999)
+}
+
+function formatDeadlineFr(value: string | null | undefined): string {
+  if (!value?.trim()) return ''
+  const ymd = value.trim().match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (ymd) {
+    const d = new Date(Date.UTC(+ymd[1], +ymd[2] - 1, +ymd[3]))
+    return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+  }
+  const t = new Date(value)
+  return isNaN(t.getTime()) ? value : t.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+}
 
 export default function StudentInternshipRequestsPage() {
+  const [deadlineStatus, setDeadlineStatus] = useState<'loading' | 'blocked' | 'ok'>('loading')
+  const [deadlineLabel, setDeadlineLabel] = useState('')
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ company: '', position: '', description: '', start_date: '', end_date: '' })
 
   useEffect(() => {
+    fetch('/api/student/settings')
+      .then((r) => r.json())
+      .then((data) => {
+        const val = data.settings?.internship_request_deadline
+        if (isDeadlinePassed(val)) {
+          setDeadlineLabel(formatDeadlineFr(val))
+          setDeadlineStatus('blocked')
+        } else {
+          setDeadlineStatus('ok')
+        }
+      })
+      .catch(() => setDeadlineStatus('ok'))
+  }, [])
+
+  useEffect(() => {
+    if (deadlineStatus !== 'ok') return
     async function load() {
       try {
         const res = await fetch('/api/student/internship-requests')
@@ -20,7 +61,7 @@ export default function StudentInternshipRequestsPage() {
       }
     }
     load()
-  }, [])
+  }, [deadlineStatus])
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,6 +86,24 @@ export default function StudentInternshipRequestsPage() {
 
   const statusLabels: Record<string, string> = { pending: 'En attente', approved: 'Approuvée', rejected: 'Rejetée' }
   const statusColors: Record<string, string> = { pending: 'border-orange-500/50', approved: 'border-emerald-200', rejected: 'border-red-200' }
+
+  if (deadlineStatus === 'loading') {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-gray-600">Chargement...</p>
+      </div>
+    )
+  }
+
+  if (deadlineStatus === 'blocked') {
+    return (
+      <DeadlineBlockedPanel
+        title="Délai de demande de stage dépassé"
+        message={`La date limite pour soumettre une demande de stage est dépassée${deadlineLabel ? ` (${deadlineLabel})` : '.'}`}
+        deadlineLabel={deadlineLabel}
+      />
+    )
+  }
 
   if (loading) {
     return (

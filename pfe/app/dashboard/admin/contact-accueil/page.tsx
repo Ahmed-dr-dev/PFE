@@ -39,28 +39,31 @@ function buildReplyMailto(s: ContactSubmission, draft: string) {
 export default function AdminContactAccueilPage() {
   const [contacts, setContacts] = useState<ContactSubmission[]>([])
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState<string | null>(null)
   const [expandedContactId, setExpandedContactId] = useState<string | null>(null)
   const [replyDraftById, setReplyDraftById] = useState<Record<string, string>>({})
 
-  useEffect(() => {
-    let cancelled = false
-    ;(async () => {
-      setLoading(true)
-      try {
-        const res = await fetch('/api/admin/support-contact')
-        if (res.ok && !cancelled) {
-          const j = await res.json()
-          setContacts(Array.isArray(j.submissions) ? j.submissions : [])
-        }
-      } catch (e) {
-        console.error(e)
-      } finally {
-        if (!cancelled) setLoading(false)
+  const loadContacts = async () => {
+    setLoading(true)
+    setFetchError(null)
+    try {
+      const res = await fetch('/api/admin/support-contact')
+      const j = await res.json()
+      if (!res.ok) {
+        setFetchError(j.error || `Erreur ${res.status}`)
+      } else {
+        setContacts(Array.isArray(j.submissions) ? j.submissions : [])
       }
-    })()
-    return () => {
-      cancelled = true
+    } catch (e) {
+      setFetchError('Impossible de joindre le serveur.')
+      console.error(e)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
+    loadContacts()
   }, [])
 
   return (
@@ -79,17 +82,34 @@ export default function AdminContactAccueilPage() {
             supplémentaire en base).
           </p>
         </div>
-        {!loading && contacts.length > 0 ? (
-          <span className="text-sm font-semibold tabular-nums text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1.5 w-fit shrink-0">
-            {contacts.length} message{contacts.length !== 1 ? 's' : ''}
-          </span>
-        ) : null}
+        <div className="flex items-center gap-2 shrink-0">
+          {!loading && contacts.length > 0 && (
+            <span className="text-sm font-semibold tabular-nums text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-1.5">
+              {contacts.length} message{contacts.length !== 1 ? 's' : ''}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={loadContacts}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Actualiser
+          </button>
+        </div>
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-200 shadow-lg overflow-hidden">
         <div className="p-4 sm:p-6">
           {loading ? (
             <p className="text-gray-600 text-sm py-4">Chargement des messages…</p>
+          ) : fetchError ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              Erreur : {fetchError}
+            </div>
           ) : contacts.length === 0 ? (
             <p className="text-gray-500 text-sm py-4">Aucun message pour le moment.</p>
           ) : (

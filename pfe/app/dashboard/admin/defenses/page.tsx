@@ -215,6 +215,25 @@ export default function DefensesPage() {
       }) || null
   }, [defenses, scheduledDate, scheduledTime, durationMinutes])
 
+  // Supervisor already supervising another defense at the same date/time slot
+  const supervisorConflict = useMemo(() => {
+    if (!scheduledDate || !supervisorId) return null
+    return defenses
+      .filter((d) => d.status !== 'cancelled' && d.scheduled_date === scheduledDate)
+      .find((d) => {
+        const ids: string[] = d.jury_professor_ids || []
+        if (ids[0] !== supervisorId) return false
+        if (scheduledTime && d.scheduled_time) {
+          const newStart = timeToMinutes(scheduledTime)
+          const newEnd = newStart + durationMinutes
+          const existStart = timeToMinutes(String(d.scheduled_time).slice(0, 5))
+          const existEnd = existStart + (d.duration_minutes || 30)
+          return newStart < existEnd && newEnd > existStart
+        }
+        return true
+      }) || null
+  }, [defenses, scheduledDate, scheduledTime, durationMinutes, supervisorId])
+
   // Professors available at the selected slot (not busy, not the supervisor)
   const availableProfessors = useMemo(() => {
     if (!scheduledDate) return otherProfessors
@@ -264,10 +283,10 @@ export default function DefensesPage() {
       setSubmitError('Impossible de planifier une soutenance dans le passé.')
       return
     }
-    if (slotConflict) {
-      const pp = normalizePfeProject(slotConflict)
-      const name = pp?.student?.full_name || 'un autre étudiant'
-      setSubmitError()
+    if (supervisorConflict) {
+      const pp2 = normalizePfeProject(supervisorConflict)
+      const name2 = pp2?.student?.full_name || 'un autre étudiant'
+      setSubmitError(`L'encadrant encadre déjà ${name2} sur ce créneau. Choisissez un autre horaire ou un autre étudiant.`)
       return
     }
     if (!pfeProjectId) {
@@ -312,6 +331,27 @@ export default function DefensesPage() {
       setSubmitting(false)
     }
   }
+
+  // Professors busy at the edit slot (for edit form jury filtering)
+  const editBusyProfessorIds = useMemo(() => {
+    if (!editId || !editDate) return new Set<string>()
+    const busy = new Set<string>()
+    defenses
+      .filter((d) => d.status !== 'cancelled' && d.scheduled_date === editDate && d.id !== editId)
+      .forEach((d) => {
+        const ids: string[] = d.jury_professor_ids || []
+        if (editTime && d.scheduled_time) {
+          const newStart = timeToMinutes(editTime)
+          const newEnd = newStart + editDuration
+          const existStart = timeToMinutes(String(d.scheduled_time).slice(0, 5))
+          const existEnd = existStart + (d.duration_minutes || 30)
+          if (newStart < existEnd && newEnd > existStart) ids.forEach((id) => busy.add(id))
+        } else {
+          ids.forEach((id) => busy.add(id))
+        }
+      })
+    return busy
+  }, [defenses, editDate, editTime, editDuration, editId])
 
   const openEdit = (d: any) => {
     setEditId(d.id)
@@ -401,18 +441,13 @@ export default function DefensesPage() {
   }
 
   const today = new Date().toISOString().split('T')[0]
+  const dateMin = today
 
-  // min date = the later of today and the period start
-  const dateMin = defensePeriodComplete && periodStart
-    ? periodStart > today ? periodStart : today
-    : today
 
-  const canOpenForm = defensePeriodComplete && eligibleProjects.some((p) => !scheduledIds.has(p.id))
-  const planifierTitle = !defensePeriodComplete
-    ? 'Définissez d’abord la période des soutenances (Annonces & paramètres)'
-    : !eligibleProjects.some((p) => !scheduledIds.has(p.id))
-      ? 'Aucun étudiant : les encadrants doivent valider leurs étudiants, ou tous ont déjà une soutenance'
-      : undefined
+  const canOpenForm = eligibleProjects.some((p) => !scheduledIds.has(p.id))
+  const planifierTitle = !canOpenForm
+    ? 'Aucun étudiant : les encadrants doivent valider leurs étudiants, ou tous ont déjà une soutenance'
+    : undefined
 
   if (loading) {
     return (
@@ -430,7 +465,7 @@ export default function DefensesPage() {
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Soutenances</span>
           </h1>
           <p className="text-gray-600 text-lg">
-            Flux : période (Annonces) → validation encadrant → planification ici (jury à 3, date dans la période).
+            Planifiez les soutenances : jury à 3 enseignants + toute date future. Les encadrants doivent avoir validé leurs étudiants au préalable.
           </p>
         </div>
         <div className="flex flex-col xs:flex-row gap-2 shrink-0">
@@ -598,18 +633,10 @@ export default function DefensesPage() {
             <p className="text-gray-600 text-sm">Chargement des options…</p>
           ) : (
             <>
-              {!defensePeriodComplete && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 text-amber-900 text-sm px-4 py-3">
-                  La planification est bloquée tant que la période officielle (deux dates, début ≤ fin) n’est pas enregistrée dans{' '}
-                  <Link href="/dashboard/admin/annonces" className="font-semibold underline">
-                    Annonces &amp; paramètres
-                  </Link>
-                  .
-                </div>
-              )}
-              {defensePeriodComplete && (
-                <p className="text-sm text-gray-600">
-                  Période autorisée pour la date de soutenance : <strong>{periodStart}</strong> → <strong>{periodEnd}</strong>
+              {(periodStart || periodEnd) && (
+                <p className="text-sm text-gray-500">
+                  Période officielle (référence) : <strong>{periodStart || '—'}</strong> → <strong>{periodEnd || '—'}</strong>.
+                  Vous pouvez planifier toute date future, y compris en dehors de cette période.
                 </p>
               )}
 
@@ -623,15 +650,15 @@ export default function DefensesPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-1">
                     <label className="block text-sm font-semibold text-gray-900">Date <span className="text-red-500">*</span></label>
-                    <p className="text-xs text-gray-500">Dans la période officielle.</p>
+                    <p className="text-xs text-gray-500">Toute date future acceptée.</p>
                     <input
                       required
                       type="date"
                       min={dateMin}
-                      max={defensePeriodComplete && periodEnd ? periodEnd : undefined}
+                      
                       value={scheduledDate}
                       onChange={(e) => { setScheduledDate(e.target.value); setJuror2Id(''); setJuror3Id('') }}
-                      className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${scheduledDate && scheduledDate < today ? 'border-red-400 bg-red-50' : slotConflict ? 'border-red-400 bg-red-50' : 'bg-gray-50 border-gray-200'}`}
+                      className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${scheduledDate && scheduledDate < today ? 'border-red-400 bg-red-50' : 'bg-gray-50 border-gray-200'}`}
                     />
                     {scheduledDate && scheduledDate < today && (
                       <p className="text-xs font-semibold text-red-600 flex items-center gap-1 mt-1">
@@ -649,7 +676,7 @@ export default function DefensesPage() {
                       type="time"
                       value={scheduledTime}
                       onChange={(e) => { setScheduledTime(e.target.value); setJuror2Id(''); setJuror3Id('') }}
-                      className={`w-full px-4 py-2.5 border rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${slotConflict ? 'border-red-400 bg-red-50' : 'bg-gray-50 border-gray-200'}`}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-gray-50"
                     />
                   </div>
                   <div className="space-y-1">
@@ -666,35 +693,34 @@ export default function DefensesPage() {
                     </select>
                   </div>
                 </div>
-                {slotConflict && (() => {
-                  const pp = normalizePfeProject(slotConflict)
+                {supervisorConflict && (() => {
+                  const ppSup = normalizePfeProject(supervisorConflict)
                   return (
                     <div className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 px-3 py-2.5 text-sm text-red-800">
                       <svg className="w-4 h-4 shrink-0 mt-0.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>
-                        Créneau occupé par <strong>{pp?.student?.full_name || 'un étudiant'}</strong> à{' '}
-                        <strong>{String(slotConflict.scheduled_time).slice(0, 5)}</strong> ({slotConflict.duration_minutes} min).
+                        L’encadrant supervise déjà <strong>{ppSup?.student?.full_name || 'un autre étudiant'}</strong> sur ce créneau.
                         Choisissez un autre horaire.
                       </span>
                     </div>
                   )
                 })()}
-                {scheduledDate && !slotConflict && defenses.filter(d => d.status !== 'cancelled' && d.scheduled_date === scheduledDate).length > 0 && (
+                {scheduledDate && defenses.filter(d => d.status !== 'cancelled' && d.scheduled_date === scheduledDate).length > 0 && (
                   <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 space-y-1">
                     <p className="font-semibold">Soutenances déjà prévues ce jour :</p>
                     {defenses.filter(d => d.status !== 'cancelled' && d.scheduled_date === scheduledDate).map(d => {
-                      const pp2 = normalizePfeProject(d)
+                      const ppDay = normalizePfeProject(d)
                       return (
                         <p key={d.id}>
-                          • {pp2?.student?.full_name || '?'} — {d.scheduled_time ? String(d.scheduled_time).slice(0, 5) : '—'} ({d.duration_minutes} min)
+                          • {ppDay?.student?.full_name || '?'} — {d.scheduled_time ? String(d.scheduled_time).slice(0, 5) : '—'} ({d.duration_minutes} min)
                         </p>
                       )
                     })}
                   </div>
                 )}
-                {scheduledDate && !slotConflict && defenses.filter(d => d.status !== 'cancelled' && d.scheduled_date === scheduledDate).length === 0 && (
+                {scheduledDate && defenses.filter(d => d.status !== 'cancelled' && d.scheduled_date === scheduledDate).length === 0 && (
                   <p className="text-xs text-emerald-700 font-medium flex items-center gap-1">
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -853,7 +879,7 @@ export default function DefensesPage() {
 
           <button
             type="submit"
-            disabled={submitting || optionsLoading || (!!scheduledDate && scheduledDate < today) || !!slotConflict}
+            disabled={submitting || optionsLoading || (!!scheduledDate && scheduledDate < today) || !!supervisorConflict}
             className="px-4 py-2.5 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50"
           >
             {submitting ? 'Enregistrement…' : 'Planifier'}
@@ -982,7 +1008,7 @@ export default function DefensesPage() {
                 {editId === d.id && (() => {
                   const pp2 = normalizePfeProject(d)
                   const supId = pp2?.supervisor?.id || d.jury_professor_ids?.[0] || ''
-                  const editableProfessors = professors.filter((p) => p.id !== supId)
+                  const editableProfessors = professors.filter((p) => p.id !== supId && !editBusyProfessorIds.has(p.id))
                   return (
                     <div className="mt-5 pt-5 border-t border-gray-100">
                       <p className="text-sm font-semibold text-gray-700 mb-4">Modifier la soutenance</p>
@@ -996,7 +1022,7 @@ export default function DefensesPage() {
                             type="date"
                             value={editDate}
                             min={dateMin}
-                            max={defensePeriodComplete && periodEnd ? periodEnd : undefined}
+                            
                             onChange={(e) => setEditDate(e.target.value)}
                             className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                           />

@@ -236,8 +236,8 @@ export default function DashboardPage() {
               <KpiCard
                 tone="emerald"
                 value={stats.pfeInProgressCount}
-                label="PFE au statut « en cours »"
-                hint="Étudiants avec au moins un projet dont le statut est « en cours » (workflow)."
+                label="PFE en cours"
+                hint="Nombre de PFE affectés (étudiants ayant un encadrant assigné)."
                 icon={
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -284,7 +284,8 @@ export default function DashboardPage() {
               <KpiCard
                 tone="slate"
                 value={stats.pfeCompletedCount}
-                label="PFE terminés (étudiants)"
+                label="PFE terminés"
+                hint="Étudiants ayant une soutenance planifiée (date de soutenance fixée)."
                 icon={
                   <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -292,22 +293,6 @@ export default function DashboardPage() {
                       strokeLinejoin="round"
                       strokeWidth={2}
                       d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                }
-              />
-              <KpiCard
-                tone="orange"
-                value={stats.pendingAssignmentsFiltered}
-                label="Demandes d’affectation (filtre)"
-                hint="Demandes en attente liées aux étudiants du périmètre (si colonne disponible)."
-                icon={
-                  <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                     />
                   </svg>
                 }
