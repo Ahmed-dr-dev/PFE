@@ -34,18 +34,6 @@ export async function GET() {
       applicationsCount = count || 0
     }
 
-    // Most advanced student: most required docs uploaded + validation flags
-    let topStudent: {
-      id: string
-      full_name: string | null
-      docsUploaded: number
-      docsTotal: number
-      appValidated: boolean
-      rapportValidated: boolean
-      soutenanceValidated: boolean
-      topicTitle: string | null
-    } | null = null
-
     const { data: projects } = await supabase
       .from('pfe_projects')
       .select(`
@@ -59,8 +47,22 @@ export async function GET() {
       `)
       .eq('supervisor_id', userId)
 
+    type RankedStudent = {
+      id: string
+      full_name: string | null
+      docsUploaded: number
+      docsTotal: number
+      appValidated: boolean
+      rapportValidated: boolean
+      soutenanceValidated: boolean
+      topicTitle: string | null
+      score: number
+    }
+
+    let rankedStudents: RankedStudent[] = []
+
     if (projects && projects.length > 0) {
-      const scored = projects.map((p: any) => {
+      const scored: RankedStudent[] = projects.map((p: any) => {
         const student = Array.isArray(p.student) ? p.student[0] : p.student
         const topic = Array.isArray(p.topic) ? p.topic[0] : p.topic
         const docs: any[] = p.documents || []
@@ -87,25 +89,15 @@ export async function GET() {
         }
       })
 
-      scored.sort((a: any, b: any) => b.score - a.score)
-      const best = scored[0]
-      topStudent = {
-        id: best.id,
-        full_name: best.full_name,
-        docsUploaded: best.docsUploaded,
-        docsTotal: best.docsTotal,
-        appValidated: best.appValidated,
-        rapportValidated: best.rapportValidated,
-        soutenanceValidated: best.soutenanceValidated,
-        topicTitle: best.topicTitle,
-      }
+      scored.sort((a, b) => b.score - a.score)
+      rankedStudents = scored
     }
 
     return NextResponse.json({
       topicsProposed: topicsCount || 0,
       studentsSupervised: studentsCount || 0,
       pendingApplications: applicationsCount || 0,
-      topStudent,
+      rankedStudents,
     })
   } catch {
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 })

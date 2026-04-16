@@ -93,8 +93,14 @@ export default function TopicsPage() {
                       Réservé
                     </span>
                   ) : (
-                    <span className="px-3 py-1 rounded-lg text-xs font-semibold border bg-gray-100 text-gray-900">
-                      {topic.status}
+                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${
+                      topic.status === 'approved'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : topic.status === 'rejected'
+                          ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-amber-50 text-amber-700 border-amber-200'
+                    }`}>
+                      {topic.status === 'approved' ? 'Approuvé' : topic.status === 'rejected' ? 'Rejeté' : 'En attente'}
                     </span>
                   )}
                 </div>

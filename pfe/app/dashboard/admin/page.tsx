@@ -44,8 +44,7 @@ type Stats = {
   }[]
 }
 
-/** Always listed in the Année filter even if no student has it yet in the DB. */
-const YEAR_FILTER_EXTRAS = ['3ème année Master']
+const YEAR_FILTER_EXTRAS = ['3ème année ', '2ème année Master']
 
 const emptyStats: Stats = {
   filters: { department: null, year: null },
@@ -139,9 +138,7 @@ export default function DashboardPage() {
 
   const deptLabel = (d: string) => d.charAt(0).toUpperCase() + d.slice(1)
 
-  const yearFilterOptions = [...new Set([...YEAR_FILTER_EXTRAS, ...stats.filterOptions.years])].sort((a, b) =>
-    a.localeCompare(b, 'fr')
-  )
+  const yearFilterOptions = YEAR_FILTER_EXTRAS
 
   return (
     <div className="space-y-8 pb-12">
