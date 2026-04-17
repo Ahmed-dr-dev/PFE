@@ -56,6 +56,17 @@ const statusLabels: Record<string, string> = {
   completed: 'Terminé',
 }
 
+function computeProgress(pfe: any): number {
+  if (pfe.progress != null) return Math.min(100, Math.max(0, Number(pfe.progress)))
+  let score = 0
+  const st = pfe.status
+  if (st === 'approved' || st === 'in_progress' || st === 'completed') score += 25
+  if (pfe.app_validated) score += 25
+  if (pfe.rapport_validated) score += 25
+  if (pfe.soutenance_validated || st === 'completed') score += 25
+  return score
+}
+
 function LoadingBlock() {
   return (
     <div className="space-y-8">
@@ -227,20 +238,51 @@ function SuiviMonPfeInner() {
                 <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{myPfe.topic.requirements}</p>
               </div>
             )}
-            {myPfe.progress != null && (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Progression</p>
-                  <span className="text-sm font-semibold text-gray-900">{myPfe.progress || 0}%</span>
+            {(() => {
+              const pct = computeProgress(myPfe)
+              const milestones = [
+                { label: 'Affectation', done: myPfe.status === 'approved' || myPfe.status === 'in_progress' || myPfe.status === 'completed', pct: 25 },
+                { label: 'Application', done: !!myPfe.app_validated, pct: 50 },
+                { label: 'Rapport', done: !!myPfe.rapport_validated, pct: 75 },
+                { label: 'Soutenance', done: !!myPfe.soutenance_validated || myPfe.status === 'completed', pct: 100 },
+              ]
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Progression du projet</p>
+                    <span className={`text-lg font-extrabold ${pct === 100 ? 'text-emerald-600' : 'text-gray-900'}`}>{pct}%</span>
+                  </div>
+                  <div className="relative">
+                    <div className="w-full bg-gray-100 rounded-full h-4">
+                      <div
+                        className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-4 rounded-full transition-all duration-700"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    {/* milestone dots on the bar */}
+                    <div className="absolute inset-y-0 left-0 right-0 flex items-center">
+                      {milestones.map((m) => (
+                        <div
+                          key={m.label}
+                          className="absolute -translate-x-1/2"
+                          style={{ left: `${m.pct}%` }}
+                        >
+                          <div className={`w-4 h-4 rounded-full border-2 border-white shadow-sm ${m.done ? 'bg-emerald-500' : 'bg-gray-300'}`} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {/* milestone labels */}
+                  <div className="flex mt-3">
+                    {milestones.map((m) => (
+                      <div key={m.label} className="flex-1 text-center" style={{ maxWidth: '25%' }}>
+                        <p className={`text-xs font-semibold truncate ${m.done ? 'text-emerald-600' : 'text-gray-400'}`}>{m.label}</p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-3">
-                  <div
-                    className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-3 rounded-full transition-all"
-                    style={{ width: `${myPfe.progress || 0}%` }}
-                  />
-                </div>
-              </div>
-            )}
+              )
+            })()}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200 text-sm">
               {myPfe.start_date && (
                 <div>
@@ -530,27 +572,42 @@ function SuiviMonPfeInner() {
           className="w-full text-left relative bg-white rounded-2xl border-2 border-gray-200 p-8 shadow-xl overflow-hidden transition-all hover:border-emerald-300 hover:shadow-emerald-500/10 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
         >
           <div className="absolute top-0 right-0 w-56 h-56 bg-gradient-to-br from-emerald-500/10 to-cyan-500/10 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none" />
-          <div className="relative flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-            <div className="space-y-3 min-w-0 flex-1">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Votre sujet</p>
-              <h2 className="text-2xl font-bold text-gray-900 leading-tight">{myPfe.topic?.title || 'Sujet PFE'}</h2>
-              <p className="text-gray-600 text-sm">Cliquez pour voir l&apos;avancement, la progression et les documents partagés.</p>
+          <div className="relative space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+              <div className="space-y-2 min-w-0 flex-1">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Votre sujet</p>
+                <h2 className="text-2xl font-bold text-gray-900 leading-tight">{myPfe.topic?.title || 'Sujet PFE'}</h2>
+              </div>
+              <div className="flex flex-col items-start sm:items-end gap-2 shrink-0">
+                <span className={`px-3 py-1.5 rounded-xl text-sm font-semibold border ${statusColors[myPfe.status] || statusColors.pending}`}>
+                  {statusLabels[myPfe.status] || 'Inconnu'}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col items-start sm:items-end gap-3 shrink-0">
-              <span
-                className={`px-4 py-2 rounded-xl text-sm font-semibold border ${
-                  statusColors[myPfe.status] || statusColors.pending
-                }`}
-              >
-                {statusLabels[myPfe.status] || 'Inconnu'}
-              </span>
-              <span className="inline-flex items-center gap-2 text-emerald-600 font-bold text-sm">
-                Voir l&apos;avancement
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </span>
-            </div>
+            {/* Compact progress bar */}
+            {(() => {
+              const pct = computeProgress(myPfe)
+              return (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-semibold text-gray-500">Progression</p>
+                    <span className="text-xs font-bold text-gray-900">{pct}%</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-2.5">
+                    <div
+                      className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2.5 rounded-full transition-all duration-700"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })()}
+            <span className="inline-flex items-center gap-2 text-emerald-600 font-bold text-sm">
+              Voir l&apos;avancement détaillé
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </span>
           </div>
         </button>
       )}
