@@ -12,7 +12,12 @@ type Defense = {
   status: string
   jury_members: string[] | null
   note: number | null
+  myRole?: 'encadrant' | 'rapporteur'
   pfe_project?: {
+    student?: { full_name: string | null; email: string } | null
+    topic?: { title: string | null } | null
+  } | null
+  pfe_projects?: {
     student?: { full_name: string | null; email: string } | null
     topic?: { title: string | null } | null
   } | null
@@ -40,8 +45,25 @@ export default function ProfDefenses() {
   const load = useCallback(async () => {
     setError('')
     try {
-      const data = await api.get<{ defenses: Defense[] }>('/api/professor/defenses')
-      setDefenses(data.defenses || [])
+      const [supervisorRes, rapporteurRes] = await Promise.all([
+        api.get<{ defenses: Defense[] }>('/api/professor/defenses'),
+        api.get<{ defenses: Defense[] }>('/api/professor/rapporteur-defenses'),
+      ])
+      const supervisorDefs = (supervisorRes.defenses || []).map((d) => ({ ...d, myRole: 'encadrant' as const }))
+      const rapporteurDefs = (rapporteurRes.defenses || []).map((d) => ({
+        ...d,
+        myRole: 'rapporteur' as const,
+        pfe_projects: d.pfe_project,
+      }))
+      // Merge and deduplicate by id (supervisor takes priority)
+      const seen = new Set<string>(supervisorDefs.map((d) => d.id))
+      const merged = [...supervisorDefs, ...rapporteurDefs.filter((d) => !seen.has(d.id))]
+      merged.sort((a, b) => {
+        if (!a.scheduled_date) return 1
+        if (!b.scheduled_date) return -1
+        return a.scheduled_date.localeCompare(b.scheduled_date)
+      })
+      setDefenses(merged)
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -59,11 +81,12 @@ export default function ProfDefenses() {
       <SectionTitle>Mes soutenances ({defenses.length})</SectionTitle>
 
       {defenses.length === 0 ? (
-        <Empty message="Aucune soutenance planifiée pour vos étudiants" />
+        <Empty message="Aucune soutenance planifiée" />
       ) : (
         defenses.map((d) => {
-          const student = d.pfe_project?.student
-          const topic = d.pfe_project?.topic
+          const proj = d.pfe_projects || d.pfe_project
+          const student = proj?.student
+          const topic = proj?.topic
           return (
             <Card key={d.id} style={sty.card}>
               <Row>
@@ -75,7 +98,14 @@ export default function ProfDefenses() {
                     <Text style={sty.topicTitle} numberOfLines={2}>{topic.title}</Text>
                   ) : null}
                 </View>
-                <Badge label={statusLabel(d.status)} color={statusColor(d.status)} />
+                <View style={sty.badges}>
+                  {d.myRole === 'rapporteur' ? (
+                    <Badge label="Rapporteur" color={C.violet} />
+                  ) : (
+                    <Badge label="Encadrant" color={C.cyan} />
+                  )}
+                  <Badge label={statusLabel(d.status)} color={statusColor(d.status)} />
+                </View>
               </Row>
 
               <View style={sty.infoRow}>
@@ -131,6 +161,7 @@ const sty = StyleSheet.create({
   card: { gap: 8 },
   studentName: { fontSize: 15, fontWeight: '700', color: C.gray900 },
   topicTitle: { fontSize: 12, color: C.gray500, marginTop: 2 },
+  badges: { flexDirection: 'column', gap: 4, alignItems: 'flex-end' },
   infoRow: { flexDirection: 'row', gap: 6 },
   infoLabel: { fontSize: 13, fontWeight: '600', color: C.gray600, width: 60 },
   infoVal: { fontSize: 13, color: C.gray900, flex: 1 },

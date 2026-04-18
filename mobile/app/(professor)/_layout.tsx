@@ -54,7 +54,7 @@ export default function ProfessorLayout() {
         name="jury"
         options={{
           title: 'Jury — Président',
-          tabBarLabel: 'Jury',
+          tabBarLabel: 'Président',
           tabBarIcon: ({ color, size }) => <Ionicons name="ribbon-outline" size={size} color={color} />,
         }}
       />

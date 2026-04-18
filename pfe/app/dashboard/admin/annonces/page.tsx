@@ -35,6 +35,12 @@ export default function AnnoncesPage() {
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ title: '', content: '', target_audience: 'all' })
 
+  const [planningModalOpen, setPlanningModalOpen] = useState(false)
+  const [planningDefenses, setPlanningDefenses] = useState<any[]>([])
+  const [planningLoading, setPlanningLoading] = useState(false)
+  const [planningPublishing, setPlanningPublishing] = useState(false)
+  const [planningTitle, setPlanningTitle] = useState('')
+
   useEffect(() => {
     async function fetchStats() {
       try {
@@ -191,6 +197,99 @@ export default function AnnoncesPage() {
       if (res.ok) setAnnouncements(announcements.filter((a) => a.id !== id))
     } catch (e) {
       console.error(e)
+    }
+  }
+
+  const MOIS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
+  function fmtDate(iso: string | null): string {
+    if (!iso) return '—'
+    const p = iso.slice(0, 10).split('-')
+    if (p.length !== 3) return iso
+    const [y, m, d] = p.map(Number)
+    return `${d} ${MOIS_FR[(m ?? 1) - 1] ?? ''} ${y}`
+  }
+  function fmtTime(t: string | null): string {
+    if (!t) return ''
+    return ` à ${String(t).slice(0, 5)}`
+  }
+
+  function buildPlanningContent(defenses: any[]): string {
+    const scheduled = defenses
+      .filter((d) => d.status === 'scheduled' || d.status === 'completed')
+      .sort((a, b) => {
+        const dc = (a.scheduled_date || '').localeCompare(b.scheduled_date || '')
+        if (dc !== 0) return dc
+        return (a.scheduled_time || '').localeCompare(b.scheduled_time || '')
+      })
+    if (scheduled.length === 0) return 'Aucune soutenance planifiée.'
+
+    const groups = new Map<string, any[]>()
+    for (const d of scheduled) {
+      const key = d.scheduled_date || 'Sans date'
+      if (!groups.has(key)) groups.set(key, [])
+      groups.get(key)!.push(d)
+    }
+
+    const lines: string[] = []
+    for (const [date, rows] of groups) {
+      lines.push(`📅 ${fmtDate(date)}`)
+      lines.push('─────────────────────────')
+      for (const d of rows) {
+        const p = Array.isArray(d.pfe_projects) ? d.pfe_projects[0] : d.pfe_projects
+        const student = p?.student?.full_name || p?.student?.email || 'Étudiant'
+        const topic = p?.topic?.title ? ` — ${p.topic.title}` : ''
+        const time = fmtTime(d.scheduled_time)
+        const room = d.room ? ` | Salle : ${d.room}` : ''
+        const jury = d.jury_members?.length
+          ? `\n   Jury : ${d.jury_members.join(' · ')}`
+          : ''
+        const note = d.note != null ? ` | Note : ${d.note}/20` : ''
+        lines.push(`• ${student}${topic}\n   ⏰ ${String(d.scheduled_time || '').slice(0, 5) || '—'}${time ? '' : ''}${time}${room}${note}${jury}`)
+      }
+      lines.push('')
+    }
+    return lines.join('\n').trim()
+  }
+
+  const openPlanningModal = async () => {
+    setPlanningLoading(true)
+    setPlanningModalOpen(true)
+    const defaultTitle = `Planning des soutenances${settings.academic_year ? ` — ${settings.academic_year}` : ''}`
+    setPlanningTitle(defaultTitle)
+    try {
+      const res = await fetch('/api/admin/defenses', { cache: 'no-store' })
+      if (res.ok) {
+        const data = await res.json()
+        setPlanningDefenses(data.defenses || [])
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setPlanningLoading(false)
+    }
+  }
+
+  const handlePublishPlanning = async () => {
+    const content = buildPlanningContent(planningDefenses)
+    setPlanningPublishing(true)
+    try {
+      const res = await fetch('/api/admin/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: planningTitle, content, target_audience: 'students' }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAnnouncements([data.announcement, ...announcements])
+        setPlanningModalOpen(false)
+        setPlanningDefenses([])
+      } else {
+        alert((await res.json()).error || 'Erreur')
+      }
+    } catch {
+      alert('Erreur réseau')
+    } finally {
+      setPlanningPublishing(false)
     }
   }
 
@@ -432,12 +531,24 @@ export default function AnnoncesPage() {
       <section>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <h2 className="text-2xl font-bold text-gray-900">Annonces</h2>
-          <button
-            onClick={() => setShowForm(!showForm)}
-            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-cyan-700"
-          >
-            {showForm ? 'Annuler' : 'Nouvelle annonce'}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => void openPlanningModal()}
+              className="px-4 py-2 bg-white border border-emerald-300 text-emerald-700 rounded-lg font-semibold hover:bg-emerald-50 flex items-center gap-2 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Publier le planning des soutenances
+            </button>
+            <button
+              onClick={() => setShowForm(!showForm)}
+              className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-cyan-700"
+            >
+              {showForm ? 'Annuler' : 'Nouvelle annonce'}
+            </button>
+          </div>
         </div>
 
         {showForm && (
@@ -506,6 +617,91 @@ export default function AnnoncesPage() {
           </>
         )}
       </section>
+
+      {/* Planning modal */}
+      {planningModalOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+          onClick={() => { if (!planningPublishing) setPlanningModalOpen(false) }}
+        >
+          <div
+            className="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-200 shrink-0">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Publier le planning des soutenances</h3>
+                <p className="text-sm text-gray-500 mt-1">L&apos;annonce sera envoyée à tous les étudiants.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPlanningModalOpen(false)}
+                disabled={planningPublishing}
+                className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Titre de l&apos;annonce</label>
+                <input
+                  value={planningTitle}
+                  onChange={(e) => setPlanningTitle(e.target.value)}
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-1.5">Aperçu du contenu</p>
+                {planningLoading ? (
+                  <p className="text-sm text-gray-500 text-center py-8">Chargement des soutenances…</p>
+                ) : planningDefenses.filter((d) => d.status === 'scheduled' || d.status === 'completed').length === 0 ? (
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-800">
+                    Aucune soutenance planifiée à publier.
+                  </div>
+                ) : (
+                  <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-4 text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed max-h-72 overflow-y-auto">
+                    {buildPlanningContent(planningDefenses)}
+                  </div>
+                )}
+                <p className="text-xs text-gray-400 mt-2">
+                  {planningDefenses.filter((d) => d.status === 'scheduled' || d.status === 'completed').length} soutenance(s) incluse(s)
+                </p>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-200 shrink-0 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setPlanningModalOpen(false)}
+                disabled={planningPublishing}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                disabled={planningPublishing || planningLoading || planningDefenses.filter((d) => d.status === 'scheduled' || d.status === 'completed').length === 0}
+                onClick={() => void handlePublishPlanning()}
+                className="px-5 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {planningPublishing ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                    Publication…
+                  </>
+                ) : 'Publier aux étudiants'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

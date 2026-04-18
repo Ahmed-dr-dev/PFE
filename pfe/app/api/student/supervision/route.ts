@@ -68,17 +68,41 @@ export async function GET() {
     // Get defense (soutenance) - read-only for student, scheduled by admin
     const { data: defense } = await supabase
       .from('defenses')
-      .select('id, scheduled_date, scheduled_time, room, jury_members, duration_minutes, status, note, note_comment')
+      .select('id, scheduled_date, scheduled_time, room, jury_members, jury_professor_ids, duration_minutes, status, note, note_comment, notes')
       .eq('pfe_project_id', pfe.id)
-      .in('status', ['scheduled', 'postponed'])
+      .in('status', ['scheduled', 'postponed', 'completed'])
+      .order('scheduled_date', { ascending: false })
+      .limit(1)
       .maybeSingle()
+
+    // Attach student + topic info so the PDF fiche can be generated client-side
+    let defenseWithPfe = defense ? { ...defense, pfe_project: null as any } : null
+    if (defense) {
+      const [{ data: studentProfile }, { data: project }] = await Promise.all([
+        supabase.from('profiles').select('id, full_name, email').eq('id', auth.user!.id).single(),
+        supabase
+          .from('pfe_projects')
+          .select('id, topic:pfe_topics(id, title)')
+          .eq('id', pfe.id)
+          .single(),
+      ])
+      const topic = project?.topic && (Array.isArray(project.topic) ? project.topic[0] : project.topic)
+      defenseWithPfe = {
+        ...defense,
+        pfe_project: {
+          student: studentProfile || null,
+          supervisor: supervisor || null,
+          topic: topic || null,
+        },
+      }
+    }
 
     return NextResponse.json({
       supervisor,
       meetings: meetings || [],
       documents: documents || [],
       pfeStatus: pfe.status,
-      defense: defense || null,
+      defense: defenseWithPfe,
     })
   } catch (error) {
     return NextResponse.json(

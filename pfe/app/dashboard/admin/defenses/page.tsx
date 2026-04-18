@@ -64,6 +64,8 @@ export default function DefensesPage() {
   const [validatedWaitingForPeriodCount, setValidatedWaitingForPeriodCount] = useState(0)
   const [pdfLoading, setPdfLoading] = useState(false)
   const [fichePdfLoading, setFichePdfLoading] = useState<string | null>(null)
+  const [filterSpecialite, setFilterSpecialite] = useState('')
+  const [markingAllDone, setMarkingAllDone] = useState(false)
 
   const [editId, setEditId] = useState<string | null>(null)
   const [editDate, setEditDate] = useState('')
@@ -439,6 +441,47 @@ export default function DefensesPage() {
       console.error(e)
     }
   }
+
+  const handleMarkAllDone = async () => {
+    const toMark = defenses.filter((d) => d.status === 'scheduled' && d.note != null)
+    if (toMark.length === 0) return
+    setMarkingAllDone(true)
+    try {
+      await Promise.all(
+        toMark.map((d) =>
+          fetch(`/api/admin/defenses/${d.id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'completed' }),
+          })
+        )
+      )
+      setDefenses((prev) =>
+        prev.map((d) => toMark.some((t) => t.id === d.id) ? { ...d, status: 'completed' } : d)
+      )
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setMarkingAllDone(false)
+    }
+  }
+
+  const specialiteOptions = useMemo(() => {
+    const set = new Set<string>()
+    defenses.forEach((d) => {
+      const dept = (normalizePfeProject(d)?.student?.department || '').trim()
+      if (dept) set.add(dept)
+    })
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [defenses])
+
+  const filteredDefenses = useMemo(() => {
+    if (!filterSpecialite) return defenses
+    return defenses.filter((d) => {
+      const dept = (normalizePfeProject(d)?.student?.department || '').trim()
+      return dept === filterSpecialite
+    })
+  }, [defenses, filterSpecialite])
 
   const today = new Date().toISOString().split('T')[0]
   const dateMin = today
@@ -888,7 +931,42 @@ export default function DefensesPage() {
       )}
 
       <div className="space-y-4">
-        {defenses
+        {/* Filter bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex items-center gap-2 flex-1">
+            <label className="text-sm font-semibold text-gray-700 shrink-0">Filière :</label>
+            <select
+              value={filterSpecialite}
+              onChange={(e) => setFilterSpecialite(e.target.value)}
+              className="flex-1 max-w-xs px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">Toutes les filières</option>
+              {specialiteOptions.map((s) => (
+                <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+              ))}
+            </select>
+            {filterSpecialite && (
+              <span className="text-xs text-gray-500">
+                {filteredDefenses.length} / {defenses.length} soutenances
+              </span>
+            )}
+          </div>
+          {defenses.some((d) => d.status === 'scheduled' && d.note != null) && (
+            <button
+              type="button"
+              disabled={markingAllDone}
+              onClick={() => void handleMarkAllDone()}
+              className="shrink-0 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+              </svg>
+              {markingAllDone ? 'En cours…' : `Tout marquer comme terminé (${defenses.filter((d) => d.status === 'scheduled' && d.note != null).length})`}
+            </button>
+          )}
+        </div>
+
+        {filteredDefenses
           .sort((a, b) => (a.scheduled_date || '').localeCompare(b.scheduled_date || ''))
           .map((d) => {
             const pp = normalizePfeProject(d)
@@ -926,7 +1004,6 @@ export default function DefensesPage() {
                         )}
                       </div>
                     )}
-                    {/* Note attribuée par le président du jury */}
                     {d.note != null ? (
                       <div className="mt-2 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200">
                         <span className="text-xs font-semibold text-emerald-700">Note :</span>
@@ -936,7 +1013,7 @@ export default function DefensesPage() {
                         )}
                       </div>
                     ) : (
-                      <p className="mt-2 text-xs text-gray-400 italic">Note non attribuée</p>
+                      <p className="mt-2 text-xs text-amber-600 italic font-medium">⚠ Note non attribuée — requis pour marquer comme terminée</p>
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -959,13 +1036,15 @@ export default function DefensesPage() {
                             ? 'Annulée'
                             : 'Reportée'}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => editId === d.id ? setEditId(null) : openEdit(d)}
-                      className="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded text-sm hover:bg-gray-200"
-                    >
-                      {editId === d.id ? 'Fermer' : 'Modifier'}
-                    </button>
+                    {d.status !== 'completed' && (
+                      <button
+                        type="button"
+                        onClick={() => editId === d.id ? setEditId(null) : openEdit(d)}
+                        className="px-3 py-1 bg-gray-100 text-gray-700 border border-gray-200 rounded text-sm hover:bg-gray-200"
+                      >
+                        {editId === d.id ? 'Fermer' : 'Modifier'}
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => void handleFichePdf(d)}
@@ -981,8 +1060,10 @@ export default function DefensesPage() {
                       <>
                         <button
                           type="button"
+                          disabled={d.note == null}
+                          title={d.note == null ? 'Attribuez une note avant de marquer comme terminée' : undefined}
                           onClick={() => void handleStatusChange(d.id, 'completed')}
-                          className="px-3 py-1 bg-emerald-600 text-white rounded text-sm"
+                          className="px-3 py-1 bg-emerald-600 text-white rounded text-sm disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                           Terminer
                         </button>
@@ -1127,9 +1208,11 @@ export default function DefensesPage() {
           })}
       </div>
 
-      {defenses.length === 0 && (
+      {filteredDefenses.length === 0 && (
         <div className="bg-white rounded-2xl border shadow-sm border-gray-200 p-12 text-center">
-          <p className="text-gray-600">Aucune soutenance planifiée</p>
+          <p className="text-gray-600">
+            {defenses.length === 0 ? 'Aucune soutenance planifiée' : 'Aucune soutenance pour cette filière'}
+          </p>
         </div>
       )}
     </div>

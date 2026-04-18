@@ -77,6 +77,20 @@ export default function SupervisionPage() {
   const documents = data.documents || []
   const pfeStatus = data.pfeStatus
   const defense = data.defense
+  const [fichePdfLoading, setFichePdfLoading] = useState(false)
+
+  async function handleDownloadFiche() {
+    if (!defense) return
+    setFichePdfLoading(true)
+    try {
+      const { downloadDefenseFichePdf } = await import('@/lib/defenses-planning-pdf')
+      downloadDefenseFichePdf(defense)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setFichePdfLoading(false)
+    }
+  }
 
   function requestForProfessor(professorId: string) {
     return requests.find((r: any) => r.professor_id === professorId)
@@ -531,7 +545,57 @@ export default function SupervisionPage() {
         </div>
 
         <div className="space-y-6">
-          {defense && (
+          {defense && defense.status === 'completed' ? (
+            <div className="relative bg-white rounded-2xl border border-emerald-500/40 p-6 shadow-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/30">
+                  <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">Soutenance terminée</h2>
+                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">Validée</span>
+                </div>
+              </div>
+              <div className="space-y-2 text-gray-700 mb-5">
+                <p><span className="text-gray-600">Date :</span> {new Date(defense.scheduled_date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                {defense.scheduled_time && <p><span className="text-gray-600">Heure :</span> {String(defense.scheduled_time).slice(0, 5)}</p>}
+                {defense.room && <p><span className="text-gray-600">Salle :</span> {defense.room}</p>}
+                {defense.jury_members?.length > 0 && (
+                  <div className="text-sm text-gray-600 space-y-0.5 mt-1">
+                    {defense.jury_members[0] && <p><span className="font-medium">Encadrant :</span> {defense.jury_members[0]}</p>}
+                    {defense.jury_members[1] && <p><span className="font-medium text-violet-700">Rapporteur :</span> {defense.jury_members[1]}</p>}
+                    {defense.jury_members[2] && <p><span className="font-medium text-amber-700">Président du jury :</span> {defense.jury_members[2]}</p>}
+                  </div>
+                )}
+              </div>
+              {defense.note != null ? (
+                <div className="flex items-center gap-4 p-4 rounded-xl bg-emerald-50 border border-emerald-200 mb-5">
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-0.5">Note finale</p>
+                    <p className="text-4xl font-extrabold text-emerald-700 tabular-nums leading-none">{defense.note}<span className="text-lg font-normal"> / 20</span></p>
+                  </div>
+                  {defense.note_comment && (
+                    <p className="text-sm text-emerald-800 italic border-l border-emerald-300 pl-4 flex-1">{defense.note_comment}</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic mb-5">Note non encore disponible.</p>
+              )}
+              <button
+                type="button"
+                disabled={fichePdfLoading}
+                onClick={() => void handleDownloadFiche()}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-cyan-700 transition-all disabled:opacity-50"
+              >
+                <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {fichePdfLoading ? 'Génération…' : 'Télécharger ma fiche de soutenance (PDF)'}
+              </button>
+            </div>
+          ) : defense ? (
             <div className="relative bg-white rounded-2xl border border-emerald-500/30 p-6 shadow-xl">
               <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center border border-emerald-500/30">
@@ -551,7 +615,7 @@ export default function SupervisionPage() {
                 {defense.jury_members?.length > 0 && <p><span className="text-gray-600">Jury :</span> {defense.jury_members.join(', ')}</p>}
               </div>
             </div>
-          )}
+          ) : null}
 
           <div className="relative bg-white rounded-2xl border border-gray-200 p-6 shadow-xl">
             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">

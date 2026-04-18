@@ -27,10 +27,74 @@ function formatSettingDisplay(key: string, value: string): string {
   return v
 }
 
+type Milestone = {
+  label: string
+  sublabel?: string
+  done: boolean
+  active: boolean
+  href?: string
+}
+
+function buildMilestones(pfe: any, defense: any): Milestone[] {
+  const hasDefense = !!defense
+  const defenseScheduled = hasDefense && (defense.status === 'scheduled' || defense.status === 'postponed')
+  const defenseCompleted = hasDefense && defense.status === 'completed'
+
+  const pfeActive = ['approved', 'in_progress', 'completed'].includes(pfe.status)
+
+  const steps: Milestone[] = [
+    {
+      label: 'Sujet assigné',
+      sublabel: pfe.topic?.title ? `« ${pfe.topic.title.slice(0, 40)}${pfe.topic.title.length > 40 ? '…' : ''} »` : undefined,
+      done: pfeActive,
+      active: !pfeActive,
+      href: '/dashboard/student/topics',
+    },
+    {
+      label: 'Application validée',
+      sublabel: pfe.app_validated ? 'Validée par l\'administration' : 'En attente de validation admin',
+      done: !!pfe.app_validated,
+      active: pfeActive && !pfe.app_validated,
+    },
+    {
+      label: 'Rapport validé',
+      sublabel: pfe.rapport_validated ? 'Rapport accepté' : 'En attente d\'approbation',
+      done: !!pfe.rapport_validated,
+      active: !!pfe.app_validated && !pfe.rapport_validated,
+      href: '/dashboard/student/suivi-mon-pfe',
+    },
+    {
+      label: 'Soutenance approuvée',
+      sublabel: pfe.soutenance_validated ? 'Approuvée par l\'encadrant' : 'En attente de l\'encadrant',
+      done: !!pfe.soutenance_validated,
+      active: !!pfe.rapport_validated && !pfe.soutenance_validated,
+    },
+    {
+      label: 'Soutenance planifiée',
+      sublabel: defenseScheduled
+        ? `${defense.scheduled_date ?? '—'}${defense.scheduled_time ? ` à ${String(defense.scheduled_time).slice(0, 5)}` : ''}${defense.room ? ` — ${defense.room}` : ''}`
+        : defenseCompleted ? 'Terminée' : 'En attente de planification admin',
+      done: hasDefense,
+      active: !!pfe.soutenance_validated && !hasDefense,
+    },
+    {
+      label: 'Soutenance terminée',
+      sublabel: defenseCompleted
+        ? defense.note != null ? `Note : ${defense.note} / 20` : 'Terminée — note en attente'
+        : 'En attente',
+      done: defenseCompleted,
+      active: defenseScheduled,
+      href: defenseCompleted ? '/dashboard/student/supervision' : undefined,
+    },
+  ]
+  return steps
+}
+
 export default function DashboardPage() {
   const [myPfe, setMyPfe] = useState<any>(null)
   const [settings, setSettings] = useState<Record<string, string>>({})
   const [supervisorFallback, setSupervisorFallback] = useState<any>(null)
+  const [defense, setDefense] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -52,6 +116,7 @@ export default function DashboardPage() {
         if (supervisionRes.ok) {
           const data = await supervisionRes.json()
           setSupervisorFallback(data.supervisor || null)
+          setDefense(data.defense || null)
         }
       } catch {
         /* ignore */
@@ -250,20 +315,82 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {myPfe.progress !== undefined && myPfe.progress !== null && (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Progression</p>
-                      <span className="text-sm font-semibold text-gray-900">{myPfe.progress || 0}%</span>
+                {(() => {
+                  const milestones = buildMilestones(myPfe, defense)
+                  const doneCount = milestones.filter((m) => m.done).length
+                  const pct = Math.round((doneCount / milestones.length) * 100)
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Progression PFE</p>
+                        <span className="text-sm font-bold text-gray-900">{pct}%</span>
+                      </div>
+                      <div className="w-full bg-gray-100 rounded-full h-2.5 mb-5">
+                        <div
+                          className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-2.5 rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <ol className="space-y-2.5">
+                        {milestones.map((m, i) => {
+                          const inner = (
+                            <div
+                              className={`flex items-start gap-3 px-3 py-2.5 rounded-xl border transition-all ${
+                                m.done
+                                  ? 'bg-emerald-50 border-emerald-200'
+                                  : m.active
+                                    ? 'bg-blue-50 border-blue-200'
+                                    : 'bg-gray-50 border-gray-100'
+                              }`}
+                            >
+                              <div
+                                className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center mt-0.5 ${
+                                  m.done
+                                    ? 'bg-emerald-500'
+                                    : m.active
+                                      ? 'bg-blue-500'
+                                      : 'bg-gray-300'
+                                }`}
+                              >
+                                {m.done ? (
+                                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                ) : m.active ? (
+                                  <svg className="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                ) : (
+                                  <span className="text-white text-xs font-bold">{i + 1}</span>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className={`text-sm font-semibold leading-tight ${m.done ? 'text-emerald-800' : m.active ? 'text-blue-800' : 'text-gray-400'}`}>
+                                  {m.label}
+                                </p>
+                                {m.sublabel && (
+                                  <p className={`text-xs mt-0.5 truncate ${m.done ? 'text-emerald-600' : m.active ? 'text-blue-600' : 'text-gray-400'}`}>
+                                    {m.sublabel}
+                                  </p>
+                                )}
+                              </div>
+                              {m.href && (
+                                <svg className={`w-4 h-4 shrink-0 mt-0.5 ${m.done ? 'text-emerald-400' : 'text-blue-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                              )}
+                            </div>
+                          )
+                          return (
+                            <li key={i}>
+                              {m.href ? <Link href={m.href}>{inner}</Link> : inner}
+                            </li>
+                          )
+                        })}
+                      </ol>
                     </div>
-                    <div className="w-full bg-gray-100 rounded-full h-3">
-                      <div
-                        className="bg-gradient-to-r from-emerald-500 to-cyan-500 h-3 rounded-full transition-all duration-300"
-                        style={{ width: `${myPfe.progress || 0}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
+                  )
+                })()}
 
                 <div className="mt-auto pt-6">
                   <Link
