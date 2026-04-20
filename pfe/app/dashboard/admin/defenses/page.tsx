@@ -483,6 +483,11 @@ export default function DefensesPage() {
     })
   }, [defenses, filterSpecialite])
 
+  const scheduledWithNoteCount = useMemo(
+    () => defenses.filter((d) => d.status === 'scheduled' && d.note != null).length,
+    [defenses]
+  )
+
   const today = new Date().toISOString().split('T')[0]
   const dateMin = today
 
@@ -511,7 +516,7 @@ export default function DefensesPage() {
             Planifiez les soutenances : jury à 3 enseignants + toute date future. Les encadrants doivent avoir validé leurs étudiants au préalable.
           </p>
         </div>
-        <div className="flex flex-col xs:flex-row gap-2 shrink-0">
+        <div className="flex flex-col xs:flex-row flex-wrap gap-2 shrink-0">
           <button
             type="button"
             onClick={() => void handleExportPlanningPdf()}
@@ -519,6 +524,26 @@ export default function DefensesPage() {
             className="px-4 py-2 border border-gray-300 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50"
           >
             {pdfLoading ? 'PDF…' : 'Télécharger le planning (PDF)'}
+          </button>
+          <button
+            type="button"
+            disabled={markingAllDone || scheduledWithNoteCount === 0}
+            title={
+              scheduledWithNoteCount === 0
+                ? 'Aucune soutenance « Planifiée » avec note : attribuez une note (président du jury) puis réessayez.'
+                : 'Passe au statut « Terminée » toutes les soutenances planifiées qui ont déjà une note.'
+            }
+            onClick={() => void handleMarkAllDone()}
+            className={`px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 border transition-colors ${
+              scheduledWithNoteCount === 0
+                ? 'bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed'
+                : 'bg-emerald-700 text-white border-emerald-800 hover:bg-emerald-800'
+            } disabled:opacity-60`}
+          >
+            <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            {markingAllDone ? 'En cours…' : `Marquer tout comme terminé (${scheduledWithNoteCount})`}
           </button>
           <button
             type="button"
@@ -951,19 +976,6 @@ export default function DefensesPage() {
               </span>
             )}
           </div>
-          {defenses.some((d) => d.status === 'scheduled' && d.note != null) && (
-            <button
-              type="button"
-              disabled={markingAllDone}
-              onClick={() => void handleMarkAllDone()}
-              className="shrink-0 px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-              </svg>
-              {markingAllDone ? 'En cours…' : `Tout marquer comme terminé (${defenses.filter((d) => d.status === 'scheduled' && d.note != null).length})`}
-            </button>
-          )}
         </div>
 
         {filteredDefenses

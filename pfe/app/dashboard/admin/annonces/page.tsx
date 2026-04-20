@@ -38,6 +38,7 @@ export default function AnnoncesPage() {
   const [planningModalOpen, setPlanningModalOpen] = useState(false)
   const [planningDefenses, setPlanningDefenses] = useState<any[]>([])
   const [planningLoading, setPlanningLoading] = useState(false)
+  const [planningPdfLoading, setPlanningPdfLoading] = useState(false)
   const [planningPublishing, setPlanningPublishing] = useState(false)
   const [planningTitle, setPlanningTitle] = useState('')
 
@@ -200,62 +201,14 @@ export default function AnnoncesPage() {
     }
   }
 
-  const MOIS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre']
-  function fmtDate(iso: string | null): string {
-    if (!iso) return '—'
-    const p = iso.slice(0, 10).split('-')
-    if (p.length !== 3) return iso
-    const [y, m, d] = p.map(Number)
-    return `${d} ${MOIS_FR[(m ?? 1) - 1] ?? ''} ${y}`
-  }
-  function fmtTime(t: string | null): string {
-    if (!t) return ''
-    return ` à ${String(t).slice(0, 5)}`
-  }
-
-  function buildPlanningContent(defenses: any[]): string {
-    const scheduled = defenses
-      .filter((d) => d.status === 'scheduled' || d.status === 'completed')
-      .sort((a, b) => {
-        const dc = (a.scheduled_date || '').localeCompare(b.scheduled_date || '')
-        if (dc !== 0) return dc
-        return (a.scheduled_time || '').localeCompare(b.scheduled_time || '')
-      })
-    if (scheduled.length === 0) return 'Aucune soutenance planifiée.'
-
-    const groups = new Map<string, any[]>()
-    for (const d of scheduled) {
-      const key = d.scheduled_date || 'Sans date'
-      if (!groups.has(key)) groups.set(key, [])
-      groups.get(key)!.push(d)
-    }
-
-    const lines: string[] = []
-    for (const [date, rows] of groups) {
-      lines.push(`📅 ${fmtDate(date)}`)
-      lines.push('─────────────────────────')
-      for (const d of rows) {
-        const p = Array.isArray(d.pfe_projects) ? d.pfe_projects[0] : d.pfe_projects
-        const student = p?.student?.full_name || p?.student?.email || 'Étudiant'
-        const topic = p?.topic?.title ? ` — ${p.topic.title}` : ''
-        const time = fmtTime(d.scheduled_time)
-        const room = d.room ? ` | Salle : ${d.room}` : ''
-        const jury = d.jury_members?.length
-          ? `\n   Jury : ${d.jury_members.join(' · ')}`
-          : ''
-        const note = d.note != null ? ` | Note : ${d.note}/20` : ''
-        lines.push(`• ${student}${topic}\n   ⏰ ${String(d.scheduled_time || '').slice(0, 5) || '—'}${time ? '' : ''}${time}${room}${note}${jury}`)
-      }
-      lines.push('')
-    }
-    return lines.join('\n').trim()
-  }
+  /** Texte annonce : le PDF est généré côté étudiant (navigateur), pas stocké sur Supabase. */
+  const STUDENT_PLANNING_ANNOUNCE_BODY =
+    'Le planning officiel des soutenances est disponible en PDF sur cette page : utilisez le bouton « Télécharger le planning (PDF) » dans la section « Planning ». Le fichier est créé sur votre ordinateur (navigateur) ; rien n’est enregistré comme fichier sur le serveur.'
 
   const openPlanningModal = async () => {
     setPlanningLoading(true)
     setPlanningModalOpen(true)
-    const defaultTitle = `Planning des soutenances${settings.academic_year ? ` — ${settings.academic_year}` : ''}`
-    setPlanningTitle(defaultTitle)
+    setPlanningTitle(`Planning des soutenances${settings.academic_year ? ` — ${settings.academic_year}` : ''}`)
     try {
       const res = await fetch('/api/admin/defenses', { cache: 'no-store' })
       if (res.ok) {
@@ -269,29 +222,52 @@ export default function AnnoncesPage() {
     }
   }
 
-  const handlePublishPlanning = async () => {
-    const content = buildPlanningContent(planningDefenses)
+  const handlePublishPlanningToStudents = async () => {
+    if (!planningTitle.trim()) {
+      window.alert('Indiquez un titre pour l’annonce.')
+      return
+    }
     setPlanningPublishing(true)
     try {
       const res = await fetch('/api/admin/announcements', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: planningTitle, content, target_audience: 'students' }),
+        body: JSON.stringify({
+          title: planningTitle.trim(),
+          content: STUDENT_PLANNING_ANNOUNCE_BODY,
+          target_audience: 'students',
+        }),
       })
       if (res.ok) {
         const data = await res.json()
-        setAnnouncements([data.announcement, ...announcements])
+        setAnnouncements((prev) => [data.announcement, ...prev])
         setPlanningModalOpen(false)
         setPlanningDefenses([])
       } else {
-        alert((await res.json()).error || 'Erreur')
+        window.alert((await res.json()).error || 'Erreur')
       }
     } catch {
-      alert('Erreur réseau')
+      window.alert('Erreur réseau')
     } finally {
       setPlanningPublishing(false)
     }
   }
+
+  const handleDownloadPlanningPdf = async () => {
+    setPlanningPdfLoading(true)
+    try {
+      const { downloadDefensesPlanningPdf } = await import('@/lib/defenses-planning-pdf')
+      downloadDefensesPlanningPdf(planningDefenses)
+    } catch (e) {
+      console.error(e)
+      window.alert('Impossible de générer le PDF.')
+    } finally {
+      setPlanningPdfLoading(false)
+    }
+  }
+
+  const scheduledForPdfCount = planningDefenses.filter((d) => d.status === 'scheduled').length
+  const planningBusy = planningPublishing || planningPdfLoading
 
   const targetLabels: Record<string, string> = { all: 'Tous', students: 'Étudiants', professors: 'Enseignants' }
 
@@ -540,7 +516,7 @@ export default function AnnoncesPage() {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
-              Publier le planning des soutenances
+              Planning des soutenances
             </button>
             <button
               onClick={() => setShowForm(!showForm)}
@@ -622,7 +598,7 @@ export default function AnnoncesPage() {
       {planningModalOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-          onClick={() => { if (!planningPublishing) setPlanningModalOpen(false) }}
+          onClick={() => { if (!planningBusy) setPlanningModalOpen(false) }}
         >
           <div
             className="bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col"
@@ -630,13 +606,15 @@ export default function AnnoncesPage() {
           >
             <div className="flex items-start justify-between gap-4 px-6 py-4 border-b border-gray-200 shrink-0">
               <div>
-                <h3 className="text-xl font-bold text-gray-900">Publier le planning des soutenances</h3>
-                <p className="text-sm text-gray-500 mt-1">L&apos;annonce sera envoyée à tous les étudiants.</p>
+                <h3 className="text-xl font-bold text-gray-900">Planning des soutenances</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  Publiez la liste aux <strong className="text-gray-700">étudiants</strong> (annonce sur leur tableau de bord), ou téléchargez un PDF pour vous.
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => setPlanningModalOpen(false)}
-                disabled={planningPublishing}
+                disabled={planningBusy}
                 className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-900 disabled:opacity-50"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -646,47 +624,81 @@ export default function AnnoncesPage() {
             </div>
 
             <div className="overflow-y-auto flex-1 px-6 py-5 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Titre de l&apos;annonce</label>
-                <input
-                  value={planningTitle}
-                  onChange={(e) => setPlanningTitle(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-1.5">Aperçu du contenu</p>
-                {planningLoading ? (
-                  <p className="text-sm text-gray-500 text-center py-8">Chargement des soutenances…</p>
-                ) : planningDefenses.filter((d) => d.status === 'scheduled' || d.status === 'completed').length === 0 ? (
-                  <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-4 text-sm text-amber-800">
-                    Aucune soutenance planifiée à publier.
+              {planningLoading ? (
+                <p className="text-sm text-gray-500 text-center py-8">Chargement des soutenances…</p>
+              ) : (
+                <>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1.5">Titre de l&apos;annonce (étudiants)</label>
+                    <input
+                      value={planningTitle}
+                      onChange={(e) => setPlanningTitle(e.target.value)}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      placeholder="Planning des soutenances"
+                    />
                   </div>
-                ) : (
-                  <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-4 text-sm text-gray-700 whitespace-pre-wrap font-mono leading-relaxed max-h-72 overflow-y-auto">
-                    {buildPlanningContent(planningDefenses)}
+                  <div>
+                    <p className="text-sm font-semibold text-gray-700 mb-1.5">Texte de l&apos;annonce (résumé)</p>
+                    <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-4 text-sm text-gray-700 whitespace-pre-wrap max-h-44 overflow-y-auto">
+                      {STUDENT_PLANNING_ANNOUNCE_BODY}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      Le détail du planning est un PDF généré dans le navigateur de l&apos;étudiant (téléchargement local), sans fichier stocké sur Supabase.
+                    </p>
                   </div>
-                )}
-                <p className="text-xs text-gray-400 mt-2">
-                  {planningDefenses.filter((d) => d.status === 'scheduled' || d.status === 'completed').length} soutenance(s) incluse(s)
-                </p>
-              </div>
+                  <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-800">
+                    <p className="font-semibold mb-1">Soutenances « Planifiée » dans le PDF</p>
+                    <p className="text-slate-600">
+                      {scheduledForPdfCount === 0
+                        ? 'Aucune pour l’instant — le PDF sera vide jusqu’à ce qu’il y ait des soutenances planifiées.'
+                        : `${scheduledForPdfCount} soutenance(s) seront incluses dans le PDF côté étudiant.`}
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
 
-            <div className="px-6 py-4 border-t border-gray-200 shrink-0 flex justify-end gap-3">
+            <div className="px-6 py-4 border-t border-gray-200 shrink-0 flex flex-col sm:flex-row sm:justify-end gap-3">
               <button
                 type="button"
                 onClick={() => setPlanningModalOpen(false)}
-                disabled={planningPublishing}
-                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50"
+                disabled={planningBusy}
+                className="px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50 order-3 sm:order-1"
               >
                 Annuler
               </button>
               <button
                 type="button"
-                disabled={planningPublishing || planningLoading || planningDefenses.filter((d) => d.status === 'scheduled' || d.status === 'completed').length === 0}
-                onClick={() => void handlePublishPlanning()}
-                className="px-5 py-2 bg-emerald-600 text-white rounded-lg font-semibold hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
+                disabled={
+                  planningBusy ||
+                  planningLoading ||
+                  planningDefenses.filter((d) => d.status === 'scheduled').length === 0
+                }
+                onClick={() => void handleDownloadPlanningPdf()}
+                className="px-5 py-2 border border-gray-300 bg-white text-gray-900 rounded-lg font-semibold hover:bg-gray-50 disabled:opacity-50 flex items-center justify-center gap-2 order-2"
+              >
+                {planningPdfLoading ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                    </svg>
+                    PDF…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Télécharger le PDF
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                disabled={planningPublishing || planningLoading}
+                onClick={() => void handlePublishPlanningToStudents()}
+                className="px-5 py-2 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-cyan-700 disabled:opacity-50 flex items-center justify-center gap-2 order-1 sm:order-3"
               >
                 {planningPublishing ? (
                   <>
@@ -696,7 +708,14 @@ export default function AnnoncesPage() {
                     </svg>
                     Publication…
                   </>
-                ) : 'Publier aux étudiants'}
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Publier aux étudiants
+                  </>
+                )}
               </button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { LandingFeatures } from './landing-features'
 import { LandingFooter } from './landing-footer'
 import { LandingFaq } from './landing-faq'
+import { LandingHeroIllustration } from './landing-hero-illustration'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -17,10 +18,16 @@ export default async function Home() {
   return (
     <div className="min-h-screen bg-white">
       {/* ── Navbar ── */}
-      <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+      <nav className="bg-white/90 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50 transition-shadow hover:shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-3">
-            <Image src="/isaeg.jpg" alt="ISAEG" width={120} height={48} className="h-11 w-auto object-contain" />
+          <Link href="/" className="flex items-center gap-3 group">
+            <Image
+              src="/isaeg.jpg"
+              alt="ISAEG"
+              width={120}
+              height={48}
+              className="h-11 w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+            />
             <div className="hidden sm:block w-px h-8 bg-gray-200" />
             <span className="hidden sm:block text-base font-bold bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
               Plateforme PFE
@@ -43,62 +50,77 @@ export default async function Home() {
       <main>
         {/* ── Hero ── */}
         <section className="relative overflow-hidden bg-white min-h-[min(80vh,720px)] flex items-center border-b border-gray-100">
-          {/* Soft decorative blobs */}
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-emerald-50 to-cyan-50 rounded-full blur-3xl opacity-70 pointer-events-none -mr-64 -mt-64" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-50 rounded-full blur-3xl opacity-60 pointer-events-none -ml-32 -mb-32" />
+          {/* Soft decorative blobs — slow drift */}
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-emerald-50 to-cyan-50 rounded-full blur-3xl opacity-70 pointer-events-none -mr-64 -mt-64 home-blob-drift" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-emerald-50 rounded-full blur-3xl opacity-60 pointer-events-none -ml-32 -mb-32 home-blob-drift-slow" />
+          {/* Grid pattern — subtle */}
+          <div
+            className="absolute inset-0 opacity-[0.35] pointer-events-none [mask-image:linear-gradient(to_bottom,white,transparent)]"
+            style={{
+              backgroundImage:
+                'linear-gradient(to right, rgb(209 250 229 / 0.35) 1px, transparent 1px), linear-gradient(to bottom, rgb(209 250 229 / 0.35) 1px, transparent 1px)',
+              backgroundSize: '48px 48px',
+            }}
+          />
 
           <div className="relative z-10 max-w-7xl mx-auto px-6 py-20 md:py-28 w-full">
-            <div className="max-w-3xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 xl:gap-16 items-center">
+              <div className="max-w-3xl lg:max-w-none">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-full text-emerald-700 text-sm font-semibold mb-8">
+              <div className="home-fade-up inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-full text-emerald-700 text-sm font-semibold mb-8 shadow-sm shadow-emerald-100/50">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 ISAEG — Institut Supérieur d&apos;Administration des Entreprises de Gafsa
               </div>
 
-              <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 leading-[1.1] mb-6 tracking-tight">
+              <h1 className="home-fade-up home-fade-delay-1 text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-gray-900 leading-[1.1] mb-6 tracking-tight">
                 Gérez vos{' '}
-                <span className="bg-gradient-to-r from-emerald-500 to-cyan-500 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 bg-clip-text text-transparent">
                   projets de fin
                 </span>
                 <br />
                 d&apos;études
               </h1>
 
-              <p className="text-lg md:text-xl text-gray-500 mb-10 leading-relaxed max-w-2xl">
+              <p className="home-fade-up home-fade-delay-2 text-lg md:text-xl text-gray-500 mb-10 leading-relaxed max-w-2xl">
                 Une plateforme unifiée pour étudiants, enseignants et administration —
                 sujets, encadrement, soutenances et suivi en un seul endroit.
               </p>
 
-              <div className="flex flex-col sm:flex-row gap-4 mb-14">
+              <div className="home-fade-up home-fade-delay-3 flex flex-col sm:flex-row gap-4 mb-14">
                 <Link
                   href="/auth/signin"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-2xl hover:from-emerald-700 hover:to-cyan-700 transition-all font-bold text-base shadow-lg shadow-emerald-100"
+                  className="group inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-2xl hover:from-emerald-700 hover:to-cyan-700 transition-all duration-300 font-bold text-base shadow-lg shadow-emerald-200/80 hover:shadow-xl hover:shadow-emerald-300/60 hover:-translate-y-0.5 active:translate-y-0"
                 >
                   Accéder à la plateforme
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
                   </svg>
                 </Link>
                 <a
                   href="#contact-accueil"
-                  className="inline-flex items-center justify-center px-8 py-4 bg-white text-gray-700 border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-gray-300 transition-all font-semibold text-base"
+                  className="inline-flex items-center justify-center px-8 py-4 bg-white text-gray-700 border border-gray-200 rounded-2xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 font-semibold text-base hover:-translate-y-0.5 shadow-sm"
                 >
                   Nous contacter
                 </a>
               </div>
 
               {/* Stats strip */}
-              <div className="flex flex-wrap gap-x-8 gap-y-4 border-t border-gray-100 pt-8">
+              <div className="home-fade-up home-fade-delay-4 flex flex-wrap gap-x-8 gap-y-4 border-t border-gray-100 pt-8">
                 {[
                   { num: '3', label: 'Rôles utilisateurs' },
                   { num: '100%', label: 'En ligne' },
                   { num: '∞', label: 'Projets gérés' },
                 ].map((s) => (
-                  <div key={s.label} className="flex items-baseline gap-2">
+                  <div key={s.label} className="flex items-baseline gap-2 transition-transform hover:scale-105 duration-300">
                     <span className="text-2xl font-extrabold text-gray-900">{s.num}</span>
                     <span className="text-sm text-gray-400 font-medium">{s.label}</span>
                   </div>
                 ))}
+              </div>
+              </div>
+
+              <div className="home-fade-up home-fade-delay-2 flex justify-center lg:justify-end">
+                <LandingHeroIllustration />
               </div>
             </div>
           </div>
@@ -150,8 +172,11 @@ export default async function Home() {
                   features: ['Tableau de bord global et statistiques', 'Affecter étudiants et encadrants', 'Planifier les soutenances et jurys', 'Gérer les comptes et paramètres'],
                 },
               ].map((card) => (
-                <div key={card.role} className={`bg-white border ${card.border} rounded-2xl p-7 flex flex-col gap-5 shadow-sm hover:shadow-md transition-shadow`}>
-                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-md`}>
+                <div
+                  key={card.role}
+                  className={`group bg-white border ${card.border} rounded-2xl p-7 flex flex-col gap-5 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300`}
+                >
+                  <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${card.color} flex items-center justify-center text-white shadow-md transition-transform duration-300 group-hover:scale-110`}>
                     {card.icon}
                   </div>
                   <div>

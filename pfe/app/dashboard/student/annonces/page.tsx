@@ -16,6 +16,7 @@ export default function StudentAnnoncesPage() {
   const [settingsLoading, setSettingsLoading] = useState(true)
   const [announcements, setAnnouncements] = useState<any[]>([])
   const [announcementsLoading, setAnnouncementsLoading] = useState(true)
+  const [planningPdfLoading, setPlanningPdfLoading] = useState(false)
 
   useEffect(() => {
     async function fetchSettings() {
@@ -48,6 +49,27 @@ export default function StudentAnnoncesPage() {
     load()
   }, [])
 
+  async function handleDownloadPlanningPdf() {
+    setPlanningPdfLoading(true)
+    try {
+      const res = await fetch('/api/student/defenses-planning-export', { cache: 'no-store' })
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}))
+        window.alert(j.error || `Erreur ${res.status}`)
+        return
+      }
+      const data = await res.json()
+      const defenses = data.defenses || []
+      const { downloadDefensesPlanningPdf } = await import('@/lib/defenses-planning-pdf')
+      downloadDefensesPlanningPdf(defenses)
+    } catch (e) {
+      console.error(e)
+      window.alert('Impossible de générer le PDF.')
+    } finally {
+      setPlanningPdfLoading(false)
+    }
+  }
+
   const targetLabels: Record<string, string> = { all: 'Tous', students: 'Étudiants', professors: 'Enseignants' }
 
   return (
@@ -58,6 +80,39 @@ export default function StudentAnnoncesPage() {
         </h1>
         <p className="text-gray-600 text-lg">Paramètres de la plateforme et annonces</p>
       </div>
+
+      {/* Planning PDF — généré localement dans le navigateur, aucun fichier sur Supabase */}
+      <section>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Planning des soutenances</h2>
+        <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm p-6 max-w-2xl">
+          <p className="text-gray-700 text-sm mb-4">
+            Téléchargez le planning officiel au format PDF sur votre ordinateur. Le document est créé dans votre navigateur (téléchargement local) ; aucun fichier n’est enregistré sur le serveur.
+          </p>
+          <button
+            type="button"
+            disabled={planningPdfLoading}
+            onClick={() => void handleDownloadPlanningPdf()}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-xl font-semibold hover:from-emerald-700 hover:to-cyan-700 disabled:opacity-50"
+          >
+            {planningPdfLoading ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Génération…
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Télécharger le planning (PDF)
+              </>
+            )}
+          </button>
+        </div>
+      </section>
 
       {/* Paramètres (read-only) */}
       <section>
