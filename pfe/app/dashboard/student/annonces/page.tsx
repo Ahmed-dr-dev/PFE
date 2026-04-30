@@ -61,7 +61,7 @@ export default function StudentAnnoncesPage() {
       const data = await res.json()
       const defenses = data.defenses || []
       const { downloadDefensesPlanningPdf } = await import('@/lib/defenses-planning-pdf')
-      downloadDefensesPlanningPdf(defenses)
+      await downloadDefensesPlanningPdf(defenses)
     } catch (e) {
       console.error(e)
       window.alert('Impossible de générer le PDF.')

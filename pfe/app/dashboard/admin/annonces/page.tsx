@@ -257,7 +257,7 @@ export default function AnnoncesPage() {
     setPlanningPdfLoading(true)
     try {
       const { downloadDefensesPlanningPdf } = await import('@/lib/defenses-planning-pdf')
-      downloadDefensesPlanningPdf(planningDefenses)
+      await downloadDefensesPlanningPdf(planningDefenses)
     } catch (e) {
       console.error(e)
       window.alert('Impossible de générer le PDF.')

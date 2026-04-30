@@ -1,7 +1,6 @@
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-
-const HEADER_GRAY: [number, number, number] = [210, 210, 210]
+import html2canvas from 'html2canvas'
 
 const MOIS_FR = [
   'JANVIER',
@@ -18,6 +17,120 @@ const MOIS_FR = [
   'DÉCEMBRE',
 ]
 
+/** Couleurs proches du modèle officiel (barre jaune, lignes alternées vert pâle) */
+const TABLE_YELLOW_FILL: [number, number, number] = [255, 227, 120]
+const TABLE_ALT_ROW_GREEN: [number, number, number] = [220, 239, 220]
+const TABLE_BORDER: [number, number, number] = [140, 140, 140]
+const SIDE_MARGIN_MM = 10
+
+const FR_LINES = [
+  "Ministère de l'Enseignement Supérieur et de la Recherche Scientifique",
+  'Université de Gafsa',
+  'Institut Supérieur d’Administration Des Entreprises de Gafsa',
+]
+
+const AR_LINES = [
+  'وزارة التعليم العالي والبحث العلمي',
+  'جامعة قفصة',
+  'المعهد العالي لإدارة المؤسسات بقفصة',
+]
+
+/** Hauteur réservée en tête pour le bandeau + espace avant le tableau (mm) */
+const LETTERHEAD_IMG_H_MM = 32
+const LETTERHEAD_PADDING_TOP_MM = 8
+const GAP_AFTER_LETTERHEAD_MM = 10
+/** Marge supérieure autoTable — la zone où se place le PNG du bandeau */
+const AUTOTABLE_TOP_MARGIN_MM = LETTERHEAD_PADDING_TOP_MM + LETTERHEAD_IMG_H_MM + GAP_AFTER_LETTERHEAD_MM
+
+/** Bandeau institutionnel ISAEG (FR + logo + références ISO + AR). */
+async function captureInstitutionalLetterheadDataUrl(innerWidthMm: number): Promise<string> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    throw new Error('captureInstitutionalLetterheadDataUrl doit être appelé côté client')
+  }
+
+  const PX_PER_MM = 96 / 25.4
+  const cssW = Math.round(innerWidthMm * PX_PER_MM)
+  const cssH = Math.round(LETTERHEAD_IMG_H_MM * PX_PER_MM)
+  const fontPx = Math.max(10, Math.round(cssW / 72))
+  const arFontPx = Math.max(11, Math.round(cssW / 62))
+
+  const fontId = 'noto-naskh-arabic-pdf-header'
+  if (!document.getElementById(fontId)) {
+    const link = document.createElement('link')
+    link.id = fontId
+    link.rel = 'stylesheet'
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&display=swap'
+    document.head.appendChild(link)
+    try {
+      await document.fonts.load(`400 ${arFontPx}px "Noto Naskh Arabic"`)
+      await document.fonts.ready
+    } catch {
+      /* Arial / système si police bloquée */
+    }
+  }
+
+  const isaegSrc = `${window.location.origin}/isaeg.jpg`
+  const host = document.createElement('div')
+  host.style.cssText = [
+    `position:absolute`,
+    `left:-9999px`,
+    `top:0`,
+    `width:${cssW}px`,
+    `height:${cssH}px`,
+    `display:flex`,
+    `flex-direction:row`,
+    `align-items:center`,
+    `justify-content:space-between`,
+    `gap:12px`,
+    `padding:10px 12px`,
+    `box-sizing:border-box`,
+    `background:#ffffff`,
+    `color:#173a73`,
+    `font-family:'Arial Narrow',Arial,sans-serif`,
+  ].join(';')
+
+  host.innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;line-height:1.32;font-weight:700;font-size:${fontPx}px;">
+      ${FR_LINES.map((l) => `<div>${escapeHtml(l)}</div>`).join('')}
+    </div>
+    <div style="flex:0 0 auto;display:flex;flex-direction:row;align-items:center;gap:14px;">
+      <img alt="ISAEG" crossorigin="anonymous" src="${isaegSrc}" style="display:block;height:${Math.round(
+        cssH * 0.78
+      )}px;width:auto;object-fit:contain;" />
+      <div style="display:flex;flex-direction:column;justify-content:center;gap:8px;color:#444;font-size:${Math.round(
+        fontPx * 0.58
+      )}px;line-height:1.2;font-weight:700;text-align:left;">
+        <div>ISO 21001</div>
+        <div>ISO 9001<span style="font-weight:400;font-size:${Math.round(
+          fontPx * 0.5
+        )}px"> — 2015</span></div>
+      </div>
+    </div>
+    <div dir="rtl" style="flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;line-height:1.35;font-family:'Noto Naskh Arabic','Arial',sans-serif;font-weight:700;font-size:${arFontPx}px;">
+      ${AR_LINES.map((l) => `<div>${escapeHtml(l)}</div>`).join('')}
+    </div>
+  `.trim()
+
+  document.body.appendChild(host)
+  try {
+    const canvas = await html2canvas(host, {
+      scale: Math.min(3, Math.max(2, Math.round(window.devicePixelRatio))),
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      logging: false,
+    })
+    return canvas.toDataURL('image/png')
+  } finally {
+    document.body.removeChild(host)
+  }
+}
+
+function escapeHtml(s: string): string {
+  const m: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }
+  return s.replace(/[&<>"]/g, (ch) => m[ch] || ch)
+}
+
 function formatDatePlanning(iso: string | null | undefined): string {
   if (!iso || typeof iso !== 'string') return '—'
   const p = iso.slice(0, 10).split('-')
@@ -27,6 +140,14 @@ function formatDatePlanning(iso: string | null | undefined): string {
   const day = Number(p[2])
   if (!y || !m || !day) return iso
   return `${day} ${MOIS_FR[m - 1] || ''} ${y}`.trim()
+}
+
+function formatDateShortDdMmYyyy(iso: string): string | null {
+  const p = iso.slice(0, 10).split('-')
+  if (p.length !== 3) return null
+  const [yyyy, mm, dd] = p
+  if (!yyyy || !mm || !dd) return null
+  return `${dd.padStart(2, '0')}/${mm.padStart(2, '0')}/${yyyy}`
 }
 
 function formatHeure(t: string | null | undefined): string {
@@ -257,7 +378,7 @@ export function downloadDefenseFichePdf(defense: FicheDefense): void {
 // ─── Planning complet ──────────────────────────────────────────────────────────
 
 /** Télécharge un PDF du planning (soutenances au statut « planifiée » uniquement). */
-export function downloadDefensesPlanningPdf(defenses: unknown[]): void {
+export async function downloadDefensesPlanningPdf(defenses: unknown[]): Promise<void> {
   const planned = (defenses as DefenseRow[]).filter((d) => d && d.status === 'scheduled')
 
   if (planned.length === 0) {
@@ -275,24 +396,45 @@ export function downloadDefensesPlanningPdf(defenses: unknown[]): void {
 
   const groups = buildGroups(planned)
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' })
+  const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
-  let y = 12
+  const innerW = pageW - SIDE_MARGIN_MM * 2
+  let y = AUTOTABLE_TOP_MARGIN_MM
+
+  const letterDataUrl = await captureInstitutionalLetterheadDataUrl(innerW)
+
+  const drawLetterheadOnPageTop = () => {
+    doc.addImage(letterDataUrl, 'PNG', SIDE_MARGIN_MM, LETTERHEAD_PADDING_TOP_MM, innerW, LETTERHEAD_IMG_H_MM)
+  }
 
   const headCols = ['N°', 'Heure', 'Etudiant', 'Encadrant', 'Président', 'Rapporteur']
 
   for (const g of groups) {
-    const dateLabel = `Date : ${formatDatePlanning(g.date)}`
-    const juryLabel = `Jury N° ${g.juryNum} – ${g.roomLabel}`
+
+    const dateShort = formatDateShortDdMmYyyy(g.date)
+    const dateLabel = dateShort ? `${dateShort}` : formatDatePlanning(g.date)
+    const juryRoom = g.roomLabel !== '—' ? g.roomLabel : `Jury N° ${g.juryNum}`
+
     const headTop = [
       {
         content: dateLabel,
         colSpan: 3,
-        styles: { fillColor: HEADER_GRAY, halign: 'center' as const, fontStyle: 'bold' as const },
+        styles: {
+          fillColor: TABLE_YELLOW_FILL,
+          halign: 'center' as const,
+          fontStyle: 'bold' as const,
+          textColor: [0, 0, 0] as [number, number, number],
+        },
       },
       {
-        content: juryLabel,
+        content: juryRoom,
         colSpan: 3,
-        styles: { fillColor: HEADER_GRAY, halign: 'center' as const, fontStyle: 'bold' as const },
+        styles: {
+          fillColor: TABLE_YELLOW_FILL,
+          halign: 'center' as const,
+          fontStyle: 'bold' as const,
+          textColor: [0, 0, 0] as [number, number, number],
+        },
       },
     ]
 
@@ -302,51 +444,60 @@ export function downloadDefensesPlanningPdf(defenses: unknown[]): void {
       const enc = String(jm[0] || supervisor?.full_name || '—')
       const president = String(jm[1] || '—')
       const rapporteur = String(jm[2] || '—')
+      const studentFmt = String(student?.full_name || '—').toUpperCase().replace(/\s+/g, '_')
       return [
         String(i + 1),
         formatHeure(d.scheduled_time ?? null),
-        String(student?.full_name || '—'),
+        studentFmt,
         enc,
         president,
         rapporteur,
       ]
     })
 
-    if (y > pageH - 40) {
+    const estTableH = Math.min(body.length + 4, planned.length + 10) * 7
+    if (y + estTableH > pageH - 15) {
       doc.addPage()
-      y = 12
+      y = AUTOTABLE_TOP_MARGIN_MM
     }
 
     autoTable(doc, {
       startY: y,
-      margin: { left: 10, right: 10 },
+      margin: { left: SIDE_MARGIN_MM, right: SIDE_MARGIN_MM, top: AUTOTABLE_TOP_MARGIN_MM, bottom: 12 },
       theme: 'grid',
       styles: {
         fontSize: 9,
         halign: 'center',
         valign: 'middle',
-        cellPadding: 1.8,
-        lineColor: [0, 0, 0],
-        lineWidth: 0.1,
+        cellPadding: 2,
+        lineColor: TABLE_BORDER,
+        lineWidth: { top: 0.08, bottom: 0.08, left: 0.08, right: 0.08 },
       },
       headStyles: {
-        fillColor: HEADER_GRAY,
-        textColor: [0, 0, 0],
+        fillColor: [245, 245, 245] as [number, number, number],
+        textColor: [0, 0, 0] as [number, number, number],
         halign: 'center',
         fontStyle: 'bold',
       },
-      bodyStyles: { textColor: [0, 0, 0], halign: 'center' },
+      bodyStyles: { textColor: [0, 0, 0] as [number, number, number], halign: 'center' },
       head: [headTop, headCols],
       body,
+      willDrawPage: (data) => {
+        const cy = data.cursor?.y ?? 0
+        if (cy <= AUTOTABLE_TOP_MARGIN_MM + 6) drawLetterheadOnPageTop()
+      },
       didParseCell(data) {
-        if (data.section === 'body' && data.column.index === 2) {
-          data.cell.styles.fontStyle = 'bold'
+        if (data.section === 'body') {
+          if (data.column.index === 2) data.cell.styles.fontStyle = 'bold'
+          if (data.row.index % 2 === 1) {
+            data.cell.styles.fillColor = TABLE_ALT_ROW_GREEN
+          }
         }
       },
     })
 
     const docWithTable = doc as jsPDF & { lastAutoTable?: { finalY: number } }
-    y = (docWithTable.lastAutoTable?.finalY ?? y) + 10
+    y = (docWithTable.lastAutoTable?.finalY ?? y) + 14
   }
 
   const fname = `planning-soutenances-${new Date().toISOString().slice(0, 10)}.pdf`
