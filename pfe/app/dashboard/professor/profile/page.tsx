@@ -17,6 +17,8 @@ export default function ProfilePage() {
   const [recoveryEmail, setRecoveryEmail] = useState('')
   const [recoverySaving, setRecoverySaving] = useState(false)
   const [recoveryMsg, setRecoveryMsg] = useState('')
+  const [personalSaving, setPersonalSaving] = useState(false)
+  const [personalMsg, setPersonalMsg] = useState('')
 
   useEffect(() => {
     async function fetchProfile() {
@@ -72,6 +74,31 @@ export default function ProfilePage() {
     }
   }
 
+  async function savePersonalPhone(e: React.FormEvent) {
+    e.preventDefault()
+    setPersonalMsg('')
+    setPersonalSaving(true)
+    try {
+      const res = await fetch('/api/professor/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: formData.phone.trim() || null }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        setPersonalMsg(data.error || 'Erreur')
+        return
+      }
+      setProfile(data.profile)
+      setFormData((prev) => ({ ...prev, phone: data.profile?.phone ?? '' }))
+      setPersonalMsg('Téléphone enregistré.')
+    } catch {
+      setPersonalMsg('Erreur réseau')
+    } finally {
+      setPersonalSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-8">
@@ -90,12 +117,14 @@ export default function ProfilePage() {
         <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-2">
           <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">Profil</span>
         </h1>
-        <p className="text-gray-600 text-lg">Consultation de vos informations — vous pouvez mettre à jour l’e-mail de récupération</p>
+        <p className="text-gray-600 text-lg">
+          Consultation de vos informations — vous pouvez mettre à jour le téléphone et l’e-mail de récupération
+        </p>
       </div>
 
       <div className="max-w-2xl space-y-6">
         <form onSubmit={saveRecoveryEmail} className="relative bg-white rounded-2xl border border-emerald-200 p-8 shadow-xl">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">E-mail de récupération (Brevo)</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">E-mail de récupération</h2>
           <p className="text-sm text-gray-600 mb-4">
             Utilisé pour le lien « mot de passe oublié ». Prioritaire sur l’identifiant de connexion s’il est renseigné. Laissez
             vide pour effacer.
@@ -121,13 +150,16 @@ export default function ProfilePage() {
           </button>
         </form>
 
-        <form
-          onSubmit={(e) => e.preventDefault()}
-          className="space-y-6"
-        >
+        <form onSubmit={savePersonalPhone} className="space-y-6">
           <div className="relative bg-white rounded-2xl border border-gray-200 p-8 shadow-2xl">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Informations personnelles</h2>
-            
+
+            {personalMsg && (
+              <p className={`text-sm mb-4 ${personalMsg.includes('Erreur') ? 'text-red-600' : 'text-emerald-700'}`}>
+                {personalMsg}
+              </p>
+            )}
+
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-semibold text-gray-600 mb-2">
@@ -157,16 +189,14 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-600 mb-2">
-                  Téléphone
-                </label>
+                <label className="block text-sm font-semibold text-gray-600 mb-2">Téléphone</label>
                 <input
                   type="tel"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  disabled
-                  className="w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-600 cursor-not-allowed"
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-300"
                   placeholder="Votre numéro de téléphone"
+                  autoComplete="tel"
                 />
               </div>
 
@@ -251,10 +281,10 @@ export default function ProfilePage() {
           <div className="flex items-center gap-3">
             <button
               type="submit"
-              disabled
-              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg font-semibold opacity-50 cursor-not-allowed"
+              disabled={personalSaving}
+              className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-emerald-700 hover:to-cyan-700 disabled:opacity-50"
             >
-              Enregistrer les modifications
+              {personalSaving ? 'Enregistrement…' : 'Enregistrer le téléphone'}
             </button>
           </div>
         </form>

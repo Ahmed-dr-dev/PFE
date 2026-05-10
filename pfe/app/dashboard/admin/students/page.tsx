@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import { DEPARTMENT_SLUGS, departmentLabel, departmentMatches } from '@/lib/departments'
 import { useEffect, useState } from 'react'
 import { CreateUserModal } from '../components/CreateUserModal'
 import { EditUserModal } from '../components/EditUserModal'
@@ -68,17 +69,12 @@ export default function StudentsPage() {
     approved: 'Approuvé',
   }
 
-  // Get unique departments
-  const allDepartments = ['informatique', 'gestion', 'finance', 'marketing', 'rh', 'comptabilite']
-  const existingDepartments = Array.from(new Set(students.map((s: any) => s.department).filter(Boolean)))
-  const departments = Array.from(new Set([...existingDepartments, ...allDepartments]))
-
-  // Filter students
   const filteredStudents = students.filter((student: any) => {
     const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'pending' && !student.hasPfe) ||
       (statusFilter !== 'pending' && student.pfeStatus === statusFilter)
-    const matchesDepartment = departmentFilter === 'all' || student.department === departmentFilter
+    const matchesDepartment =
+      departmentFilter === 'all' || departmentMatches(student.department, departmentFilter)
     return matchesStatus && matchesDepartment
   })
 
@@ -145,9 +141,9 @@ export default function StudentsPage() {
             className="w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:border-emerald-200 transition-colors"
           >
             <option value="all">Tous les départements</option>
-            {departments.map((dept) => (
+            {DEPARTMENT_SLUGS.map((dept) => (
               <option key={dept} value={dept}>
-                {dept.charAt(0).toUpperCase() + dept.slice(1)}
+                {departmentLabel(dept)}
               </option>
             ))}
           </select>
